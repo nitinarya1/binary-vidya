@@ -1,4 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const getBaseApiUrl = (): string => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '');
+  }
+  // In browser on Vercel or client side, use same-origin /api to prevent mixed content and CORS
+  if (typeof window !== 'undefined') {
+    return '/api';
+  }
+  return 'http://localhost:5000/api';
+};
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -28,7 +37,8 @@ export const apiRequest = async <T = any>(
   }
 
   try {
-    const res = await fetch(`${API_URL}${endpoint}`, {
+    const baseUrl = getBaseApiUrl();
+    const res = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
     });
