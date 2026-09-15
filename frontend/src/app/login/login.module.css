@@ -1,0 +1,378 @@
+.pageContainer {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  padding: 32px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.authWrapper {
+  display: flex;
+  width: 100%;
+  max-width: 1040px;
+  min-height: 620px;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  box-shadow: 0 15px 40px rgba(37, 99, 235, 0.08), 0 4px 12px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+
+/* Left Hero Banner in soft, crisp light blue */
+.heroSection {
+  flex: 1;
+  background: linear-gradient(145deg, #f0f7ff 0%, #e0edff 100%);
+  padding: 56px 44px;
+  display: flex;
+  flex-direction: column;
+  justifyContent: space-between;
+  border-right: 1px solid #e2e8f0;
+  position: relative;
+  overflow: hidden;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandLogo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  font-weight: 800;
+  font-size: 20px;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.brandName {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: #1e3a8a;
+}
+
+.heroContent {
+  margin: auto 0;
+}
+
+.heroTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.heroTitle {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #0f172a;
+  margin-bottom: 14px;
+}
+
+.heroSubtitle {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #475569;
+  max-width: 380px;
+}
+
+.featuresList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.featureItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.featureIcon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  color: #2563eb;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.06);
+}
+
+.heroFooter {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  gap: 20px;
+}
+
+/* Right Form Section */
+.formSection {
+  flex: 1.05;
+  padding: 56px 48px;
+  display: flex;
+  flex-direction: column;
+  justifyContent: center;
+  background: #ffffff;
+}
+
+.tabSwitcher {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 28px;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.tabButtonActive {
+  background: #ffffff;
+  color: #2563eb;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.formHeader {
+  margin-bottom: 24px;
+}
+
+.formTitle {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.formSubtitle {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.inputGroup {
+  margin-bottom: 18px;
+}
+
+.inputLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.inputFieldWrapper {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+
+.inputFieldWrapper:focus-within {
+  background: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.countryCodeSelect {
+  background: #f1f5f9;
+  border: none;
+  border-right: 1.5px solid #e2e8f0;
+  padding: 12px 10px;
+  font-weight: 600;
+  color: #1e3a8a;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.countryCodeSelect:focus {
+  background: #e2e8f0;
+}
+
+.inputField {
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  font-size: 14px;
+  width: 100%;
+}
+
+.inputField::placeholder {
+  color: #94a3b8;
+}
+
+.togglePasswordBtn {
+  background: none;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.togglePasswordBtn:hover {
+  color: #2563eb;
+}
+
+.rowBetween {
+  display: flex;
+  align-items: center;
+  justifyContent: space-between;
+  margin-bottom: 22px;
+  font-size: 13px;
+}
+
+.rememberMe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.rememberMe input {
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.forgotPassLink {
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  transition: color 0.2s ease;
+}
+
+.forgotPassLink:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+  gap: 8px;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+  margin-bottom: 20px;
+}
+
+.submitBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+  color: #94a3b8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.divider span {
+  padding: 0 12px;
+}
+
+.errorBox {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.successBox {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .authWrapper {
+    flex-direction: column;
+    max-width: 500px;
+  }
+  .heroSection {
+    padding: 36px 32px;
+  }
+  .formSection {
+    padding: 36px 32px;
+  }
+  .featuresList {
+    display: none;
+  }
+}
