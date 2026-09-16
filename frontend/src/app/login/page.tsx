@@ -26,7 +26,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, registerUser, user, logout } = useAuth();
 
-  const [authMode, setAuthMode] = useState<'signin' | 'register' | 'admin'>('signin');
+  const [isRegister, setIsRegister] = useState(false);
+  const [isAdminMode, setIsAdminMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Form Fields
@@ -42,9 +43,6 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-
-  const isRegister = authMode === 'register';
-  const isAdminLogin = authMode === 'admin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +82,7 @@ export default function LoginPage() {
             router.push('/');
           }, 600);
         }
-      } else if (isAdminLogin) {
+      } else if (isAdminMode) {
         const loggedInUser = await login(email, password);
         if (loggedInUser?.role !== 'admin') {
           logout();
@@ -171,9 +169,10 @@ export default function LoginPage() {
             <button
               type="button"
               id="tab-sign-in"
-              className={`${styles.tabButton} ${authMode === 'signin' ? styles.tabButtonActive : ''}`}
+              className={`${styles.tabButton} ${!isRegister ? styles.tabButtonActive : ''}`}
               onClick={() => {
-                setAuthMode('signin');
+                setIsRegister(false);
+                setIsAdminMode(false);
                 setErrorMsg(null);
               }}
             >
@@ -182,31 +181,20 @@ export default function LoginPage() {
             <button
               type="button"
               id="tab-create-account"
-              className={`${styles.tabButton} ${authMode === 'register' ? styles.tabButtonActive : ''}`}
+              className={`${styles.tabButton} ${isRegister ? styles.tabButtonActive : ''}`}
               onClick={() => {
-                setAuthMode('register');
+                setIsRegister(true);
+                setIsAdminMode(false);
                 setErrorMsg(null);
               }}
             >
               Create Account
             </button>
-            <button
-              type="button"
-              id="tab-login-admin"
-              className={`${styles.tabButton} ${authMode === 'admin' ? styles.tabButtonAdminActive : ''}`}
-              onClick={() => {
-                setAuthMode('admin');
-                setErrorMsg(null);
-              }}
-            >
-              <ShieldCheck size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-              Login as Admin
-            </button>
           </div>
 
           {/* Form Header */}
           <div className={styles.formHeader}>
-            {isAdminLogin && (
+            {isAdminMode && (
               <div
                 style={{
                   display: 'inline-flex',
@@ -226,10 +214,10 @@ export default function LoginPage() {
               </div>
             )}
             <h2 className={styles.formTitle}>
-              {isAdminLogin ? 'Administrator Sign In' : isRegister ? 'Create your account' : 'Welcome back'}
+              {isAdminMode ? 'Administrator Sign In' : isRegister ? 'Create your account' : 'Welcome back'}
             </h2>
             <p className={styles.formSubtitle}>
-              {isAdminLogin
+              {isAdminMode
                 ? 'Enter your verified administrator credentials to access management controls'
                 : isRegister
                 ? 'Start your journey with hands-on technical excellence'
@@ -382,14 +370,14 @@ export default function LoginPage() {
               className={styles.submitBtn}
               style={{
                 opacity: loading ? 0.7 : 1,
-                background: isAdminLogin ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : undefined,
+                background: isAdminMode ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : undefined,
               }}
             >
               {loading ? (
                 'Processing...'
               ) : (
                 <>
-                  {isAdminLogin
+                  {isAdminMode
                     ? 'Sign In as Administrator'
                     : isRegister
                     ? 'Create Free Account'
@@ -408,7 +396,7 @@ export default function LoginPage() {
           {/* Google Login Component */}
           <GoogleLoginBtn
             onSuccess={(googleUser) => {
-              if (isAdminLogin) {
+              if (isAdminMode) {
                 if (googleUser?.role !== 'admin') {
                   logout();
                   setErrorMsg('Access Denied: This Google account is not recognized as an Administrator.');
@@ -431,12 +419,13 @@ export default function LoginPage() {
 
           {/* Dedicated Login as Admin / Learner switch button */}
           <div className={styles.adminSwitchBanner}>
-            {isAdminLogin ? (
+            {isAdminMode ? (
               <button
                 type="button"
                 id="btn-switch-learner"
                 onClick={() => {
-                  setAuthMode('signin');
+                  setIsAdminMode(false);
+                  setIsRegister(false);
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
@@ -449,7 +438,8 @@ export default function LoginPage() {
                 type="button"
                 id="btn-login-as-admin"
                 onClick={() => {
-                  setAuthMode('admin');
+                  setIsAdminMode(true);
+                  setIsRegister(false);
                   setErrorMsg(null);
                   setSuccessMsg(null);
                 }}
