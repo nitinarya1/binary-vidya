@@ -20,6 +20,10 @@ import {
   AlertCircle,
   ExternalLink,
   Sparkles,
+  UserPlus,
+  X,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface ManagedUser {
@@ -44,6 +48,16 @@ export default function AdminDashboardPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'student'>('all');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Create New Admin Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [adminName, setAdminName] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const fetchUsers = async () => {
     if (!token) return;
@@ -121,6 +135,58 @@ export default function AdminDashboardPage() {
       setNotice({ type: 'error', text: err.message || 'Error occurred updating user role' });
     } finally {
       setUpdatingUserId(null);
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+
+    if (!adminName.trim() || !adminEmail.trim() || !adminPassword.trim()) {
+      setCreateError('Please complete all required fields.');
+      return;
+    }
+
+    if (adminPassword.length < 6) {
+      setCreateError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    try {
+      setCreatingAdmin(true);
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: adminName.trim(),
+          email: adminEmail.trim(),
+          phone: adminPhone.trim() || undefined,
+          password: adminPassword,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setNotice({
+          type: 'success',
+          text: `New Administrator "${data.user.name}" (${data.user.email}) created successfully!`,
+        });
+        setIsCreateModalOpen(false);
+        setAdminName('');
+        setAdminEmail('');
+        setAdminPhone('');
+        setAdminPassword('');
+        fetchUsers();
+      } else {
+        setCreateError(data.message || 'Failed to create administrator account.');
+      }
+    } catch (err: any) {
+      setCreateError(err.message || 'Error occurred while creating administrator.');
+    } finally {
+      setCreatingAdmin(false);
     }
   };
 
@@ -219,6 +285,19 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className={styles.headerActions}>
+            <button
+              type="button"
+              id="btn-create-admin-header"
+              onClick={() => {
+                setCreateError(null);
+                setIsCreateModalOpen(true);
+              }}
+              className={styles.createAdminBtn}
+              title="Create a new administrator account"
+            >
+              <UserPlus size={14} /> + New Admin
+            </button>
+
             <Link href="/" className={styles.secondaryBtn}>
               <ArrowLeft size={14} /> Back to Website
             </Link>
@@ -378,6 +457,20 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
+              {/* Create Admin button */}
+              <button
+                type="button"
+                id="btn-create-admin-toolbar"
+                onClick={() => {
+                  setCreateError(null);
+                  setIsCreateModalOpen(true);
+                }}
+                className={styles.createAdminBtn}
+                title="Create a new administrator account"
+              >
+                <UserPlus size={14} /> + Create New Admin
+              </button>
+
               {/* Refresh button */}
               <button
                 type="button"
@@ -492,6 +585,154 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Create Administrator Account Modal */}
+      {isCreateModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsCreateModalOpen(false)}>
+          <div className={styles.modalDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalTitleGroup}>
+                <ShieldCheck size={22} color="#2563eb" />
+                <h3 className={styles.modalTitle}>Create Administrator Account</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className={styles.modalCloseBtn}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAdmin}>
+              <div className={styles.modalBody}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '18px', lineHeight: 1.5 }}>
+                  Provision a new administrator account with elevated system privileges to manage users, courses, and platform operations.
+                </p>
+
+                {createError && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      color: '#b91c1c',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      marginBottom: '16px',
+                    }}
+                  >
+                    <AlertCircle size={16} />
+                    <span>{createError}</span>
+                  </div>
+                )}
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="new-admin-name">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="new-admin-name"
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    placeholder="e.g. Rahul Sharma"
+                    required
+                    className={styles.formInput}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="new-admin-email">
+                    Admin Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="new-admin-email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="admin@binaryvidya.edu"
+                    required
+                    className={styles.formInput}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="new-admin-phone">
+                    Mobile Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    id="new-admin-phone"
+                    value={adminPhone}
+                    onChange={(e) => setAdminPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={styles.formInput}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="new-admin-password">
+                    Initial Password *
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showAdminPassword ? 'text' : 'password'}
+                      id="new-admin-password"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="Minimum 6 characters"
+                      required
+                      className={styles.formInput}
+                      style={{ paddingRight: '40px' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPassword(!showAdminPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                      }}
+                      title={showAdminPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.modalFooter}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className={styles.secondaryBtn}
+                  disabled={creatingAdmin}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingAdmin}
+                  className={styles.createAdminBtn}
+                  id="btn-submit-create-admin"
+                >
+                  {creatingAdmin ? 'Creating Account...' : 'Create Admin Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

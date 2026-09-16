@@ -148,3 +148,90 @@ export async function PATCH(req: Request) {
     );
   }
 }
+
+// POST: Create a new Administrator account directly
+export async function POST(req: Request) {
+  try {
+    const authResult = await authenticateAdmin(req);
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { success: false, message: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
+    const body = await req.json();
+    const { name, email, phone, password } = body;
+
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { success: false, message: 'Name, email, and password are required to create an admin account' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json(
+        { success: false, message: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return NextResponse.json(
+        { success: false, message: 'An account with this email address already exists' },
+        { status: 400 }
+      );
+    }
+
+    let formattedPhone = phone?.trim();
+    if (formattedPhone) {
+      const existingPhone = await User.findOne({ phone: formattedPhone });
+      if (existingPhone) {
+        return NextResponse.json(
+          { success: false, message: 'An account with this mobile number already exists' },
+          { status: 400 }
+        );
+      }
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const newAdmin = await User.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      phone: formattedPhone || undefined,
+      password: hashedPassword,
+      role: 'admin',
+      authProvider: 'local',
+      isVerified: true,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'New Administrator account created successfully',
+        user: {
+          id: newAdmin._id.toString(),
+          name: newAdmin.name,
+          email: newAdmin.email,
+          phone: newAdmin.phone,
+          role: newAdmin.role,
+          authProvider: newAdmin.authProvider,
+          createdAt: newAdmin.createdAt,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error: any) {
+    console.error('[Admin Users POST Error]:', error);
+    return NextResponse.json(
+      { success: false, message: error.message || 'Failed to create admin account' },
+      { status: 500 }
+    );
+  }
+}

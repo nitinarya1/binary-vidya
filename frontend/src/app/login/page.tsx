@@ -24,9 +24,9 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, registerUser, user } = useAuth();
+  const { login, registerUser, user, logout } = useAuth();
 
-  const [isRegister, setIsRegister] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'register' | 'admin'>('signin');
   const [showPassword, setShowPassword] = useState(false);
 
   // Form Fields
@@ -42,6 +42,9 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+
+  const isRegister = authMode === 'register';
+  const isAdminLogin = authMode === 'admin';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +74,7 @@ export default function LoginPage() {
         const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
         const newUser = await registerUser(name, email, password, fullPhone);
         if (newUser?.role === 'admin') {
-          setSuccessMsg('Administrator account created! Redirecting to Admin Portal...');
+          setSuccessMsg('Administrator account created! Redirecting to Admin Console...');
           setTimeout(() => {
             router.push('/admin');
           }, 600);
@@ -81,10 +84,21 @@ export default function LoginPage() {
             router.push('/');
           }, 600);
         }
+      } else if (isAdminLogin) {
+        const loggedInUser = await login(email, password);
+        if (loggedInUser?.role !== 'admin') {
+          logout();
+          setErrorMsg('Access Denied: This account is not registered with administrator privileges.');
+          return;
+        }
+        setSuccessMsg('Welcome Administrator! Opening Admin Console...');
+        setTimeout(() => {
+          router.push('/admin');
+        }, 600);
       } else {
         const loggedInUser = await login(email, password);
         if (loggedInUser?.role === 'admin') {
-          setSuccessMsg('Welcome, Administrator! Redirecting to Admin Portal...');
+          setSuccessMsg('Welcome, Administrator! Redirecting to Admin Console...');
           setTimeout(() => {
             router.push('/admin');
           }, 600);
@@ -157,9 +171,9 @@ export default function LoginPage() {
             <button
               type="button"
               id="tab-sign-in"
-              className={`${styles.tabButton} ${!isRegister ? styles.tabButtonActive : ''}`}
+              className={`${styles.tabButton} ${authMode === 'signin' ? styles.tabButtonActive : ''}`}
               onClick={() => {
-                setIsRegister(false);
+                setAuthMode('signin');
                 setErrorMsg(null);
               }}
             >
@@ -168,21 +182,56 @@ export default function LoginPage() {
             <button
               type="button"
               id="tab-create-account"
-              className={`${styles.tabButton} ${isRegister ? styles.tabButtonActive : ''}`}
+              className={`${styles.tabButton} ${authMode === 'register' ? styles.tabButtonActive : ''}`}
               onClick={() => {
-                setIsRegister(true);
+                setAuthMode('register');
                 setErrorMsg(null);
               }}
             >
               Create Account
             </button>
+            <button
+              type="button"
+              id="tab-login-admin"
+              className={`${styles.tabButton} ${authMode === 'admin' ? styles.tabButtonAdminActive : ''}`}
+              onClick={() => {
+                setAuthMode('admin');
+                setErrorMsg(null);
+              }}
+            >
+              <ShieldCheck size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+              Login as Admin
+            </button>
           </div>
 
           {/* Form Header */}
           <div className={styles.formHeader}>
-            <h2 className={styles.formTitle}>{isRegister ? 'Create your account' : 'Welcome back'}</h2>
+            {isAdminLogin && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d4ed8',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  marginBottom: '10px',
+                }}
+              >
+                <ShieldCheck size={14} /> Administrator Security Gateway
+              </div>
+            )}
+            <h2 className={styles.formTitle}>
+              {isAdminLogin ? 'Administrator Sign In' : isRegister ? 'Create your account' : 'Welcome back'}
+            </h2>
             <p className={styles.formSubtitle}>
-              {isRegister
+              {isAdminLogin
+                ? 'Enter your verified administrator credentials to access management controls'
+                : isRegister
                 ? 'Start your journey with hands-on technical excellence'
                 : 'Enter your credentials to access your courses and dashboard'}
             </p>
@@ -331,13 +380,20 @@ export default function LoginPage() {
               id="auth-submit-btn"
               disabled={loading}
               className={styles.submitBtn}
-              style={{ opacity: loading ? 0.7 : 1 }}
+              style={{
+                opacity: loading ? 0.7 : 1,
+                background: isAdminLogin ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : undefined,
+              }}
             >
               {loading ? (
                 'Processing...'
               ) : (
                 <>
-                  {isRegister ? 'Create Free Account' : 'Sign In to Account'}{' '}
+                  {isAdminLogin
+                    ? 'Sign In as Administrator'
+                    : isRegister
+                    ? 'Create Free Account'
+                    : 'Sign In to Account'}{' '}
                   <ArrowRight size={16} />
                 </>
               )}
@@ -352,36 +408,56 @@ export default function LoginPage() {
           {/* Google Login Component */}
           <GoogleLoginBtn
             onSuccess={(googleUser) => {
-              if (googleUser?.role === 'admin') {
-                setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Portal...');
+              if (isAdminLogin) {
+                if (googleUser?.role !== 'admin') {
+                  logout();
+                  setErrorMsg('Access Denied: This Google account is not recognized as an Administrator.');
+                  return;
+                }
+                setSuccessMsg('Administrator verified via Google! Opening Admin Console...');
                 setTimeout(() => router.push('/admin'), 600);
               } else {
-                setSuccessMsg('Google sign-in successful! Redirecting...');
-                setTimeout(() => router.push('/'), 600);
+                if (googleUser?.role === 'admin') {
+                  setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Console...');
+                  setTimeout(() => router.push('/admin'), 600);
+                } else {
+                  setSuccessMsg('Google sign-in successful! Redirecting...');
+                  setTimeout(() => router.push('/'), 600);
+                }
               }
             }}
             onError={(msg) => setErrorMsg(msg)}
           />
 
-          {/* Role-Based Authentication Info */}
-          <div
-            style={{
-              marginTop: '20px',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontSize: '12px',
-              color: '#64748b',
-              textAlign: 'center',
-            }}
-          >
-            <ShieldCheck size={14} color="#2563eb" />
-            <span>Unified Portal: Administrators automatically route to the Admin Dashboard upon sign-in.</span>
+          {/* Dedicated Login as Admin / Learner switch button */}
+          <div className={styles.adminSwitchBanner}>
+            {isAdminLogin ? (
+              <button
+                type="button"
+                id="btn-switch-learner"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={styles.adminSwitchBtn}
+              >
+                <UserIcon size={15} /> Switch to Student Sign In
+              </button>
+            ) : (
+              <button
+                type="button"
+                id="btn-login-as-admin"
+                onClick={() => {
+                  setAuthMode('admin');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={styles.adminSwitchBtn}
+              >
+                <ShieldCheck size={15} /> Login as Administrator
+              </button>
+            )}
           </div>
         </section>
       </div>
