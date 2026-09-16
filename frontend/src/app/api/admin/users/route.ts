@@ -211,6 +211,18 @@ export async function POST(req: Request) {
       isVerified: true,
     });
 
+    // Send welcome email with credentials to newly created admin
+    const { sendWelcomeEmail } = await import('../../../../lib/serverMailer');
+    sendWelcomeEmail({
+      id: newAdmin._id.toString(),
+      name: newAdmin.name || name.trim(),
+      email: newAdmin.email || normalizedEmail,
+      role: newAdmin.role,
+      phone: newAdmin.phone,
+    }).catch((mailErr) => {
+      console.error('[Background Send Admin Welcome Email Error]:', mailErr);
+    });
+
     return NextResponse.json(
       {
         success: true,

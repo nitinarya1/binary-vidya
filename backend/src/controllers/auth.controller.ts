@@ -6,7 +6,7 @@ import path from 'path';
 import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
 import { Otp } from '../models/Otp';
-import { sendOtpEmail } from '../config/mailer';
+import { sendOtpEmail, sendWelcomeEmail } from '../config/mailer';
 import { formatPhoneNumber } from '../utils/phone';
 import { AuthenticatedRequest } from '../middleware/auth.middleware';
 
@@ -107,6 +107,17 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       authProvider: 'local',
       role: isSuperAdmin ? 'admin' : 'student',
       isVerified: false,
+    });
+
+    // Send welcome email with official logo asynchronously
+    sendWelcomeEmail({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+    }).catch((mailErr) => {
+      console.error('[Background Send Welcome Email Error]:', mailErr);
     });
 
     const token = generateToken(user._id.toString());
@@ -384,6 +395,16 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
         authProvider: 'google',
         role: isSuperAdmin ? 'admin' : 'student',
         isVerified: true,
+      });
+
+      // Send welcome email with official logo for new Google user
+      sendWelcomeEmail({
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      }).catch((mailErr) => {
+        console.error('[Background Send Google Welcome Email Error]:', mailErr);
       });
     } else {
       if (userName) {

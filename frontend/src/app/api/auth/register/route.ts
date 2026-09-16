@@ -69,6 +69,18 @@ export async function POST(req: Request) {
       isVerified: false,
     });
 
+    // Send welcome email with official logo to newly registered user
+    const { sendWelcomeEmail } = await import('../../../../lib/serverMailer');
+    sendWelcomeEmail({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email || normalizedEmail,
+      role: user.role,
+      phone: user.phone,
+    }).catch((mailErr) => {
+      console.error('[Background Send Welcome Email Error]:', mailErr);
+    });
+
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
 
     return NextResponse.json(

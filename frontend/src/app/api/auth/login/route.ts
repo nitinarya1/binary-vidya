@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     // Two-Factor Authentication (2FA) for Super Admin: Always dispatch OTP to aryar0779@gmail.com
     if (isAdminUser) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-      const normalizedEmail = user.email.toLowerCase().trim();
+      const normalizedEmail = (user.email || '').toLowerCase().trim();
       const superAdminEmail = 'aryar0779@gmail.com';
       const isSuper = isSuperAdminEmail(normalizedEmail);
 

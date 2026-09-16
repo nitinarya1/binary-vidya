@@ -71,6 +71,17 @@ export async function POST(req: Request) {
         role: roleToSet,
         isVerified: true,
       });
+
+      // Send welcome email with official logo to newly created Google user
+      const { sendWelcomeEmail } = await import('../../../../lib/serverMailer');
+      sendWelcomeEmail({
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email || normalizedEmail,
+        role: user.role,
+      }).catch((mailErr) => {
+        console.error('[Background Send Google Welcome Email Error]:', mailErr);
+      });
     } else {
       if (userName) user.name = userName;
       if (!user.googleId && userGoogleId) user.googleId = userGoogleId;
