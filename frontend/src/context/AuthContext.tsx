@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api';
+import { isSuperAdminEmail } from '../lib/auth-helpers';
 
 export interface User {
   id: string;
@@ -11,6 +12,16 @@ export interface User {
   role: 'student' | 'instructor' | 'admin';
   avatar?: string;
   authProvider?: string;
+  dateOfBirth?: string;
+  gender?: string;
+}
+
+export interface LoginResult {
+  user?: User | null;
+  requireOtp?: boolean;
+  email?: string;
+  maskedEmail?: string;
+  message?: string;
 }
 
 interface AuthContextType {
@@ -18,9 +29,12 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAdmin: boolean;
-  login: (identifier: string, pass: string) => Promise<User | null>;
+  isSuperAdmin: boolean;
+  login: (identifier: string, pass: string) => Promise<LoginResult>;
+  verifySuperAdminOtp: (email: string, otp: string) => Promise<User | null>;
   registerUser: (name: string, email: string, pass: string, phone?: string) => Promise<User | null>;
   googleAuth: (data: string | { credential?: string; accessToken?: string }) => Promise<User | null>;
+  updateUser: (updatedData: Partial<User>) => void;
   logout: () => void;
 }
 
@@ -70,10 +84,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('bv_user', JSON.stringify(resUser));
   };
 
-  const login = async (identifier: string, pass: string): Promise<User | null> => {
+  const login = async (identifier: string, pass: string): Promise<LoginResult> => {
     const res = await apiRequest('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ identifier, password: pass }),
+    });
+
+    if (res.requireOtp) {
+      return {
+        requireOtp: true,
+        email: res.email,
+        maskedEmail: res.maskedEmail,
+        message: res.message,
+      };
+    }
+
+    if (res.token && res.user) {
+      handleAuthSuccess(res.token, res.user);
+      return { user: res.user };
+    }
+    return {};
+  };
+
+  const verifySuperAdminOtp = async (email: string, otp: string): Promise<User | null> => {
+    const res = await apiRequest('/auth/login/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, otp }),
     });
 
     if (res.token && res.user) {
@@ -96,18 +132,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   };
 
-  const googleAuth = async (data: string | { credential?: string; accessToken?: string }): Promise<User | null> => {
+  const googleAuth = async (data: string | { credential?: string; accessToken?: string }): Promise<any> => {
     const payload = typeof data === 'string' ? { credential: data } : data;
     const res = await apiRequest('/auth/google', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
 
+    if (res.requireOtp) {
+      return {
+        requireOtp: true,
+        email: res.email,
+        maskedEmail: res.maskedEmail,
+        isSuperAdmin: res.isSuperAdmin,
+        message: res.message,
+      };
+    }
+
     if (res.token && res.user) {
       handleAuthSuccess(res.token, res.user);
       return res.user;
     }
     return null;
+  };
+
+  const updateUser = (updatedData: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updatedData };
+      localStorage.setItem('bv_user', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const logout = () => {
@@ -117,7 +172,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('bv_user');
   };
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || isSuperAdminEmail(user?.email);
+  const isSuperAdmin = Boolean(user && isSuperAdminEmail(user.email));
 
   return (
     <AuthContext.Provider
@@ -126,9 +182,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isLoading,
         isAdmin,
+        isSuperAdmin,
         login,
+        verifySuperAdminOtp,
         registerUser,
         googleAuth,
+        updateUser,
         logout,
       }}
     >

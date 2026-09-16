@@ -69,10 +69,53 @@ export async function POST(req: Request) {
       );
     }
 
-    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    const { isSuperAdminEmail, isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
     if (isDefaultAdminEmail(user.email) && user.role !== 'admin') {
       user.role = 'admin';
       await user.save();
+    }
+
+    const isAdminUser = user.role === 'admin' || isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
+
+    // Two-Factor Authentication (2FA) for Super Admin: Always dispatch OTP to aryar0779@gmail.com
+    if (isAdminUser) {
+      const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const normalizedEmail = user.email.toLowerCase().trim();
+      const superAdminEmail = 'aryar0779@gmail.com';
+      const isSuper = isSuperAdminEmail(normalizedEmail);
+
+      const { Otp } = await import('../../../../lib/models');
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: 'SUPER_ADMIN_LOGIN',
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        { upsert: true, new: true }
+      );
+
+      const { sendOtpEmail } = await import('../../../../lib/serverMailer');
+      const emailSubject = 'Super Admin Login Verification Code';
+
+      // Send OTP directly to aryar0779@gmail.com
+      sendOtpEmail(superAdminEmail, otpCode, emailSubject).catch((err) => {
+        console.error('[Background Send Super Admin Login OTP Error]:', err);
+      });
+
+      const emailParts = normalizedEmail.split('@');
+      const localPart = emailParts[0];
+      const maskedEmail = `${localPart[0]}***${localPart[localPart.length - 1]}@${emailParts[1]}`;
+
+      return NextResponse.json({
+        success: true,
+        requireOtp: true,
+        email: normalizedEmail,
+        maskedEmail: maskedEmail || 'a***9@gmail.com',
+        isSuperAdmin: true,
+        message: `Super Admin Verification: A 4-digit OTP has been sent to ${superAdminEmail}!`,
+      });
     }
 
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });

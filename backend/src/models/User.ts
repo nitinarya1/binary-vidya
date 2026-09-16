@@ -6,6 +6,8 @@ export interface IUser extends Document {
   phone?: string;
   password?: string;
   avatar?: string;
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer-not-to-say' | '';
   role: 'student' | 'instructor' | 'admin';
   authProvider: 'local' | 'google';
   googleId?: string;
@@ -44,6 +46,15 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: '',
     },
+    dateOfBirth: {
+      type: String,
+      default: '',
+    },
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other', 'prefer-not-to-say', ''],
+      default: '',
+    },
     role: {
       type: String,
       enum: ['student', 'instructor', 'admin'],
@@ -65,7 +76,15 @@ const userSchema = new Schema<IUser>(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
-export const User = mongoose.model<IUser>('User', userSchema);
+if (mongoose.models.User) {
+  mongoose.models.User.schema.add({
+    dateOfBirth: { type: String, default: '' },
+    gender: { type: String, default: '' },
+  });
+}
+
+export const User = mongoose.models.User || mongoose.model<IUser>('User', userSchema);

@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './login.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { GoogleLoginBtn } from '../../components/GoogleLoginBtn';
 import { ForgotPasswordModal } from '../../components/ForgotPasswordModal';
+import { isSuperAdminEmail } from '../../lib/auth-helpers';
 import {
   Mail,
   Lock,
@@ -20,14 +21,16 @@ import {
   BookOpen,
   Phone,
   CheckCircle2,
+  RefreshCw,
+  KeyRound,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-type AuthStep = 'email' | 'password' | 'register';
+type AuthStep = 'email' | 'password' | 'register' | 'superadmin-otp';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, registerUser, logout } = useAuth();
+  const { login, verifySuperAdminOtp, registerUser, logout, user, isLoading } = useAuth();
 
   // Current Authentication Step
   const [step, setStep] = useState<AuthStep>('email');
@@ -49,6 +52,31 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+
+  // Super Admin 2FA States
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '']);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [maskedEmail, setMaskedEmail] = useState<string>('');
+  const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    let interval: any;
+    if (resendCooldown > 0) {
+      interval = setInterval(() => setResendCooldown((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendCooldown]);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (!isLoading && user) {
+      if (isSuperAdminEmail(user.email)) {
+        router.push('/super-admin');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [isLoading, user, router]);
 
   // Step 1: Verify Email / Identifier
   const handleVerifyEmail = async (e: React.FormEvent) => {
@@ -99,17 +127,109 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const loggedInUser = await login(email, password);
+      const result = await login(email, password);
 
-      if (loggedInUser?.role === 'admin') {
-        setSuccessMsg('Welcome, Administrator! Opening Admin Console...');
-        setTimeout(() => router.push('/admin'), 600);
-      } else {
-        setSuccessMsg('Welcome back! Logging you in...');
-        setTimeout(() => router.push('/'), 600);
+      if (result.requireOtp) {
+        if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
+        setSuccessMsg(result.message || 'Super Admin 4-digit OTP sent to your registered email!');
+        setStep('superadmin-otp');
+        setOtpDigits(['', '', '', '']);
+        setResendCooldown(60);
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
+        return;
+      }
+
+      if (result.user) {
+        if (isSuperAdminEmail(result.user.email)) {
+          setSuccessMsg('Welcome, Super Admin! Opening Super Admin Console...');
+          setTimeout(() => router.push('/super-admin'), 200);
+        } else {
+          setSuccessMsg('Welcome back! Logging you in...');
+          setTimeout(() => router.push('/'), 200);
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Invalid password. Please check your credentials or reset password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Super Admin OTP digit change
+  const handleOtpDigitChange = (index: number, val: string) => {
+    if (val.length > 1) {
+      const pasted = val.replace(/\D/g, '').slice(0, 4).split('');
+      const updated = [...otpDigits];
+      pasted.forEach((char, i) => {
+        if (i < 4) updated[i] = char;
+      });
+      setOtpDigits(updated);
+      const nextIdx = Math.min(pasted.length, 3);
+      otpInputsRef.current[nextIdx]?.focus();
+      return;
+    }
+
+    const updated = [...otpDigits];
+    updated[index] = val.replace(/\D/g, '');
+    setOtpDigits(updated);
+
+    if (val && index < 3) {
+      otpInputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  // Step 2FA: Verify Super Admin Login OTP
+  const handleSuperAdminOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const fullOtp = otpDigits.join('');
+    if (fullOtp.length < 4) {
+      setErrorMsg('Please enter the complete 4-digit OTP code.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const verified = await verifySuperAdminOtp(email, fullOtp);
+      if (verified) {
+        if (isSuperAdminEmail(verified.email)) {
+          setSuccessMsg('Super Admin 2FA Verified! Opening Super Admin Console...');
+          setTimeout(() => router.push('/super-admin'), 200);
+        } else {
+          setSuccessMsg('Admin 2FA Verified! Opening Admin Console...');
+          setTimeout(() => router.push('/admin'), 200);
+        }
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid or expired OTP code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendSuperAdminOtp = async () => {
+    if (resendCooldown > 0 || loading) return;
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      setLoading(true);
+      const res = await login(email, password);
+      if (res.requireOtp) {
+        setSuccessMsg('A new 4-digit OTP has been sent to your email.');
+        setResendCooldown(60);
+        setOtpDigits(['', '', '', '']);
+        setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to resend OTP.');
     } finally {
       setLoading(false);
     }
@@ -142,12 +262,12 @@ export default function LoginPage() {
       const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
       const newUser = await registerUser(name, email, password, fullPhone);
 
-      if (newUser?.role === 'admin') {
-        setSuccessMsg('Administrator account created! Opening Admin Console...');
-        setTimeout(() => router.push('/admin'), 600);
+      if (isSuperAdminEmail(newUser?.email)) {
+        setSuccessMsg('Super Admin account ready! Opening Super Admin Console...');
+        setTimeout(() => router.push('/super-admin'), 200);
       } else {
         setSuccessMsg('Account created successfully! Redirecting...');
-        setTimeout(() => router.push('/'), 600);
+        setTimeout(() => router.push('/'), 200);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Registration failed. Please try again.');
@@ -208,6 +328,27 @@ export default function LoginPage() {
         <section className={styles.formSection}>
           {/* Form Header */}
           <div className={styles.formHeader}>
+            {step === 'superadmin-otp' && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '5px 12px',
+                  borderRadius: '20px',
+                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                  border: '1px solid #f59e0b',
+                  color: '#92400e',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  marginBottom: '10px',
+                  letterSpacing: '0.03em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                <ShieldCheck size={14} /> {isSuperAdminEmail(email) ? 'Super Admin 2FA Security' : 'Admin Authorization 2FA'}
+              </div>
+            )}
             {step === 'password' && verifiedUser?.role === 'admin' && (
               <div
                 style={{
@@ -231,6 +372,8 @@ export default function LoginPage() {
             <h2 className={styles.formTitle}>
               {step === 'register'
                 ? 'Create your account'
+                : step === 'superadmin-otp'
+                ? isSuperAdminEmail(email) ? 'Super Admin 2FA Verification' : 'Admin Security Verification'
                 : step === 'password'
                 ? `Welcome back${verifiedUser?.name ? `, ${verifiedUser.name.split(' ')[0]}` : ''}`
                 : 'Sign in to Binary Vidya'}
@@ -238,6 +381,8 @@ export default function LoginPage() {
             <p className={styles.formSubtitle}>
               {step === 'register'
                 ? 'Start your journey with hands-on technical excellence'
+                : step === 'superadmin-otp'
+                ? `Enter the 4-digit code dispatched to ${maskedEmail || email || 'aryar0779@gmail.com'}`
                 : step === 'password'
                 ? 'Enter your password to access your courses and dashboard'
                 : 'Enter your email or mobile number to continue'}
@@ -376,6 +521,134 @@ export default function LoginPage() {
             </form>
           )}
 
+          {/* STEP 2.5: SUPER ADMIN 2FA OTP VERIFICATION */}
+          {step === 'superadmin-otp' && (
+            <form onSubmit={handleSuperAdminOtpSubmit} id="superadmin-otp-form">
+              {/* Email Pill Badge */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '10px',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  marginBottom: '18px',
+                  fontSize: '13px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={16} color="#2563eb" />
+                  <span style={{ fontWeight: 600, color: '#1e293b' }}>{email}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('password');
+                    setErrorMsg(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563eb',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Change
+                </button>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.inputLabel} style={{ textAlign: 'center', display: 'block', marginBottom: '8px' }}>
+                  Enter 4-Digit Security Code
+                </label>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    margin: '12px 0 18px 0',
+                  }}
+                >
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => {
+                        otpInputsRef.current[idx] = el;
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                      id={`superadmin-otp-input-${idx}`}
+                      style={{
+                        width: '56px',
+                        height: '60px',
+                        textAlign: 'center',
+                        fontSize: '24px',
+                        fontWeight: 700,
+                        borderRadius: '12px',
+                        border: digit ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
+                        background: digit ? '#eff6ff' : '#ffffff',
+                        color: '#0f172a',
+                        outline: 'none',
+                        transition: 'all 0.15s ease-in-out',
+                        boxShadow: digit ? '0 0 0 3px rgba(37, 99, 235, 0.15)' : 'none',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Resend OTP button */}
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                {resendCooldown > 0 ? (
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>
+                    Resend code in <strong>{resendCooldown}s</strong>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendSuperAdminOtp}
+                    disabled={loading}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563eb',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Resend OTP Code
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                id="superadmin-otp-submit-btn"
+                disabled={loading || otpDigits.some((d) => !d)}
+                className={styles.submitBtn}
+                style={{
+                  opacity: loading || otpDigits.some((d) => !d) ? 0.6 : 1,
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                }}
+              >
+                {loading ? 'Verifying OTP...' : <>Verify & Enter Super Admin Console <ArrowRight size={16} /></>}
+              </button>
+            </form>
+          )}
+
           {/* STEP 3: CREATE ACCOUNT FORM */}
           {step === 'register' && (
             <form onSubmit={handleRegisterSubmit} id="auth-register-form">
@@ -486,28 +759,58 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* Divider */}
-          <div className={styles.divider}>
-            <span>Or continue with</span>
-          </div>
+          {/* Divider and Google Login (hidden during Super Admin 2FA) */}
+          {step !== 'superadmin-otp' && (
+            <>
+              <div className={styles.divider}>
+                <span>Or continue with</span>
+              </div>
 
-          {/* Google Login Component */}
-          <GoogleLoginBtn
-            onSuccess={(googleUser) => {
-              if (googleUser?.role === 'admin') {
-                setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Console...');
-                setTimeout(() => router.push('/admin'), 600);
-              } else {
-                setSuccessMsg('Google sign-in successful! Redirecting...');
-                setTimeout(() => router.push('/'), 600);
-              }
-            }}
-            onError={(msg) => setErrorMsg(msg)}
-          />
+              <GoogleLoginBtn
+                onSuccess={(googleUser) => {
+                  if (googleUser?.requireOtp) {
+                    setStep('superadmin-otp');
+                    setEmail(googleUser.email);
+                    if (googleUser.maskedEmail) setMaskedEmail(googleUser.maskedEmail);
+                    setSuccessMsg(googleUser.message || 'OTP sent to aryar0779@gmail.com for Super Admin verification.');
+                    setResendCooldown(60);
+                    return;
+                  }
+                  if (isSuperAdminEmail(googleUser?.email)) {
+                    setSuccessMsg('Super Admin account confirmed! Opening Super Admin Console...');
+                    setTimeout(() => router.push('/super-admin'), 200);
+                  } else if (googleUser?.role === 'admin') {
+                    setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Console...');
+                    setTimeout(() => router.push('/admin'), 200);
+                  } else {
+                    setSuccessMsg('Google sign-in successful! Redirecting...');
+                    setTimeout(() => router.push('/'), 200);
+                  }
+                }}
+                onError={(msg) => setErrorMsg(msg)}
+              />
+            </>
+          )}
 
           {/* Bottom Link: Don't have an account? Create one / Already have an account? Sign in */}
           <div className={styles.footerSwitchRow}>
-            {step === 'register' ? (
+            {step === 'superadmin-otp' ? (
+              <span>
+                Want to use a different account?{' '}
+                <button
+                  type="button"
+                  id="link-switch-to-signin-from-otp"
+                  onClick={() => {
+                    setStep('email');
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className={styles.footerSwitchBtn}
+                >
+                  Return to Sign In
+                </button>
+              </span>
+            ) : step === 'register' ? (
               <span>
                 Already have an account?{' '}
                 <button

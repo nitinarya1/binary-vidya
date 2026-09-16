@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     }
 
     await connectDB();
-    const user = await User.findById(decoded.id);
+    const user: any = await User.findById(decoded.id).lean();
 
     if (!user) {
       return NextResponse.json(
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
     if (user.email && isDefaultAdminEmail(user.email) && user.role !== 'admin') {
       user.role = 'admin';
-      await user.save();
+      await User.findByIdAndUpdate(user._id, { role: 'admin' });
     }
 
     return NextResponse.json({
@@ -52,7 +52,9 @@ export async function GET(req: Request) {
         email: user.email,
         phone: user.phone,
         role: user.role,
-        avatar: user.avatar,
+        avatar: user.avatar || '',
+        dateOfBirth: user.dateOfBirth || '',
+        gender: user.gender || '',
         authProvider: user.authProvider,
       },
     });

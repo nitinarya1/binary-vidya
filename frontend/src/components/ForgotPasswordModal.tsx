@@ -17,7 +17,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 }) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [email, setEmail] = useState(initialEmail);
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -69,7 +69,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       setSuccessMsg(res.message || 'OTP code sent to your registered email.');
       setStep(2);
       setResendCooldown(60);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(['', '', '', '']);
       setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
     } catch (err: any) {
       setError(err.message || 'Failed to send OTP. Please check your credentials.');
@@ -81,13 +81,13 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
   // Step 2: Handle OTP input changes
   const handleOtpChange = (index: number, val: string) => {
     if (val.length > 1) {
-      const pasted = val.replace(/\D/g, '').slice(0, 6).split('');
+      const pasted = val.replace(/\D/g, '').slice(0, 4).split('');
       const updated = [...otpDigits];
       pasted.forEach((char, i) => {
-        if (i < 6) updated[i] = char;
+        if (i < 4) updated[i] = char;
       });
       setOtpDigits(updated);
-      const nextIdx = Math.min(pasted.length, 5);
+      const nextIdx = Math.min(pasted.length, 3);
       otpInputsRef.current[nextIdx]?.focus();
       return;
     }
@@ -96,7 +96,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     updated[index] = val.replace(/\D/g, '');
     setOtpDigits(updated);
 
-    if (val && index < 5) {
+    if (val && index < 3) {
       otpInputsRef.current[index + 1]?.focus();
     }
   };
@@ -114,8 +114,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (fullOtp.length < 6) {
-      setError('Please enter the complete 6-digit OTP code');
+    if (fullOtp.length < 4) {
+      setError('Please enter the complete 4-digit OTP code');
       return;
     }
 
@@ -237,8 +237,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             {step === 4 && 'Password Updated!'}
           </h2>
           <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
-            {step === 1 && 'Enter your registered email address or mobile number to receive your 6-digit OTP code.'}
-            {step === 2 && (successMsg || `Check your email inbox for the 6-digit verification code.`)}
+            {step === 1 && 'Enter your registered email address or mobile number to receive your 4-digit OTP code.'}
+            {step === 2 && (successMsg || `Check your email inbox for the 4-digit verification code.`)}
             {step === 3 && 'Choose a strong password with at least 6 characters.'}
             {step === 4 && 'Your password has been updated. You can now sign in.'}
           </p>
@@ -341,9 +341,9 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
           <form onSubmit={handleVerifyOtp}>
             <div style={{ marginBottom: '24px' }}>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '12px', textAlign: 'center' }}>
-                Enter 6-Digit Code from Email
+                Enter 4-Digit Code from Email
               </label>
-              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                 {otpDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -358,10 +358,10 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     id={`otp-input-${idx}`}
                     style={{
-                      width: '46px',
-                      height: '54px',
+                      width: '54px',
+                      height: '58px',
                       textAlign: 'center',
-                      fontSize: '22px',
+                      fontSize: '24px',
                       fontWeight: 700,
                       background: digit ? '#eff6ff' : '#f8fafc',
                       border: digit ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
@@ -376,7 +376,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             <button
               type="submit"
               id="verify-otp-btn"
-              disabled={loading || fullOtp.length < 6}
+              disabled={loading || fullOtp.length < 4}
               style={{
                 width: '100%',
                 padding: '13px',
@@ -389,7 +389,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
-                opacity: loading || fullOtp.length < 6 ? 0.6 : 1,
+                opacity: loading || fullOtp.length < 4 ? 0.6 : 1,
                 boxShadow: '0 6px 16px rgba(37, 99, 235, 0.25)',
               }}
             >

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import styles from './home.module.css';
@@ -23,10 +23,82 @@ import {
   ExternalLink,
   Laptop,
   Check,
+  Film,
+  Clock,
+  Layers,
+  Video,
+  X,
+  PlayCircle,
+  Zap,
 } from 'lucide-react';
+
+interface VideoLesson {
+  id?: string;
+  title: string;
+  videoUrl: string;
+  duration: string;
+  thumbnail?: string;
+  description?: string;
+}
+
+interface Chapter {
+  id?: string;
+  title: string;
+  description?: string;
+  lessons: VideoLesson[];
+}
+
+interface CourseItem {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  category: string;
+  level: string;
+  duration: string;
+  price: number;
+  instructor: string;
+  thumbnail?: string;
+  tags?: string[];
+  chapters?: Chapter[];
+  chaptersCount?: number;
+  totalLessons?: number;
+  rating?: number;
+  enrolledCount?: number;
+}
 
 export default function HomePage() {
   const { user, logout, isLoading, isAdmin } = useAuth();
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [previewCourse, setPreviewCourse] = useState<CourseItem | null>(null);
+
+  useEffect(() => {
+    async function loadCourses() {
+      try {
+        setLoadingCourses(true);
+        const url =
+          selectedCategory === 'all'
+            ? '/api/courses'
+            : `/api/courses?category=${encodeURIComponent(selectedCategory)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.courses)) {
+          setCourses(data.courses);
+          if (data.categories && data.categories.length > 0) {
+            setCategories(data.categories);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load courses from backend:', err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    }
+    loadCourses();
+  }, [selectedCategory]);
 
   return (
     <div className={styles.container}>
@@ -60,19 +132,64 @@ export default function HomePage() {
             {isLoading ? (
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
-              <div className={styles.userPill}>
-                <div className={styles.userAvatar}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className={styles.userName}>{user.name}</div>
-                <button
-                  onClick={logout}
-                  className={styles.logoutBtn}
-                  title="Sign out of your account"
-                  id="nav-logout-btn"
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Link
+                  href="/my-learning"
+                  id="nav-my-learning-btn"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    background: 'rgba(37, 99, 235, 0.1)',
+                    color: '#2563eb',
+                    border: '1px solid rgba(147, 197, 253, 0.5)',
+                    textDecoration: 'none',
+                    transition: 'all 0.2s ease',
+                  }}
                 >
-                  <LogOut size={16} />
-                </button>
+                  <BookOpen size={15} /> My Learning
+                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin/dashboard"
+                    id="nav-admin-btn"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      background: 'rgba(15, 23, 42, 0.06)',
+                      color: '#0f172a',
+                      border: '1px solid #cbd5e1',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Admin
+                  </Link>
+                )}
+                <div className={styles.userPill}>
+                  <Link
+                    href="/profile"
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}
+                    title="View & Edit Profile"
+                  >
+                    <div className={styles.userAvatar}>
+                      {user.avatar ? (
+                        <img src={user.avatar} alt={user.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : (
+                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                      )}
+                    </div>
+                    <div className={styles.userName}>{user.name}</div>
+                  </Link>
+                </div>
               </div>
             ) : (
               <>
@@ -248,82 +365,165 @@ export default function HomePage() {
             </div>
             <h2 className={styles.sectionTitle}>Flagship Engineering Masterclasses</h2>
             <p className={styles.sectionSubtitle}>
-              Curated roadmaps designed to take you from foundational logic to full-stack mastery.
+              Curated roadmaps designed to take you from foundational logic to production-grade engineering mastery.
             </p>
           </div>
 
-          <div className={styles.coursesGrid}>
-            {/* Course 1 */}
-            <div className={styles.courseCard}>
-              <div className={styles.courseBanner}>
-                <div className={styles.courseTrackBadge}>Full-Stack Web</div>
-                <div className={styles.courseDuration}>12 Weeks • 48 Lessons</div>
-              </div>
-              <div className={styles.courseBody}>
-                <div className={styles.courseRating}>
-                  <Star size={16} fill="#f59e0b" color="#f59e0b" /> 4.9 (2,410 reviews)
-                </div>
-                <h3 className={styles.courseTitle}>Modern MERN & Next.js 14 Architecture</h3>
-                <p className={styles.courseDesc}>
-                  Master React Server Components, TypeScript, Node.js REST APIs, MongoDB Mongoose, and
-                  production deployment on Vercel and AWS.
-                </p>
-                <div className={styles.courseFooter}>
-                  <span className={styles.coursePrice}>Free Access</span>
-                  <Link href="/login" className={styles.courseActionBtn}>
-                    Enroll Now
-                  </Link>
-                </div>
-              </div>
-            </div>
+          {/* Category Filter Bar */}
+          <div className={styles.filterBarContainer}>
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`${styles.filterPill} ${selectedCategory === 'all' ? styles.filterPillActive : ''}`}
+            >
+              All Tracks ({courses.length})
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`${styles.filterPill} ${selectedCategory === cat ? styles.filterPillActive : ''}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
 
-            {/* Course 2 */}
-            <div className={styles.courseCard}>
-              <div className={styles.courseBanner} style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%)' }}>
-                <div className={styles.courseTrackBadge}>Algorithms & DSA</div>
-                <div className={styles.courseDuration}>10 Weeks • 40 Lessons</div>
-              </div>
-              <div className={styles.courseBody}>
-                <div className={styles.courseRating}>
-                  <Star size={16} fill="#f59e0b" color="#f59e0b" /> 4.9 (1,890 reviews)
+          {/* Dynamic Courses Grid */}
+          {loadingCourses ? (
+            <div className={styles.coursesGrid}>
+              {[1, 2, 3].map((n) => (
+                <div key={n} className={styles.courseCard} style={{ minHeight: '380px', opacity: 0.6 }}>
+                  <div style={{ height: '180px', background: '#f1f5f9' }} />
+                  <div style={{ padding: '24px' }}>
+                    <div style={{ height: '14px', width: '40%', background: '#e2e8f0', borderRadius: '4px', marginBottom: '12px' }} />
+                    <div style={{ height: '22px', width: '80%', background: '#e2e8f0', borderRadius: '4px', marginBottom: '12px' }} />
+                    <div style={{ height: '50px', width: '100%', background: '#f1f5f9', borderRadius: '4px', marginBottom: '16px' }} />
+                    <div style={{ height: '20px', width: '50%', background: '#e2e8f0', borderRadius: '4px' }} />
+                  </div>
                 </div>
-                <h3 className={styles.courseTitle}>Data Structures, Algorithms & System Design</h3>
-                <p className={styles.courseDesc}>
-                  Master high-frequency interview patterns: Dynamic Programming, Graph Traversals,
-                  Trees, and distributed scalable system design.
-                </p>
-                <div className={styles.courseFooter}>
-                  <span className={styles.coursePrice}>Free Access</span>
-                  <Link href="/login" className={styles.courseActionBtn}>
-                    Enroll Now
-                  </Link>
-                </div>
-              </div>
+              ))}
             </div>
+          ) : courses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+              <BookOpen size={40} color="#94a3b8" style={{ marginBottom: '12px' }} />
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '6px' }}>
+                No courses found in this category
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '18px' }}>
+                Try selecting &ldquo;All Tracks&rdquo; or check back shortly as new curricula are published.
+              </p>
+              <button
+                onClick={() => setSelectedCategory('all')}
+                className={styles.filterPill}
+                style={{ background: '#2563eb', color: '#fff', borderColor: '#2563eb' }}
+              >
+                Show All Courses
+              </button>
+            </div>
+          ) : (
+            <div className={styles.coursesGrid}>
+              {courses.map((course) => (
+                <div key={course.id} className={styles.courseCard}>
+                  {/* Thumbnail / Header Banner */}
+                  {course.thumbnail ? (
+                    <div className={styles.thumbnailWrapper}>
+                      <img src={course.thumbnail} alt={course.title} className={styles.thumbnailImg} />
+                      <div className={styles.thumbnailOverlay}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className={styles.levelPill}>{course.level || 'All Levels'}</span>
+                          <span style={{ fontSize: '11px', color: '#ffffff', fontWeight: 700, background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '4px' }}>
+                            {course.duration}
+                          </span>
+                        </div>
+                        <div className={styles.courseTrackBadge} style={{ alignSelf: 'flex-start' }}>
+                          {course.category}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.courseBanner}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className={styles.courseTrackBadge}>{course.category}</div>
+                        <span className={styles.levelPill}>{course.level || 'All Levels'}</span>
+                      </div>
+                      <div className={styles.courseDuration}>
+                        {course.duration} • {course.totalLessons || 15} Lessons
+                      </div>
+                    </div>
+                  )}
 
-            {/* Course 3 */}
-            <div className={styles.courseCard}>
-              <div className={styles.courseBanner} style={{ background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)' }}>
-                <div className={styles.courseTrackBadge}>Cloud & DevOps</div>
-                <div className={styles.courseDuration}>8 Weeks • 32 Lessons</div>
-              </div>
-              <div className={styles.courseBody}>
-                <div className={styles.courseRating}>
-                  <Star size={16} fill="#f59e0b" color="#f59e0b" /> 4.8 (1,240 reviews)
+                  {/* Body Content */}
+                  <div className={styles.courseBody}>
+                    <div className={styles.courseRating}>
+                      <Star size={15} fill="#f59e0b" color="#f59e0b" />
+                      <span>{course.rating || 4.9}</span>
+                      <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 500 }}>
+                        ({(course.enrolledCount || 120).toLocaleString()} enrolled)
+                      </span>
+                    </div>
+
+                    <h3 className={styles.courseTitle}>{course.title}</h3>
+                    <p className={styles.courseDesc}>{course.description}</p>
+
+                    {/* Metadata Pill Row */}
+                    <div className={styles.metaRow}>
+                      <span className={styles.metaItem}>
+                        <Layers size={14} color="#2563eb" />
+                        <strong>{course.chaptersCount || course.chapters?.length || 1}</strong> Chapters
+                      </span>
+                      <span>•</span>
+                      <span className={styles.metaItem}>
+                        <Video size={14} color="#2563eb" />
+                        <strong>{course.totalLessons || 12}</strong> Video Lectures
+                      </span>
+                    </div>
+
+                    {/* Curriculum Preview Modal Trigger */}
+                    {course.chapters && course.chapters.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewCourse(course)}
+                        className={styles.curriculumLinkBtn}
+                      >
+                        <PlayCircle size={14} /> View Syllabus &amp; Lectures
+                      </button>
+                    )}
+
+                    <div className={styles.courseFooter}>
+                      <span className={styles.coursePrice}>
+                        {course.price && course.price > 0 ? `₹${course.price.toLocaleString('en-IN')}` : 'Free Access'}
+                      </span>
+                      <Link href={`/courses/${course.slug || course.id}`} className={styles.courseActionBtn}>
+                        Enroll Now
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <h3 className={styles.courseTitle}>Docker, Kubernetes & Production CI/CD</h3>
-                <p className={styles.courseDesc}>
-                  Containerize microservices, configure automated GitHub Actions pipelines, and manage
-                  zero-downtime rolling deployments.
-                </p>
-                <div className={styles.courseFooter}>
-                  <span className={styles.coursePrice}>Free Access</span>
-                  <Link href="/login" className={styles.courseActionBtn}>
-                    Enroll Now
-                  </Link>
-                </div>
-              </div>
+              ))}
             </div>
+          )}
+
+          {/* Bottom All Courses Link */}
+          <div style={{ textAlign: 'center', marginTop: '48px' }}>
+            <Link
+              href="/courses"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 28px',
+                borderRadius: '12px',
+                background: '#f8fafc',
+                border: '1.5px solid #cbd5e1',
+                color: '#1e293b',
+                fontSize: '14px',
+                fontWeight: 700,
+                textDecoration: 'none',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Explore All Courses &amp; Specializations <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
@@ -369,7 +569,7 @@ export default function HomePage() {
             </div>
             <h3 className={styles.featureTitle}>Secure Nodemailer Recovery</h3>
             <p className={styles.featureDesc}>
-              Fast 6-digit transactional email OTP password reset with anti-spam inbox optimization and
+              Fast 4-digit transactional email OTP password reset with anti-spam inbox optimization and
               plain-text fallbacks.
             </p>
           </div>
@@ -524,6 +724,124 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Syllabus Preview Modal */}
+      {previewCourse && (
+        <div className={styles.syllabusModalOverlay} onClick={() => setPreviewCourse(null)}>
+          <div className={styles.syllabusModalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.syllabusModalHeader}>
+              <div>
+                <span className={styles.levelPill} style={{ marginBottom: '6px' }}>
+                  {previewCourse.category}
+                </span>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                  {previewCourse.title}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                  Complete Course Curriculum • {previewCourse.chapters?.length || 0} Chapters • {previewCourse.totalLessons || 0} Lectures
+                </p>
+              </div>
+              <button onClick={() => setPreviewCourse(null)} className={styles.syllabusCloseBtn}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              {previewCourse.chapters && previewCourse.chapters.length > 0 ? (
+                previewCourse.chapters.map((ch, chIdx) => (
+                  <div key={ch.id || chIdx} className={styles.syllabusChapterBox}>
+                    <div className={styles.syllabusChapterHeader}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, background: '#2563eb', color: '#fff', padding: '2px 8px', borderRadius: '4px' }}>
+                          CH {chIdx + 1}
+                        </span>
+                        <strong style={{ fontSize: '14px', color: '#0f172a' }}>{ch.title}</strong>
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                        {ch.lessons?.length || 0} Lectures
+                      </span>
+                    </div>
+
+                    {ch.description && (
+                      <p style={{ margin: '8px 16px', fontSize: '12px', color: '#64748b' }}>
+                        {ch.description}
+                      </p>
+                    )}
+
+                    <div>
+                      {ch.lessons && ch.lessons.map((les, lIdx) => (
+                        <div key={les.id || lIdx} className={styles.syllabusLessonRow}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                            {les.thumbnail ? (
+                              <img src={les.thumbnail} alt={les.title} className={styles.syllabusLessonThumb} />
+                            ) : (
+                              <div className={styles.syllabusLessonThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+                                <Film size={16} />
+                              </div>
+                            )}
+                            <div>
+                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
+                                {les.title}
+                              </div>
+                              {les.description && (
+                                <div style={{ fontSize: '11px', color: '#64748b' }}>{les.description}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                            <Clock size={12} /> {les.duration || '15 Mins'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                  No syllabus uploaded yet for this course.
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px' }}>
+                <button
+                  onClick={() => setPreviewCourse(null)}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    background: '#f1f5f9',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#475569',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Close
+                </button>
+                <Link
+                  href={`/courses/${previewCourse.slug || previewCourse.id}`}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '10px',
+                    background: '#2563eb',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: '#ffffff',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  Enroll in this Course <ArrowRight size={14} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -97,8 +97,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
-    const isDefaultAdmin = defaultAdminEmails.includes(normalizedEmail) || (process.env.ADMIN_EMAILS || '').includes(normalizedEmail);
+    const isSuperAdmin = normalizedEmail === 'aryar0779@gmail.com';
 
     const user = await User.create({
       name,
@@ -106,7 +105,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       phone: formattedPhone || undefined,
       password: hashedPassword,
       authProvider: 'local',
-      role: isDefaultAdmin ? 'admin' : 'student',
+      role: isSuperAdmin ? 'admin' : 'student',
       isVerified: false,
     });
 
@@ -176,12 +175,43 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
-    if (user.email && (defaultAdminEmails.includes(user.email.toLowerCase()) || (process.env.ADMIN_EMAILS || '').includes(user.email.toLowerCase()))) {
-      if (user.role !== 'admin') {
-        user.role = 'admin';
-        await user.save();
-      }
+    const isSuperAdmin = user.email?.toLowerCase().trim() === 'aryar0779@gmail.com';
+    if (isSuperAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    } else if (!isSuperAdmin && user.role === 'admin') {
+      user.role = 'student';
+      await user.save();
+    }
+
+    if (isSuperAdmin) {
+      const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const normalizedEmail = 'aryar0779@gmail.com';
+
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: 'SUPER_ADMIN_LOGIN',
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        { upsert: true, new: true }
+      );
+
+      sendOtpEmail(normalizedEmail, otpCode, 'Super Admin Login Verification Code').catch((err) => {
+        console.error('[Background Send Super Admin Login OTP Error]:', err);
+      });
+
+      res.json({
+        success: true,
+        requireOtp: true,
+        email: normalizedEmail,
+        maskedEmail: 'a***9@gmail.com',
+        isSuperAdmin: true,
+        message: 'Super Admin Verification: A 4-digit OTP has been sent to aryar0779@gmail.com!',
+      });
+      return;
     }
 
     const token = generateToken(user._id.toString());
@@ -202,6 +232,78 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.error('[Login Error]:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error during login' });
+  }
+};
+
+// 2.1 VERIFY ADMIN LOGIN OTP
+export const verifyLoginOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      res.status(400).json({ success: false, message: 'Email and 4-digit OTP code are required' });
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const cleanOtp = otp.toString().trim();
+
+    const user = await User.findOne({ email: normalizedEmail });
+    if (!user) {
+      res.status(404).json({ success: false, message: 'Administrator account not found' });
+      return;
+    }
+
+    const isSuper = normalizedEmail === 'aryar0779@gmail.com';
+    if (!isSuper && user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Unauthorized: Super Admin access only' });
+      return;
+    }
+
+    const otpRecord = await Otp.findOne({
+      email: normalizedEmail,
+      otp: cleanOtp,
+      purpose: { $in: ['ADMIN_LOGIN', 'SUPER_ADMIN_LOGIN'] },
+    });
+
+    if (!otpRecord) {
+      res.status(400).json({ success: false, message: 'Invalid or incorrect OTP code. Please try again.' });
+      return;
+    }
+
+    if (new Date() > otpRecord.expiresAt) {
+      await Otp.deleteOne({ _id: otpRecord._id });
+      res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
+      return;
+    }
+
+    await Otp.deleteOne({ _id: otpRecord._id });
+
+    if (isSuper && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
+    const token = generateToken(user._id.toString());
+
+    res.json({
+      success: true,
+      message: isSuper
+        ? 'Super Admin 2FA verified successfully!'
+        : 'Admin 2FA verified successfully!',
+      token,
+      isSuperAdmin: isSuper,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar,
+      },
+    });
+  } catch (error: any) {
+    console.error('[Verify Login OTP Error]:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error during OTP verification' });
   }
 };
 
@@ -271,8 +373,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
     const normalizedEmail = userEmail.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
-    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
-    const isDefaultAdmin = defaultAdminEmails.includes(normalizedEmail) || (process.env.ADMIN_EMAILS || '').includes(normalizedEmail);
+    const isSuperAdmin = normalizedEmail === 'aryar0779@gmail.com';
 
     if (!user) {
       user = await User.create({
@@ -281,7 +382,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
         avatar: userAvatar || '',
         googleId: userGoogleId,
         authProvider: 'google',
-        role: isDefaultAdmin ? 'admin' : 'student',
+        role: isSuperAdmin ? 'admin' : 'student',
         isVerified: true,
       });
     } else {
@@ -294,8 +395,10 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       if (userAvatar) {
         user.avatar = userAvatar;
       }
-      if (isDefaultAdmin && user.role !== 'admin') {
+      if (isSuperAdmin && user.role !== 'admin') {
         user.role = 'admin';
+      } else if (!isSuperAdmin && user.role === 'admin') {
+        user.role = 'student';
       }
       await user.save();
     }
@@ -356,30 +459,25 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response): Promis
 
     const normalizedEmail = user.email.toLowerCase().trim();
 
-    // Generate cryptographically secure 6-digit numeric OTP
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Generate cryptographically secure 4-digit numeric OTP
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Delete any previous OTPs for this email & purpose
-    await Otp.deleteMany({ email: normalizedEmail, purpose: 'FORGOT_PASSWORD' });
+    // Fast atomic upsert in DB with 10-minute expiry
+    await Otp.findOneAndUpdate(
+      { email: normalizedEmail, purpose: 'FORGOT_PASSWORD' },
+      {
+        email: normalizedEmail,
+        otp: otpCode,
+        purpose: 'FORGOT_PASSWORD',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      { upsert: true, new: true }
+    );
 
-    // Store in DB with 10-minute expiry
-    await Otp.create({
-      email: normalizedEmail,
-      otp: otpCode,
-      purpose: 'FORGOT_PASSWORD',
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 mins
+    // Send OTP asynchronously in background through connection pool
+    sendOtpEmail(normalizedEmail, otpCode, 'Password Reset').catch((err) => {
+      console.error('[Background Backend Send OTP Email Error]:', err);
     });
-
-    // Send OTP strictly via Nodemailer to user's registered email
-    const emailSent = await sendOtpEmail(normalizedEmail, otpCode, 'Password Reset');
-
-    if (!emailSent) {
-      res.status(500).json({
-        success: false,
-        message: 'Failed to dispatch verification email. Please try again later.',
-      });
-      return;
-    }
 
     // Mask email for display: e.g. j***e@domain.com
     const emailParts = normalizedEmail.split('@');
@@ -391,7 +489,7 @@ export const sendForgotPasswordOtp = async (req: Request, res: Response): Promis
 
     res.json({
       success: true,
-      message: `A 6-digit OTP verification code has been sent to your email (${maskedEmail})!`,
+      message: `A 4-digit OTP verification code has been sent to your email (${maskedEmail})!`,
       email: normalizedEmail,
       maskedEmail,
     });
@@ -510,8 +608,11 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
         id: req.user._id,
         name: req.user.name,
         email: req.user.email,
+        phone: req.user.phone,
         role: req.user.role,
-        avatar: req.user.avatar,
+        avatar: req.user.avatar || '',
+        dateOfBirth: req.user.dateOfBirth || '',
+        gender: req.user.gender || '',
         authProvider: req.user.authProvider,
       },
     });
@@ -519,3 +620,88 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
     res.status(500).json({ success: false, message: 'Failed to fetch user' });
   }
 };
+
+// 8. UPDATE USER PROFILE (Name, DOB, Gender, Avatar, Phone)
+export const updateProfile = async (req: Request, res: Response): Promise<void> => {
+  try {
+    let userId: string | null = null;
+    let userEmail: string | null = null;
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const secret = process.env.JWT_SECRET || 'fallback_secret';
+      try {
+        const decoded: any = jwt.verify(token, secret);
+        if (decoded && decoded.id) userId = decoded.id;
+        if (decoded && decoded.email) userEmail = decoded.email.toLowerCase().trim();
+      } catch (e) {}
+    }
+
+    if (!userEmail && req.body.email) {
+      userEmail = req.body.email.toLowerCase().trim();
+    }
+
+    if (!userId && !userEmail) {
+      res.status(401).json({ success: false, message: 'Authentication required to update profile' });
+      return;
+    }
+
+    const user = userId ? await User.findById(userId) : await User.findOne({ email: userEmail });
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User account not found' });
+      return;
+    }
+
+    const { name, dateOfBirth, gender, avatar, phone } = req.body;
+
+    if (name && typeof name === 'string' && name.trim()) {
+      user.name = name.trim();
+    }
+    if (dateOfBirth !== undefined) {
+      user.dateOfBirth = (dateOfBirth || '').toString().trim();
+    }
+    if (gender !== undefined) {
+      const g = (gender || '').toString().toLowerCase().trim();
+      user.gender = ['male', 'female', 'other', 'prefer-not-to-say'].includes(g) ? (g as any) : '';
+    }
+    if (avatar !== undefined) {
+      user.avatar = (avatar || '').toString().trim();
+    }
+    if (phone !== undefined) {
+      const trimmedPhone = phone ? formatPhoneNumber(phone.trim()) : '';
+      if (trimmedPhone && trimmedPhone !== user.phone) {
+        const existingWithPhone = await User.findOne({ phone: trimmedPhone, _id: { $ne: user._id } });
+        if (existingWithPhone) {
+          res.status(400).json({ success: false, message: 'This mobile number is already linked to another account.' });
+          return;
+        }
+        user.phone = trimmedPhone;
+      } else if (!trimmedPhone) {
+        user.phone = undefined;
+      }
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Profile updated successfully!',
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar || '',
+        dateOfBirth: user.dateOfBirth || '',
+        gender: user.gender || '',
+        authProvider: user.authProvider,
+      },
+    });
+  } catch (error: any) {
+    console.error('[Update Profile Error]:', error);
+    res.status(500).json({ success: false, message: error.message || 'Failed to update profile' });
+  }
+};
+

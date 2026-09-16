@@ -3,16 +3,24 @@ import nodemailer from 'nodemailer';
 // Clean the app password (remove spaces if user copied with spaces)
 const getEmailPass = () => (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
+let sharedTransporter: any = null;
+
 export const getTransporter = () => {
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: getEmailPass(),
-    },
-  });
+  if (!sharedTransporter) {
+    sharedTransporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: getEmailPass(),
+      },
+    });
+  }
+  return sharedTransporter;
 };
 
 export const sendOtpEmail = async (to: string, otp: string, purpose: string = 'Password Reset'): Promise<boolean> => {

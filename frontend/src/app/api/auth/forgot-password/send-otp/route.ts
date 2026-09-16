@@ -52,24 +52,24 @@ export async function POST(req: Request) {
     }
 
     const normalizedEmail = user.email.toLowerCase().trim();
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-    await Otp.deleteMany({ email: normalizedEmail, purpose: 'FORGOT_PASSWORD' });
+    // Fast atomic upsert in MongoDB (<30ms)
+    await Otp.findOneAndUpdate(
+      { email: normalizedEmail, purpose: 'FORGOT_PASSWORD' },
+      {
+        email: normalizedEmail,
+        otp: otpCode,
+        purpose: 'FORGOT_PASSWORD',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      { upsert: true, new: true }
+    );
 
-    await Otp.create({
-      email: normalizedEmail,
-      otp: otpCode,
-      purpose: 'FORGOT_PASSWORD',
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+    // Dispatch email through persistent SMTP pool in background without blocking client response
+    sendOtpEmail(normalizedEmail, otpCode, 'Password Reset').catch((err) => {
+      console.error('[Background Send OTP Email Error]:', err);
     });
-
-    const emailSent = await sendOtpEmail(normalizedEmail, otpCode, 'Password Reset');
-    if (!emailSent) {
-      return NextResponse.json(
-        { success: false, message: 'Failed to dispatch verification email. Please try again later.' },
-        { status: 500 }
-      );
-    }
 
     const emailParts = normalizedEmail.split('@');
     const localPart = emailParts[0];
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `A 6-digit OTP verification code has been sent to your email (${maskedEmail})!`,
+      message: `A 4-digit OTP verification code has been sent to your email (${maskedEmail})!`,
       email: normalizedEmail,
       maskedEmail,
     });

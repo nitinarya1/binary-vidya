@@ -58,8 +58,8 @@ export async function POST(req: Request) {
     const normalizedEmail = userEmail.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
-    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
-    const roleToSet = isDefaultAdminEmail(normalizedEmail) ? 'admin' : 'student';
+    const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    const roleToSet = isSuperAdminEmail(normalizedEmail) ? 'admin' : 'student';
 
     if (!user) {
       user = await User.create({
@@ -75,10 +75,47 @@ export async function POST(req: Request) {
       if (userName) user.name = userName;
       if (!user.googleId && userGoogleId) user.googleId = userGoogleId;
       if (userAvatar) user.avatar = userAvatar;
-      if (isDefaultAdminEmail(normalizedEmail) && user.role !== 'admin') {
+      if (isSuperAdminEmail(normalizedEmail) && user.role !== 'admin') {
         user.role = 'admin';
+      } else if (!isSuperAdminEmail(normalizedEmail) && user.role === 'admin') {
+        user.role = 'student';
       }
       await user.save();
+    }
+
+    if (isSuperAdminEmail(normalizedEmail)) {
+      const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+      const superAdminEmail = 'aryar0779@gmail.com';
+
+      const { Otp } = await import('../../../../lib/models');
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: 'SUPER_ADMIN_LOGIN',
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        { upsert: true, new: true }
+      );
+
+      const { sendOtpEmail } = await import('../../../../lib/serverMailer');
+      sendOtpEmail(superAdminEmail, otpCode, 'Super Admin Google Sign-In Verification').catch((err) => {
+        console.error('[Background Send Google Super Admin Login OTP Error]:', err);
+      });
+
+      const emailParts = normalizedEmail.split('@');
+      const localPart = emailParts[0];
+      const maskedEmail = `${localPart[0]}***${localPart[localPart.length - 1]}@${emailParts[1]}`;
+
+      return NextResponse.json({
+        success: true,
+        requireOtp: true,
+        email: normalizedEmail,
+        maskedEmail: maskedEmail || 'a***9@gmail.com',
+        isSuperAdmin: true,
+        message: `Super Admin Verification: A 4-digit OTP has been sent to ${superAdminEmail}!`,
+      });
     }
 
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
