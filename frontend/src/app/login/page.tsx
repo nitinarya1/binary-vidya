@@ -69,16 +69,32 @@ export default function LoginPage() {
       setLoading(true);
       if (isRegister) {
         const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
-        await registerUser(name, email, password, fullPhone);
-        setSuccessMsg('Account created successfully! Redirecting...');
+        const newUser = await registerUser(name, email, password, fullPhone);
+        if (newUser?.role === 'admin') {
+          setSuccessMsg('Administrator account created! Redirecting to Admin Portal...');
+          setTimeout(() => {
+            router.push('/admin');
+          }, 600);
+        } else {
+          setSuccessMsg('Account created successfully! Redirecting...');
+          setTimeout(() => {
+            router.push('/');
+          }, 600);
+        }
       } else {
-        await login(email, password);
-        setSuccessMsg('Welcome back! Logging you in...');
+        const loggedInUser = await login(email, password);
+        if (loggedInUser?.role === 'admin') {
+          setSuccessMsg('Welcome, Administrator! Redirecting to Admin Portal...');
+          setTimeout(() => {
+            router.push('/admin');
+          }, 600);
+        } else {
+          setSuccessMsg('Welcome back! Logging you in...');
+          setTimeout(() => {
+            router.push('/');
+          }, 600);
+        }
       }
-
-      setTimeout(() => {
-        router.push('/');
-      }, 800);
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed. Please verify credentials.');
     } finally {
@@ -335,12 +351,38 @@ export default function LoginPage() {
 
           {/* Google Login Component */}
           <GoogleLoginBtn
-            onSuccess={() => {
-              setSuccessMsg('Google sign-in successful! Redirecting...');
-              setTimeout(() => router.push('/'), 800);
+            onSuccess={(googleUser) => {
+              if (googleUser?.role === 'admin') {
+                setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Portal...');
+                setTimeout(() => router.push('/admin'), 600);
+              } else {
+                setSuccessMsg('Google sign-in successful! Redirecting...');
+                setTimeout(() => router.push('/'), 600);
+              }
             }}
             onError={(msg) => setErrorMsg(msg)}
           />
+
+          {/* Role-Based Authentication Info */}
+          <div
+            style={{
+              marginTop: '20px',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              background: '#f1f5f9',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '12px',
+              color: '#64748b',
+              textAlign: 'center',
+            }}
+          >
+            <ShieldCheck size={14} color="#2563eb" />
+            <span>Unified Portal: Administrators automatically route to the Admin Dashboard upon sign-in.</span>
+          </div>
         </section>
       </div>
 

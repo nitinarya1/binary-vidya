@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { ExternalLink, AlertCircle } from 'lucide-react';
 
 interface GoogleLoginBtnProps {
-  onSuccess?: () => void;
+  onSuccess?: (user: any) => void;
   onError?: (msg: string) => void;
 }
 
@@ -22,9 +22,12 @@ export const GoogleLoginBtn: React.FC<GoogleLoginBtnProps> = ({ onSuccess, onErr
     try {
       setIsProcessing(true);
       if (credentialResponse.credential) {
-        await googleAuth({ credential: credentialResponse.credential });
-        onSuccess?.();
-        window.location.href = '/';
+        const authUser = await googleAuth({ credential: credentialResponse.credential });
+        if (onSuccess) {
+          onSuccess(authUser);
+        } else {
+          window.location.href = authUser?.role === 'admin' ? '/admin' : '/';
+        }
       } else {
         onError?.('Google credential token was not provided.');
       }
@@ -41,9 +44,12 @@ export const GoogleLoginBtn: React.FC<GoogleLoginBtnProps> = ({ onSuccess, onErr
       try {
         setIsProcessing(true);
         if (tokenResponse.access_token) {
-          await googleAuth({ accessToken: tokenResponse.access_token });
-          onSuccess?.();
-          window.location.href = '/';
+          const authUser = await googleAuth({ accessToken: tokenResponse.access_token });
+          if (onSuccess) {
+            onSuccess(authUser);
+          } else {
+            window.location.href = authUser?.role === 'admin' ? '/admin' : '/';
+          }
         }
       } catch (err: any) {
         onError?.(err.message || 'Google authentication failed.');

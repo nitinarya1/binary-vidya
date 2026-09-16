@@ -97,12 +97,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
+    const isDefaultAdmin = defaultAdminEmails.includes(normalizedEmail) || (process.env.ADMIN_EMAILS || '').includes(normalizedEmail);
+
     const user = await User.create({
       name,
       email: normalizedEmail,
       phone: formattedPhone || undefined,
       password: hashedPassword,
       authProvider: 'local',
+      role: isDefaultAdmin ? 'admin' : 'student',
       isVerified: false,
     });
 
@@ -170,6 +174,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     if (!isMatch) {
       res.status(401).json({ success: false, message: 'Invalid credentials. Check your password.' });
       return;
+    }
+
+    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
+    if (user.email && (defaultAdminEmails.includes(user.email.toLowerCase()) || (process.env.ADMIN_EMAILS || '').includes(user.email.toLowerCase()))) {
+      if (user.role !== 'admin') {
+        user.role = 'admin';
+        await user.save();
+      }
     }
 
     const token = generateToken(user._id.toString());
@@ -259,6 +271,9 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
     const normalizedEmail = userEmail.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
+    const defaultAdminEmails = ['aryar0779@gmail.com', 'binaryvidyaadmin@gmail.com', 'admin@binaryvidya.edu'];
+    const isDefaultAdmin = defaultAdminEmails.includes(normalizedEmail) || (process.env.ADMIN_EMAILS || '').includes(normalizedEmail);
+
     if (!user) {
       user = await User.create({
         name: userName || normalizedEmail.split('@')[0],
@@ -266,6 +281,7 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
         avatar: userAvatar || '',
         googleId: userGoogleId,
         authProvider: 'google',
+        role: isDefaultAdmin ? 'admin' : 'student',
         isVerified: true,
       });
     } else {
@@ -277,6 +293,9 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       }
       if (userAvatar) {
         user.avatar = userAvatar;
+      }
+      if (isDefaultAdmin && user.role !== 'admin') {
+        user.role = 'admin';
       }
       await user.save();
     }

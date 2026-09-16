@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, logout, isLoading } = useAuth();
+  const { user, logout, isLoading, isAdmin } = useAuth();
 
   return (
     <div className={styles.container}>
@@ -60,19 +60,26 @@ export default function HomePage() {
             {isLoading ? (
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
-              <div className={styles.userPill}>
-                <div className={styles.userAvatar}>
-                  {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {isAdmin && (
+                  <Link href="/admin" id="nav-admin-link" className={styles.adminPortalBtn}>
+                    <ShieldCheck size={14} /> Admin Portal
+                  </Link>
+                )}
+                <div className={styles.userPill}>
+                  <div className={styles.userAvatar}>
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className={styles.userName}>{user.name}</div>
+                  <button
+                    onClick={logout}
+                    className={styles.logoutBtn}
+                    title="Sign out of your account"
+                    id="nav-logout-btn"
+                  >
+                    <LogOut size={16} />
+                  </button>
                 </div>
-                <div className={styles.userName}>{user.name}</div>
-                <button
-                  onClick={logout}
-                  className={styles.logoutBtn}
-                  title="Sign out of your account"
-                  id="nav-logout-btn"
-                >
-                  <LogOut size={16} />
-                </button>
               </div>
             ) : (
               <>

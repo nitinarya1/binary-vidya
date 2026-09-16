@@ -38,6 +38,12 @@ export async function GET(req: Request) {
       );
     }
 
+    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    if (user.email && isDefaultAdminEmail(user.email) && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
     return NextResponse.json({
       success: true,
       user: {

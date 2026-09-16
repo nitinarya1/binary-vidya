@@ -55,12 +55,16 @@ export async function POST(req: Request) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    const roleToAssign = isDefaultAdminEmail(normalizedEmail) ? 'admin' : 'student';
+
     const user = await User.create({
       name,
       email: normalizedEmail,
       phone: formattedPhone || undefined,
       password: hashedPassword,
       authProvider: 'local',
+      role: roleToAssign,
       isVerified: false,
     });
 

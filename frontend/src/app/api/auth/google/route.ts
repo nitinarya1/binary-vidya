@@ -58,6 +58,9 @@ export async function POST(req: Request) {
     const normalizedEmail = userEmail.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
+    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    const roleToSet = isDefaultAdminEmail(normalizedEmail) ? 'admin' : 'student';
+
     if (!user) {
       user = await User.create({
         name: userName || normalizedEmail.split('@')[0],
@@ -65,12 +68,16 @@ export async function POST(req: Request) {
         avatar: userAvatar || '',
         googleId: userGoogleId,
         authProvider: 'google',
+        role: roleToSet,
         isVerified: true,
       });
     } else {
       if (userName) user.name = userName;
       if (!user.googleId && userGoogleId) user.googleId = userGoogleId;
       if (userAvatar) user.avatar = userAvatar;
+      if (isDefaultAdminEmail(normalizedEmail) && user.role !== 'admin') {
+        user.role = 'admin';
+      }
       await user.save();
     }
 

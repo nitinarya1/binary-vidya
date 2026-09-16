@@ -69,6 +69,12 @@ export async function POST(req: Request) {
       );
     }
 
+    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    if (isDefaultAdminEmail(user.email) && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
 
     return NextResponse.json({
