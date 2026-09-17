@@ -129,7 +129,6 @@ ${fromAddress}`;
         'Auto-Submitted': 'auto-generated',
         'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
-      attachments: getLogoAttachment(),
     });
 
     console.log(`[Nodemailer] Inbox-optimized OTP email sent to ${to}. MessageId: ${info.messageId}`);

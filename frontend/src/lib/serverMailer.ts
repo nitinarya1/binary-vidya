@@ -58,7 +58,6 @@ export const sendOtpEmail = async (
 ): Promise<boolean> => {
   try {
     const mailClient = getTransporter();
-    const attachments = getLogoAttachment();
 
     const mailOptions = {
       from: `"Binary Vidya Security" <${EMAIL_USER}>`,
@@ -70,14 +69,12 @@ export const sendOtpEmail = async (
         Importance: 'high',
         'Auto-Submitted': 'auto-generated',
       },
-      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.`,
+      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #ffffff; border: 1px solid #dbeafe; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
-          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); padding: 28px 24px; text-align: center; color: #ffffff;">
-            <div style="background: #ffffff; border-radius: 12px; padding: 12px 20px; display: inline-block; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-              <img src="cid:binaryvidyalogo" alt="Binary Vidya" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; margin: 0 auto;" />
-            </div>
-            <h1 style="margin: 0; font-size: 20px; font-weight: 800;">Account Verification</h1>
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%); padding: 24px; text-align: center; color: #ffffff;">
+            <h1 style="margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px;">Binary Vidya</h1>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color: #dbeafe; font-weight: 500;">Security Verification</p>
           </div>
           <div style="padding: 32px 24px; text-align: center;">
             <p style="font-size: 15px; color: #334155; margin-bottom: 20px;">
@@ -96,11 +93,10 @@ export const sendOtpEmail = async (
           </div>
         </div>
       `,
-      attachments,
     };
 
     const info = await mailClient.sendMail(mailOptions);
-    console.log('[Nodemailer Sent]:', info.messageId);
+    console.log('[Nodemailer Sent OTP]:', info.messageId);
     return true;
   } catch (error) {
     console.error('[Nodemailer Error]:', error);
