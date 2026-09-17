@@ -13,6 +13,7 @@ node_modules/
 backend/.env
 frontend/.env
 frontend/.env.local
+*.csv
 
 # Next.js Build Outputs
 .next/

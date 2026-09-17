@@ -5,18 +5,15 @@ import { Course } from '../models/Course';
 import { Order } from '../models/Order';
 import { Enrollment } from '../models/Enrollment';
 
-const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_1DP5mmOlF5G5ag';
-const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 's0m3S3cr3tK3yF0rT3st1ng';
+const getRazorpayKeys = () => ({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_Td7SsGbdScfViP',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'X0JhnfuzcIyffQGBclP3Q9vK',
+});
 
-let razorpayInstance: any = null;
-try {
-  razorpayInstance = new Razorpay({
-    key_id: RAZORPAY_KEY_ID,
-    key_secret: RAZORPAY_KEY_SECRET,
-  });
-} catch (e) {
-  console.warn('[Razorpay] Initialized with test parameters');
-}
+export const getRazorpayClient = () => {
+  const { key_id, key_secret } = getRazorpayKeys();
+  return new Razorpay({ key_id, key_secret });
+};
 
 /**
  * POST /api/payment/create-order
@@ -55,19 +52,20 @@ export const createOrder = async (req: Request, res: Response) => {
     const receiptId = `rcpt_${Date.now().toString().slice(-8)}_${Math.random().toString(36).slice(-4)}`;
 
     let rzpOrder: any = null;
+    const { key_id, key_secret } = getRazorpayKeys();
     try {
-      if (razorpayInstance && RAZORPAY_KEY_ID !== 'rzp_test_bv_mock_key123') {
-        rzpOrder = await razorpayInstance.orders.create({
-          amount: amountInPaise,
-          currency: 'INR',
-          receipt: receiptId,
-          notes: {
-            courseId: course._id.toString(),
-            courseTitle: course.title,
-            userEmail,
-          },
-        });
-      }
+      const razorpay = getRazorpayClient();
+      rzpOrder = await razorpay.orders.create({
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: receiptId,
+        notes: {
+          courseId: course._id.toString(),
+          courseTitle: course.title,
+          userEmail,
+        },
+      });
+      console.log(`[Razorpay Order Created] Order ID: ${rzpOrder.id} for amount: ₹${price}`);
     } catch (rzpErr: any) {
       console.warn('[Razorpay API Warning]:', rzpErr.message);
     }
@@ -100,7 +98,7 @@ export const createOrder = async (req: Request, res: Response) => {
       orderId: rzpOrder.id,
       amount: rzpOrder.amount, // in paise
       currency: rzpOrder.currency,
-      keyId: RAZORPAY_KEY_ID,
+      keyId: key_id,
       dbOrderId: orderDoc._id.toString(),
       course: {
         id: course._id.toString(),
@@ -136,17 +134,18 @@ export const verifyPayment = async (req: Request, res: Response) => {
     }
 
     // Verify HMAC SHA256 Signature if signature provided
+    const { key_secret } = getRazorpayKeys();
     let isSignatureValid = true;
-    if (razorpaySignature && RAZORPAY_KEY_SECRET && !razorpayOrderId.startsWith('order_mock_')) {
+    if (razorpaySignature && key_secret && !razorpayOrderId.startsWith('order_mock_')) {
       try {
         const body = razorpayOrderId + '|' + razorpayPaymentId;
         const expectedSignature = crypto
-          .createHmac('sha256', RAZORPAY_KEY_SECRET)
+          .createHmac('sha256', key_secret)
           .update(body.toString())
           .digest('hex');
 
         if (expectedSignature !== razorpaySignature) {
-          console.warn('[Signature Mismatch]: Simulated payment or key difference');
+          console.warn('[Signature Mismatch]: Payment verification signature difference');
         }
       } catch (sigErr) {
         console.warn('[Signature Check Warning]:', sigErr);
