@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useParams, useRouter } from 'next/navigation';
+import confetti from 'canvas-confetti';
 import { useAuth } from '../../../../context/AuthContext';
 import styles from './checkout.module.css';
 import { AuthModal } from '../../../../components/AuthModal';
-import { PaymentModal } from '../../../../components/PaymentModal';
 import {
   ShieldCheck,
   Lock,
@@ -24,6 +25,13 @@ import {
   User as UserIcon,
   HelpCircle,
   Building,
+  AlertCircle,
+  Printer,
+  Smartphone,
+  CreditCard,
+  Building2,
+  QrCode,
+  Zap,
 } from 'lucide-react';
 
 interface CourseData {
@@ -42,6 +50,37 @@ interface CourseData {
   totalLessons?: number;
 }
 
+interface PaymentReceiptData {
+  paymentId: string;
+  orderId: string;
+  amount: number;
+  courseTitle: string;
+  userEmail: string;
+  date: string;
+}
+
+// Dynamically and safely loads official Razorpay Checkout SDK
+const ensureRazorpayLoaded = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const existingScript = document.getElementById('razorpay-checkout-sdk');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(true));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'razorpay-checkout-sdk';
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CourseCheckoutPage() {
   const params = useParams();
   const router = useRouter();
@@ -52,9 +91,18 @@ export default function CourseCheckoutPage() {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Modals
+  // Authentication Modal
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Authentic Razorpay Payment States
+  const [paymentStep, setPaymentStep] = useState<'idle' | 'initiating' | 'verifying' | 'success' | 'failed'>('idle');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptData | null>(null);
+
+  // Preload Razorpay Checkout SDK in background
+  useEffect(() => {
+    ensureRazorpayLoaded();
+  }, []);
 
   useEffect(() => {
     async function fetchCourse() {
@@ -77,22 +125,148 @@ export default function CourseCheckoutPage() {
     fetchCourse();
   }, [slug]);
 
-  // Handle Buy Now Click
-  const handleBuyNow = () => {
+  // Execute the authentic Razorpay checkout flow
+  const triggerRazorpayPayment = useCallback(
+    async (currentUser: any) => {
+      if (!course) return;
+
+      try {
+        setPaymentStep('initiating');
+        setPaymentError(null);
+
+        // 1. Ensure Razorpay SDK is available
+        const loaded = await ensureRazorpayLoaded();
+        if (!loaded || typeof (window as any).Razorpay === 'undefined') {
+          throw new Error('Razorpay Checkout SDK failed to load. Please check your internet connection.');
+        }
+
+        // 2. Call backend to create official Razorpay order with test keys
+        const orderRes = await fetch('/api/payment/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseId: course.slug || course.id,
+            userEmail: currentUser.email,
+            userName: currentUser.name || 'Student',
+            userId: currentUser.id || '',
+          }),
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderData.success || !orderData.orderId) {
+          throw new Error(orderData.message || 'Unable to initialize secure payment order.');
+        }
+
+        // 3. Launch official Razorpay standard checkout modal
+        const razorpayKey =
+          orderData.keyId ||
+          process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+          'rzp_test_Td7SsGbdScfViP';
+
+        const options = {
+          key: razorpayKey,
+          amount: orderData.amount, // in paise
+          currency: orderData.currency || 'INR',
+          name: 'Binary Vidya',
+          description: `Enrollment: ${course.title}`,
+          image: 'https://binaryvidya.com/logo.png',
+          order_id: orderData.orderId,
+          handler: async function (response: any) {
+            // Authentic Razorpay Signature verification
+            setPaymentStep('verifying');
+            try {
+              const verifyRes = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                  paymentMethod: 'razorpay_authentic',
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (verifyData.success) {
+                setPaymentReceipt({
+                  paymentId: response.razorpay_payment_id,
+                  orderId: response.razorpay_order_id,
+                  amount: course.price,
+                  courseTitle: course.title,
+                  userEmail: currentUser.email,
+                  date: new Date().toLocaleString('en-IN', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  }),
+                });
+                setPaymentStep('success');
+
+                // Confetti celebration
+                try {
+                  confetti({
+                    particleCount: 140,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                  });
+                } catch (cErr) {}
+              } else {
+                setPaymentStep('failed');
+                setPaymentError(verifyData.message || 'Payment signature verification failed.');
+              }
+            } catch (err: any) {
+              setPaymentStep('failed');
+              setPaymentError(err.message || 'Payment verification network error.');
+            }
+          },
+          prefill: {
+            name: currentUser.name || '',
+            email: currentUser.email || '',
+            contact: currentUser.phone || '9999999999',
+          },
+          notes: {
+            courseId: course.id,
+            courseTitle: course.title,
+            studentEmail: currentUser.email,
+          },
+          theme: {
+            color: '#2563eb',
+          },
+          modal: {
+            ondismiss: function () {
+              setPaymentStep('idle');
+            },
+            confirm_close: true,
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (resp: any) {
+          setPaymentStep('failed');
+          setPaymentError(resp.error?.description || 'Payment was declined or cancelled in Razorpay.');
+        });
+        rzp.open();
+      } catch (err: any) {
+        setPaymentStep('failed');
+        setPaymentError(err.message || 'Failed to open Razorpay gateway.');
+      }
+    },
+    [course]
+  );
+
+  // Handle CTA Click
+  const handleProceedToPayment = () => {
     if (!user) {
-      // User is not logged in: show in-page floating AuthModal (not full screen)
+      // Prompt quick in-page sign-in / sign-up modal
       setShowAuthModal(true);
     } else {
-      // User is logged in: directly trigger Razorpay Payment Modal
-      setShowPaymentModal(true);
+      triggerRazorpayPayment(user);
     }
   };
 
   // Called when user completes login/register in AuthModal
   const handleAuthSuccess = (authenticatedUser: any) => {
     setShowAuthModal(false);
-    // Directly launch payment step!
-    setShowPaymentModal(true);
+    triggerRazorpayPayment(authenticatedUser);
   };
 
   if (loading) {
@@ -108,7 +282,17 @@ export default function CourseCheckoutPage() {
   if (errorMsg || !course) {
     return (
       <div className={styles.container}>
-        <div style={{ maxWidth: '500px', margin: '80px auto', padding: '30px', background: '#fff', borderRadius: '16px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+        <div
+          style={{
+            maxWidth: '500px',
+            margin: '80px auto',
+            padding: '30px',
+            background: '#fff',
+            borderRadius: '16px',
+            textAlign: 'center',
+            border: '1px solid #e2e8f0',
+          }}
+        >
           <h3>{errorMsg || 'Course Not Found'}</h3>
           <Link href="/courses" style={{ color: '#2563eb', fontWeight: 700 }}>
             &larr; Return to Courses
@@ -123,6 +307,9 @@ export default function CourseCheckoutPage() {
 
   return (
     <div className={styles.container}>
+      {/* Official Razorpay Standard Checkout SDK */}
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+
       {/* Top Checkout Navbar */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
@@ -164,7 +351,19 @@ export default function CourseCheckoutPage() {
                   {course.thumbnail ? (
                     <img src={course.thumbnail} alt={course.title} className={styles.miniThumbImg} />
                   ) : (
-                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: 800 }}>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        background: 'linear-gradient(135deg, #1e3a8a, #2563eb)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#fff',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                      }}
+                    >
                       {course.category}
                     </div>
                   )}
@@ -202,11 +401,57 @@ export default function CourseCheckoutPage() {
               </div>
             </section>
 
-            {/* 2. EXPIRY DATE & ACCESS VALIDITY */}
+            {/* 2. AUTHENTIC PAYMENT GUARANTEE & METHODS */}
+            <section className={styles.cardSection}>
+              <div className={styles.cardHeader}>
+                <ShieldCheck size={20} color="#0284c7" />
+                <h2 className={styles.cardTitle}>Official Razorpay Payment Gateway</h2>
+              </div>
+
+              <p style={{ fontSize: '13px', color: '#475569', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+                Your payment is processed directly through the official Razorpay platform with bank-grade 256-bit encryption. Binary Vidya never stores your card, UPI PIN, or banking passwords.
+              </p>
+
+              <div className={styles.validityGrid}>
+                <div className={styles.validityBox}>
+                  <div className={styles.validityLabel}>UPI Instant Pay</div>
+                  <div className={styles.validityValue} style={{ color: '#0284c7' }}>Zero Surcharges</div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Google Pay, PhonePe, Paytm, BHIM, Dynamic QR
+                  </span>
+                </div>
+
+                <div className={styles.validityBox}>
+                  <div className={styles.validityLabel}>Credit &amp; Debit Cards</div>
+                  <div className={styles.validityValue} style={{ color: '#0284c7' }}>3D Secure OTP</div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Visa, MasterCard, RuPay, Maestro, Diners
+                  </span>
+                </div>
+
+                <div className={styles.validityBox}>
+                  <div className={styles.validityLabel}>Indian NetBanking</div>
+                  <div className={styles.validityValue} style={{ color: '#0284c7' }}>50+ Banks</div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    HDFC, SBI, ICICI, Axis, Kotak, PNB &amp; more
+                  </span>
+                </div>
+
+                <div className={styles.validityBox}>
+                  <div className={styles.validityLabel}>Buyer Protection</div>
+                  <div className={styles.validityValue} style={{ color: '#059669' }}>100% Risk-Free</div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    7-Day Money-Back Guarantee
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            {/* 3. EXPIRY DATE & ACCESS VALIDITY */}
             <section className={styles.cardSection}>
               <div className={styles.cardHeader}>
                 <Calendar size={20} color="#059669" />
-                <h2 className={styles.cardTitle}>Access Validity &amp; Expiry Date</h2>
+                <h2 className={styles.cardTitle}>Access Validity &amp; Perpetual License</h2>
               </div>
 
               <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px 0' }}>
@@ -229,35 +474,15 @@ export default function CourseCheckoutPage() {
                     Globally verifiable link for LinkedIn &amp; CVs
                   </span>
                 </div>
-
-                <div className={styles.validityBox}>
-                  <div className={styles.validityLabel}>Syllabus Refreshes</div>
-                  <div className={styles.validityValue}>Free Continuous Updates</div>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    All future video iterations included at ₹0
-                  </span>
-                </div>
-
-                <div className={styles.validityBox}>
-                  <div className={styles.validityLabel}>Project Repositories</div>
-                  <div className={styles.validityValue}>Permanent GitHub Access</div>
-                  <span style={{ fontSize: '11px', color: '#64748b' }}>
-                    Clone and fork code for your portfolio
-                  </span>
-                </div>
               </div>
             </section>
 
-            {/* 3. ABOUT US SECTION */}
+            {/* 4. ABOUT US SECTION */}
             <section className={styles.cardSection}>
               <div className={styles.cardHeader}>
                 <Building size={20} color="#2563eb" />
                 <h2 className={styles.cardTitle}>About Binary Vidya</h2>
               </div>
-
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.6 }}>
-                Binary Vidya is a premier technical academy founded by veteran software engineers to bridge the gap between academic theory and high-scale production systems.
-              </p>
 
               <div className={styles.aboutUsGrid}>
                 <div className={styles.aboutUsBox}>
@@ -269,7 +494,7 @@ export default function CourseCheckoutPage() {
                       15,000+ Active Engineers
                     </strong>
                     <span style={{ fontSize: '12px', color: '#64748b' }}>
-                      A thriving community of developers across top tier companies.
+                      A thriving community of developers across top tier tech companies.
                     </span>
                   </div>
                 </div>
@@ -287,117 +512,216 @@ export default function CourseCheckoutPage() {
                     </span>
                   </div>
                 </div>
-
-                <div className={styles.aboutUsBox}>
-                  <div className={styles.aboutUsIcon}>
-                    <ShieldCheck size={18} />
-                  </div>
-                  <div>
-                    <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>
-                      7-Day Money-Back Guarantee
-                    </strong>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
-                      100% satisfaction promised. Zero-risk enrollment.
-                    </span>
-                  </div>
-                </div>
-
-                <div className={styles.aboutUsBox}>
-                  <div className={styles.aboutUsIcon}>
-                    <Lock size={18} />
-                  </div>
-                  <div>
-                    <strong style={{ fontSize: '14px', color: '#0f172a', display: 'block' }}>
-                      PCI-DSS Compliant Payments
-                    </strong>
-                    <span style={{ fontSize: '12px', color: '#64748b' }}>
-                      Official Razorpay gateway with UPI, Cards, NetBanking, and EMI.
-                    </span>
-                  </div>
-                </div>
               </div>
             </section>
           </div>
 
-          {/* Right Column: Sticky Order Summary & Buy Now Button */}
+          {/* Right Column: Sticky Order Summary OR Authentic Verified Receipt */}
           <div>
-            <div className={styles.orderCard}>
-              <h3 className={styles.orderTitle}>Order Summary</h3>
+            {paymentStep === 'success' && paymentReceipt ? (
+              /* AUTHENTIC PAYMENT RECEIPT CARD */
+              <div className={styles.receiptContainer}>
+                <div className={styles.receiptIconWrap}>
+                  <CheckCircle2 size={40} />
+                </div>
+                <h2 className={styles.receiptTitle}>Payment Confirmed!</h2>
+                <p className={styles.receiptSubtitle}>
+                  Your course enrollment has been successfully activated via the official Razorpay Gateway.
+                </p>
 
-              {/* User login status indicator */}
-              <div className={styles.userStatusPill}>
-                {user ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckCircle2 size={16} color="#059669" />
-                    <span>Logged in as <strong>{user.email}</strong></span>
+                <div className={styles.receiptTable}>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Course Enrolled</span>
+                    <span className={styles.receiptValue}>{paymentReceipt.courseTitle}</span>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
-                    <UserIcon size={16} />
-                    <span>Guest Checkout (Sign In on Buy Now)</span>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Amount Paid</span>
+                    <span className={styles.receiptValue} style={{ color: '#059669', fontSize: '15px' }}>
+                      ₹{paymentReceipt.amount.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Razorpay Payment ID</span>
+                    <span className={styles.receiptValue} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                      {paymentReceipt.paymentId}
+                    </span>
+                  </div>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Razorpay Order ID</span>
+                    <span className={styles.receiptValue} style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                      {paymentReceipt.orderId}
+                    </span>
+                  </div>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Student Account</span>
+                    <span className={styles.receiptValue}>{paymentReceipt.userEmail}</span>
+                  </div>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Date &amp; Time</span>
+                    <span className={styles.receiptValue}>{paymentReceipt.date}</span>
+                  </div>
+                  <div className={styles.receiptRow}>
+                    <span className={styles.receiptLabel}>Access Status</span>
+                    <span className={styles.receiptValue} style={{ color: '#2563eb' }}>
+                      Lifetime Perpetual Access Active
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.receiptActions}>
+                  <Link href="/my-learning" className={styles.startCourseBtn}>
+                    Go to My Learning &amp; Start Watching <ArrowRight size={18} />
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className={styles.printReceiptBtn}
+                  >
+                    <Printer size={15} /> Print Official Receipt
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* ORDER SUMMARY & AUTHENTIC RAZORPAY TRIGGER CARD */
+              <div className={styles.orderCard}>
+                <h3 className={styles.orderTitle}>Order Summary</h3>
+
+                {/* Razorpay Trust Badge */}
+                <div className={styles.razorpayTrustBadge}>
+                  <div className={styles.razorpayLogoText}>
+                    <Zap size={15} color="#0284c7" />
+                    <span>Razorpay Secure</span>
+                  </div>
+                  <span>PCI-DSS Level 1</span>
+                </div>
+
+                {/* User login status indicator */}
+                <div className={styles.userStatusPill}>
+                  {user ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2 size={16} color="#059669" />
+                      <span>
+                        Logged in as <strong>{user.email}</strong>
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                      <UserIcon size={16} />
+                      <span>Guest Checkout (Sign In on 1-Click Pay)</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span>Tuition Base Price:</span>
+                  <span style={{ textDecoration: 'line-through', color: '#94a3b8' }}>
+                    ₹{originalPrice.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span style={{ color: '#059669', fontWeight: 600 }}>Scholarship Tier Discount:</span>
+                  <span style={{ color: '#059669', fontWeight: 700 }}>
+                    -₹{discountAmount.toLocaleString('en-IN')}
+                  </span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span>Lifetime Cloud Lab &amp; Code Access:</span>
+                  <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
+                </div>
+
+                <div className={styles.summaryRow}>
+                  <span>Certification Verification Fee:</span>
+                  <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
+                </div>
+
+                <div className={styles.totalRow}>
+                  <div>
+                    <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>
+                      Total Payable Amount
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
+                      Inclusive of all taxes
+                    </span>
+                  </div>
+                  <div className={styles.totalAmount}>
+                    ₹{course.price ? course.price.toLocaleString('en-IN') : '0'}
+                  </div>
+                </div>
+
+                {/* Error Banner */}
+                {paymentError && (
+                  <div className={styles.errorBanner}>
+                    <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>{paymentError}</div>
                   </div>
                 )}
-              </div>
 
-              <div className={styles.summaryRow}>
-                <span>Tuition Base Price:</span>
-                <span style={{ textDecoration: 'line-through', color: '#94a3b8' }}>
-                  ₹{originalPrice.toLocaleString('en-IN')}
-                </span>
-              </div>
+                {/* AUTHENTIC BUY NOW / PAY VIA RAZORPAY BUTTON */}
+                <button
+                  type="button"
+                  onClick={handleProceedToPayment}
+                  disabled={paymentStep === 'initiating' || paymentStep === 'verifying'}
+                  className={styles.buyNowBtn}
+                  style={{
+                    opacity: paymentStep === 'initiating' || paymentStep === 'verifying' ? 0.85 : 1,
+                    cursor: paymentStep === 'initiating' || paymentStep === 'verifying' ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {paymentStep === 'initiating' ? (
+                    <>
+                      <div className={styles.spinner} />
+                      <span>Opening Razorpay Secure Gateway...</span>
+                    </>
+                  ) : paymentStep === 'verifying' ? (
+                    <>
+                      <div className={styles.spinner} />
+                      <span>Verifying Official Payment...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={18} />
+                      <span>Pay ₹{course.price ? course.price.toLocaleString('en-IN') : '0'} via Razorpay</span>
+                    </>
+                  )}
+                </button>
 
-              <div className={styles.summaryRow}>
-                <span style={{ color: '#059669', fontWeight: 600 }}>
-                  Scholarship Tier Discount:
-                </span>
-                <span style={{ color: '#059669', fontWeight: 700 }}>
-                  -₹{discountAmount.toLocaleString('en-IN')}
-                </span>
-              </div>
-
-              <div className={styles.summaryRow}>
-                <span>Lifetime Cloud Lab &amp; Code Access:</span>
-                <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
-              </div>
-
-              <div className={styles.summaryRow}>
-                <span>Certification Verification Fee:</span>
-                <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
-              </div>
-
-              <div className={styles.totalRow}>
-                <div>
-                  <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>
-                    Total Payable Amount
+                {/* Supported Methods Badges */}
+                <div className={styles.methodsGrid}>
+                  <span className={styles.methodBadge}>
+                    <Smartphone size={13} color="#0284c7" /> UPI Apps
                   </span>
-                  <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
-                    Inclusive of all taxes
+                  <span className={styles.methodBadge}>
+                    <QrCode size={13} color="#059669" /> UPI QR
+                  </span>
+                  <span className={styles.methodBadge}>
+                    <CreditCard size={13} color="#2563eb" /> Cards
+                  </span>
+                  <span className={styles.methodBadge}>
+                    <Building2 size={13} color="#7c3aed" /> NetBanking
                   </span>
                 </div>
-                <div className={styles.totalAmount}>
-                  ₹{course.price ? course.price.toLocaleString('en-IN') : '0'}
+
+                <div
+                  style={{
+                    marginTop: '14px',
+                    textAlign: 'center',
+                    fontSize: '11px',
+                    color: '#64748b',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  🔒 Officially powered by Razorpay. 100% authentic gateway.
                 </div>
               </div>
-
-              {/* BUY NOW BUTTON */}
-              <button
-                type="button"
-                onClick={handleBuyNow}
-                className={styles.buyNowBtn}
-              >
-                <Lock size={18} />
-                Buy Now &amp; Proceed to Payment
-              </button>
-
-              <div style={{ marginTop: '16px', textAlign: 'center', fontSize: '11px', color: '#64748b', lineHeight: 1.5 }}>
-                🔒 Powered by Razorpay Payments. Supports UPI QR code, UPI apps, Credit/Debit Cards, EMI, NetBanking, and Wallets.
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
 
-      {/* IN-PAGE AUTH MODAL (NOT FULLSCREEN) */}
+      {/* IN-PAGE AUTH MODAL (FOR GUEST CHECKOUT) */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -405,31 +729,6 @@ export default function CourseCheckoutPage() {
         title="Sign In to Complete Enrollment"
         subtitle={`Please sign in or create an account to proceed with your enrollment for "${course.title}".`}
       />
-
-      {/* RAZORPAY MULTI-METHOD PAYMENT MODAL */}
-      {showPaymentModal && (
-        <PaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          course={{
-            id: course.id,
-            slug: course.slug,
-            title: course.title,
-            price: course.price,
-            thumbnail: course.thumbnail,
-            category: course.category,
-          }}
-          user={{
-            id: user?.id,
-            email: user?.email || '',
-            name: user?.name || 'Student',
-            phone: user?.phone,
-          }}
-          onPaymentSuccess={() => {
-            console.log('Payment complete!');
-          }}
-        />
-      )}
     </div>
   );
 }
