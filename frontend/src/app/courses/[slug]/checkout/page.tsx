@@ -98,6 +98,7 @@ export default function CourseCheckoutPage() {
   const [paymentStep, setPaymentStep] = useState<'idle' | 'initiating' | 'verifying' | 'success' | 'failed'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptData | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<'upi_qr' | 'cards_all'>('upi_qr');
 
   // Preload Razorpay Checkout SDK in background
   useEffect(() => {
@@ -163,7 +164,7 @@ export default function CourseCheckoutPage() {
           process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
           'rzp_test_Td7SsGbdScfViP';
 
-        const options = {
+        const options: any = {
           key: razorpayKey,
           amount: orderData.amount, // in paise
           currency: orderData.currency || 'INR',
@@ -171,6 +172,37 @@ export default function CourseCheckoutPage() {
           description: `Enrollment: ${course.title}`,
           image: 'https://binaryvidya.com/logo.png',
           order_id: orderData.orderId,
+          config: {
+            display: {
+              blocks: {
+                upi: {
+                  name: 'UPI / QR Code (Instant Scan & Pay)',
+                  instruments: [
+                    {
+                      method: 'upi',
+                      flows: ['qr', 'intent'],
+                      apps: ['google_pay', 'phonepe', 'paytm', 'bhim'],
+                    },
+                  ],
+                },
+                cards: {
+                  name: 'Debit/Credit Cards & NetBanking',
+                  instruments: [
+                    { method: 'card' },
+                    { method: 'netbanking' },
+                    { method: 'wallet' },
+                  ],
+                },
+              },
+              sequence:
+                selectedMethod === 'upi_qr'
+                  ? ['block.upi', 'block.cards']
+                  : ['block.cards', 'block.upi'],
+              preferences: {
+                show_default_blocks: true,
+              },
+            },
+          },
           handler: async function (response: any) {
             // Authentic Razorpay Signature verification
             setPaymentStep('verifying');
@@ -182,7 +214,7 @@ export default function CourseCheckoutPage() {
                   razorpayOrderId: response.razorpay_order_id,
                   razorpayPaymentId: response.razorpay_payment_id,
                   razorpaySignature: response.razorpay_signature,
-                  paymentMethod: 'razorpay_authentic',
+                  paymentMethod: selectedMethod === 'upi_qr' ? 'upi_qr' : 'cards',
                 }),
               });
 
@@ -222,11 +254,13 @@ export default function CourseCheckoutPage() {
             name: currentUser.name || '',
             email: currentUser.email || '',
             contact: currentUser.phone || '9999999999',
+            method: selectedMethod === 'upi_qr' ? 'upi' : 'card',
           },
           notes: {
             courseId: course.id,
             courseTitle: course.title,
             studentEmail: currentUser.email,
+            selectedMethod: selectedMethod,
           },
           theme: {
             color: '#2563eb',
@@ -659,6 +693,121 @@ export default function CourseCheckoutPage() {
                   </div>
                 )}
 
+                {/* SELECT PAYMENT METHOD */}
+                <div style={{ marginTop: '20px', marginBottom: '16px' }}>
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      color: '#475569',
+                      marginBottom: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                    }}
+                  >
+                    Select Payment Option:
+                  </div>
+
+                  {/* 1. UPI & QR Code */}
+                  <div
+                    onClick={() => setSelectedMethod('upi_qr')}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: selectedMethod === 'upi_qr' ? '2px solid #0284c7' : '1.5px solid #e2e8f0',
+                      background: selectedMethod === 'upi_qr' ? '#f0f9ff' : '#ffffff',
+                      cursor: 'pointer',
+                      marginBottom: '10px',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '8px',
+                          background: selectedMethod === 'upi_qr' ? '#0284c7' : '#f1f5f9',
+                          color: selectedMethod === 'upi_qr' ? '#ffffff' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <QrCode size={18} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a' }}>
+                          UPI &amp; QR Code (Instant Scan &amp; Pay)
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          Google Pay • PhonePe • Paytm • BHIM • Dynamic QR
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      checked={selectedMethod === 'upi_qr'}
+                      onChange={() => setSelectedMethod('upi_qr')}
+                      style={{ accentColor: '#0284c7', width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                  </div>
+
+                  {/* 2. Cards & NetBanking */}
+                  <div
+                    onClick={() => setSelectedMethod('cards_all')}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: selectedMethod === 'cards_all' ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                      background: selectedMethod === 'cards_all' ? '#eff6ff' : '#ffffff',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        style={{
+                          width: '34px',
+                          height: '34px',
+                          borderRadius: '8px',
+                          background: selectedMethod === 'cards_all' ? '#2563eb' : '#f1f5f9',
+                          color: selectedMethod === 'cards_all' ? '#ffffff' : '#64748b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <CreditCard size={18} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a' }}>
+                          Cards &amp; NetBanking
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          Visa, MasterCard, RuPay, 50+ Banks &amp; EMI
+                        </div>
+                      </div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="payment_method"
+                      checked={selectedMethod === 'cards_all'}
+                      onChange={() => setSelectedMethod('cards_all')}
+                      style={{ accentColor: '#2563eb', width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+
                 {/* AUTHENTIC BUY NOW / PAY VIA RAZORPAY BUTTON */}
                 <button
                   type="button"
@@ -668,6 +817,10 @@ export default function CourseCheckoutPage() {
                   style={{
                     opacity: paymentStep === 'initiating' || paymentStep === 'verifying' ? 0.85 : 1,
                     cursor: paymentStep === 'initiating' || paymentStep === 'verifying' ? 'not-allowed' : 'pointer',
+                    background:
+                      selectedMethod === 'upi_qr'
+                        ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                        : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                   }}
                 >
                   {paymentStep === 'initiating' ? (
@@ -680,10 +833,15 @@ export default function CourseCheckoutPage() {
                       <div className={styles.spinner} />
                       <span>Verifying Official Payment...</span>
                     </>
+                  ) : selectedMethod === 'upi_qr' ? (
+                    <>
+                      <QrCode size={18} />
+                      <span>Pay ₹{course.price ? course.price.toLocaleString('en-IN') : '0'} via UPI / QR</span>
+                    </>
                   ) : (
                     <>
-                      <Lock size={18} />
-                      <span>Pay ₹{course.price ? course.price.toLocaleString('en-IN') : '0'} via Razorpay</span>
+                      <CreditCard size={18} />
+                      <span>Pay ₹{course.price ? course.price.toLocaleString('en-IN') : '0'} via Cards / NetBanking</span>
                     </>
                   )}
                 </button>
