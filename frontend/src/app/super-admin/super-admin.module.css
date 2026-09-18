@@ -33,7 +33,24 @@
 .brandGroup {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+}
+
+.brandLogoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.brandLogoLink:hover {
+  transform: scale(1.02);
+}
+
+.brandLogoImg {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
 }
 
 .brandLogo {
@@ -46,6 +63,21 @@
   justify-content: center;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.superAdminPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .brandTextTitle {
@@ -899,4 +931,265 @@
   background: #dbeafe;
   border-color: #93c5fd;
 }
+
+/* Quick Action Buttons in Top Nav */
+.quickAddCourseBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quickAddCourseBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.quickAddTrainingBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quickAddTrainingBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+}
+
+.quickAddCareerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.quickAddCareerBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+}
+
+.liveSiteBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  color: #1e40af;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.liveSiteBtn:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.userInfoCol {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.userRoleTag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Friendly Access & Loading Screens */
+.loadingScreen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: radial-gradient(circle at 50% 20%, #dbeafe 0%, #f0f7ff 50%, #ffffff 90%);
+  padding: 24px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #bfdbfe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.accessScreen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 20%, #dbeafe 0%, #f0f7ff 50%, #ffffff 90%);
+  padding: 24px;
+}
+
+.accessCard {
+  max-width: 460px;
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  box-shadow: 0 20px 50px -10px rgba(37, 99, 235, 0.15), 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.accessLogoImg {
+  height: 52px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+
+.accessPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.accessRestrictedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.accessTitle {
+  font-size: 22px;
+  font-weight: 850;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.accessDesc {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.55;
+  margin-bottom: 24px;
+}
+
+.accessActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.accessPrimaryBtn {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.accessPrimaryBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.accessSecondaryBtn {
+  padding: 11px 20px;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
+  color: #475569;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.accessSecondaryBtn:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
 

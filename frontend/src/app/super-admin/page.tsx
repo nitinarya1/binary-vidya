@@ -35,6 +35,7 @@ import {
   Film,
   Zap,
   Trash,
+  ArrowRight,
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
 
@@ -167,14 +168,7 @@ export default function SuperAdminDashboard() {
     }
   }, [notice]);
 
-  // Protect Super Admin route: Only the main Super Admin account can access
-  useEffect(() => {
-    if (!isLoading) {
-      if (!user || !isSuperAdminEmail(user.email)) {
-        router.push('/login');
-      }
-    }
-  }, [isLoading, user, router]);
+  // Data is fetched once authenticated with valid token
 
   // Fetch all data
   const fetchData = async () => {
@@ -407,23 +401,74 @@ export default function SuperAdminDashboard() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <RefreshCw className="animate-spin" size={32} color="#2563eb" />
+      <div className={styles.loadingScreen}>
+        <img
+          src="/images/binary-vidya-logo.png"
+          alt="Binary Vidya"
+          className={styles.accessLogoImg}
+        />
+        <div className={styles.spinner} />
+        <p className={styles.loadingText}>Verifying administrator session...</p>
       </div>
     );
   }
 
-  if (!user || !isSuperAdminEmail(user.email)) {
+  if (!user) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#0f172a', color: '#f8fafc', padding: '24px', textAlign: 'center' }}>
-        <AlertCircle size={48} color="#ef4444" />
-        <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Super Admin Access Denied</h2>
-        <p style={{ color: '#94a3b8', maxWidth: '440px' }}>
-          This console is strictly restricted to <strong>aryar0779@gmail.com</strong>. Other accounts do not have permission to view or manage Super Admin resources.
-        </p>
-        <Link href="/login" style={{ padding: '10px 22px', borderRadius: '8px', background: '#2563eb', color: '#fff', textDecoration: 'none', fontWeight: 600, marginTop: '8px' }}>
-          Return to Sign In
-        </Link>
+      <div className={styles.accessScreen}>
+        <div className={styles.accessCard}>
+          <img
+            src="/images/binary-vidya-logo.png"
+            alt="Binary Vidya"
+            className={styles.accessLogoImg}
+          />
+          <div className={styles.accessPill}>
+            <ShieldCheck size={14} color="#1e40af" />
+            <span>Super Administrator Console</span>
+          </div>
+          <h2 className={styles.accessTitle}>Sign In Required</h2>
+          <p className={styles.accessDesc}>
+            Please sign in with your authorized administrator account to access courses, training &amp; internship programs, and career openings.
+          </p>
+          <div className={styles.accessActions}>
+            <Link href="/login" className={styles.accessPrimaryBtn}>
+              Sign In to Super Admin <ArrowRight size={15} />
+            </Link>
+            <Link href="/" className={styles.accessSecondaryBtn}>
+              Return to Live Site
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSuperAdminEmail(user.email)) {
+    return (
+      <div className={styles.accessScreen}>
+        <div className={styles.accessCard}>
+          <img
+            src="/images/binary-vidya-logo.png"
+            alt="Binary Vidya"
+            className={styles.accessLogoImg}
+          />
+          <div className={styles.accessRestrictedPill}>
+            <AlertCircle size={14} color="#dc2626" />
+            <span>Access Restricted</span>
+          </div>
+          <h2 className={styles.accessTitle}>Administrator Privileges Required</h2>
+          <p className={styles.accessDesc}>
+            You are currently signed in as <strong>{user.email}</strong> which does not have Super Admin permissions.
+          </p>
+          <div className={styles.accessActions}>
+            <button onClick={logout} className={styles.accessPrimaryBtn}>
+              Switch to Admin Account
+            </button>
+            <Link href="/my-learning" className={styles.accessSecondaryBtn}>
+              Go to Student Dashboard
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -434,34 +479,61 @@ export default function SuperAdminDashboard() {
       <header className={styles.topNav}>
         <div className={styles.topNavInner}>
           <div className={styles.brandGroup}>
-            <div className={styles.brandLogo}>
-              <Layers size={22} />
-            </div>
-            <div>
-              <div className={styles.brandTextTitle}>
-                Binary Vidya
-                <span className={styles.superBadge}>Super Admin</span>
-              </div>
-              <div className={styles.brandTextSubtitle}>Curriculum, Internships & Careers Control</div>
+            <Link href="/" className={styles.brandLogoLink} title="View Home Page">
+              <img
+                src="/images/binary-vidya-logo.png"
+                alt="Binary Vidya"
+                className={styles.brandLogoImg}
+              />
+            </Link>
+            <div className={styles.superAdminPill}>
+              <ShieldCheck size={13} />
+              <span>Super Admin</span>
             </div>
           </div>
 
           <div className={styles.navActions}>
+            {/* Quick Actions */}
+            <button
+              onClick={() => {
+                setEditingCourse(null);
+                setCourseModalOpen(true);
+              }}
+              className={styles.quickAddCourseBtn}
+              title="Add Course"
+            >
+              <Plus size={15} />
+              <span>Add Course</span>
+            </button>
+
             <button
               onClick={() => {
                 setActiveTab('training');
                 setEditingTraining(null);
                 setTrainingModalOpen(true);
               }}
-              className={styles.addTrainingHeaderBtn}
+              className={styles.quickAddTrainingBtn}
               title="Add New Training & Internship Program"
             >
               <Plus size={15} />
-              <span>Add Training &amp; Internship</span>
+              <span>Add Program</span>
             </button>
 
-            <Link href="/" className={styles.switchAdminBtn} target="_blank" title="View Public Portal">
-              <ExternalLink size={15} />
+            <button
+              onClick={() => {
+                setActiveTab('careers');
+                setEditingCareer(null);
+                setCareerModalOpen(true);
+              }}
+              className={styles.quickAddCareerBtn}
+              title="Post Career Opportunity"
+            >
+              <Plus size={15} />
+              <span>Add Career</span>
+            </button>
+
+            <Link href="/" className={styles.liveSiteBtn} target="_blank" title="View Public Portal">
+              <ExternalLink size={14} />
               <span>Live Site</span>
             </Link>
 
@@ -469,11 +541,14 @@ export default function SuperAdminDashboard() {
               <div className={styles.userAvatar}>
                 {user?.name ? user.name[0].toUpperCase() : 'A'}
               </div>
-              <span className={styles.userName}>{user?.name || 'Administrator'}</span>
+              <div className={styles.userInfoCol}>
+                <span className={styles.userName}>{user?.name || 'Administrator'}</span>
+                <span className={styles.userRoleTag}>Super Admin</span>
+              </div>
             </div>
 
             <button onClick={logout} className={styles.logoutBtn} title="Sign Out">
-              <LogOut size={18} />
+              <LogOut size={16} />
             </button>
           </div>
         </div>
