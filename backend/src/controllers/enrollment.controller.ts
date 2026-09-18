@@ -161,6 +161,71 @@ export const getMyEnrolledCourses = async (req: Request, res: Response) => {
       };
     });
 
+    // If user is enrolled in frontend developer training & internship program, format and append it
+    if (enrolledCourseMap.has('frontend-developer-training-internship')) {
+      const meta = enrolledCourseMap.get('frontend-developer-training-internship');
+      formattedList.unshift({
+        id: 'frontend-developer-training-internship',
+        title: 'Frontend Developer Training & 2-Month Internship',
+        slug: 'frontend-developer-training-internship',
+        description: 'Comprehensive Frontend Engineering Training with Weekend Live Batches, Minor & Major Projects, and 2-Month Industrial Internship.',
+        category: 'Web Development',
+        level: 'All Levels',
+        duration: '2 Months',
+        thumbnail: '',
+        instructor: 'Binary Vidya Technical Mentors',
+        chapters: [
+          {
+            title: 'Section 1: Intensive Frontend Engineering Training (Weekend Classes)',
+            description: 'Core HTML5/CSS3, JavaScript ES6+, TypeScript, React 18, and Next.js 14 App Router',
+            lessons: [
+              { title: 'Module 1.1: Semantic HTML5, CSS3 & Responsive Architecture', videoUrl: '', duration: '2 Hours' },
+              { title: 'Module 1.2: Modern JavaScript (ES6+) & Asynchronous Mastery', videoUrl: '', duration: '2.5 Hours' },
+              { title: 'Module 1.3: TypeScript for Scalable Frontend Systems', videoUrl: '', duration: '2 Hours' },
+              { title: 'Module 1.4: React 18+ Mastery & State Architecture', videoUrl: '', duration: '3 Hours' },
+              { title: 'Module 1.5: Next.js 14 App Router & Full-Stack Capabilities', videoUrl: '', duration: '3 Hours' },
+              { title: 'Module 1.6: Developer Tooling, Git & Cloud Deployment', videoUrl: '', duration: '1.5 Hours' },
+            ],
+          },
+          {
+            title: 'Section 2: Production Minor Project (SaaS Pulse Dashboard)',
+            description: 'SaaS Analytics Dashboard & Modular Design System Kit',
+            lessons: [
+              { title: 'Minor Project Kickoff & Architecture Setup', videoUrl: '', duration: '1 Hour' },
+              { title: 'Building Analytics Widgets & Recharts Integration', videoUrl: '', duration: '2 Hours' },
+              { title: 'Theme Switcher, Mobile Navigation & Code Review', videoUrl: '', duration: '1.5 Hours' },
+            ],
+          },
+          {
+            title: 'Section 3: Enterprise Major Project (Binary Studio Platform)',
+            description: 'Full-Scale Commercial Application with Auth, Video Streaming & Razorpay',
+            lessons: [
+              { title: 'Major Capstone Architecture & System Design', videoUrl: '', duration: '2 Hours' },
+              { title: 'Authentication, REST APIs & Video Player Integration', videoUrl: '', duration: '3 Hours' },
+              { title: 'Payment Gateway Integration & Production Deployment', videoUrl: '', duration: '2.5 Hours' },
+            ],
+          },
+        ],
+        chaptersCount: 3,
+        totalLessons: 12,
+        modules: [
+          { title: 'Section 1: Frontend Engineering Training', lecturesCount: 6, duration: '14 Hours' },
+          { title: 'Section 2: Minor Project (SaaS Pulse)', lecturesCount: 3, duration: '4.5 Hours' },
+          { title: 'Section 3: Major Project (Binary Studio)', lecturesCount: 3, duration: '7.5 Hours' },
+        ],
+        batchName: meta.batchName || 'Frontend Cohort 2026 - Weekend Batch',
+        enrolledAt: meta.enrolledAt,
+        progressPercentage: meta.progressPercentage || 0,
+        completedLessons: meta.completedLessons || [],
+        completedLessonsCount: (meta.completedLessons || []).length,
+        type: 'internship',
+        status: meta.status || 'active',
+        certificateId: meta.certificateId || '',
+        certificateRecipientName: meta.certificateRecipientName || '',
+        certificateUnlocked: !!meta.certificateId || (meta.progressPercentage || 0) >= 100,
+      });
+    }
+
     res.json({
       success: true,
       count: formattedList.length,

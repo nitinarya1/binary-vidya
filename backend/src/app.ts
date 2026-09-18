@@ -6,6 +6,7 @@ import paymentRoutes from './routes/payment.routes';
 import enrollmentRoutes from './routes/enrollment.routes';
 import certificateRoutes from './routes/certificate.routes';
 import uploadRoutes from './routes/upload.routes';
+import trainingRoutes from './routes/training.routes';
 
 export const createApp = (): Application => {
   const app = express();
@@ -36,6 +37,7 @@ export const createApp = (): Application => {
   app.use('/api/enrollments', enrollmentRoutes);
   app.use('/api/certificates', certificateRoutes);
   app.use('/api/upload', uploadRoutes);
+  app.use('/api/training-internship', trainingRoutes);
 
   // 404 Handler
   app.use((req: Request, res: Response) => {

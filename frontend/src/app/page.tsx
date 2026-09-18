@@ -114,6 +114,37 @@ export default function HomePage() {
           </Link>
 
           <div className={styles.navLinks}>
+            <Link
+              href="/training-and-internship"
+              className={styles.navLink}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#2563eb',
+                fontWeight: 800,
+                background: '#eff6ff',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid #bfdbfe',
+              }}
+            >
+              <Sparkles size={14} color="#2563eb" />
+              <span>Training &amp; Internship</span>
+              <span
+                style={{
+                  background: '#2563eb',
+                  color: '#fff',
+                  fontSize: '9px',
+                  fontWeight: 900,
+                  padding: '2px 6px',
+                  borderRadius: '100px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Weekend Batch
+              </span>
+            </Link>
             <a href="#about" className={styles.navLink}>
               About Us
             </a>

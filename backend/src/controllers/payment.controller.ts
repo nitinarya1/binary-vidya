@@ -43,8 +43,20 @@ export const createOrder = async (req: Request, res: Response) => {
       course = await Course.findOne({ title: { $regex: new RegExp(`^${courseId}$`, 'i') } }).lean();
     }
 
+    // Support Training & Internship program checkout (₹2,400)
+    if (!course && (courseId === 'frontend-developer-training-internship' || courseId.includes('frontend') || courseId.includes('internship') || courseId.includes('training'))) {
+      course = {
+        _id: 'frontend-developer-training-internship',
+        title: 'Frontend Developer Training & 2-Month Internship',
+        slug: 'frontend-developer-training-internship',
+        price: 2400,
+        category: 'Web Development',
+        thumbnail: '',
+      };
+    }
+
     if (!course) {
-      return res.status(404).json({ success: false, message: 'Course not found in system.' });
+      return res.status(404).json({ success: false, message: 'Course or Training Program not found in system.' });
     }
 
     const price = Number(course.price) || 0;
@@ -161,8 +173,22 @@ export const verifyPayment = async (req: Request, res: Response) => {
       order.paymentMethod = paymentMethod || 'upi_qr';
       await order.save();
 
-      // Increment Course enrolled count
-      await Course.findByIdAndUpdate(order.courseId, { $inc: { enrolledCount: 1 } });
+      // Check if this is an internship or training program
+      const isInternship =
+        order.courseId.toLowerCase().includes('internship') ||
+        order.courseId.toLowerCase().includes('training') ||
+        order.courseTitle.toLowerCase().includes('internship') ||
+        order.courseTitle.toLowerCase().includes('training');
+
+      const enrollmentType = isInternship ? 'internship' : 'course';
+      const batchName = isInternship
+        ? 'Frontend Cohort 2026 - Weekend Batch'
+        : 'Cohort 2026 - Active';
+
+      // Increment Course enrolled count if it's a valid MongoDB ObjectId
+      if (typeof order.courseId === 'string' && order.courseId.match(/^[0-9a-fA-F]{24}$/)) {
+        await Course.findByIdAndUpdate(order.courseId, { $inc: { enrolledCount: 1 } });
+      }
 
       // Upsert Enrollment record for student
       await Enrollment.findOneAndUpdate(
@@ -172,8 +198,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
             userId: order.userId || '',
             userName: order.userName || 'Student',
             courseTitle: order.courseTitle,
-            type: 'course',
-            batchName: 'Cohort 2026 - Active',
+            type: enrollmentType,
+            batchName: batchName,
             enrolledAt: new Date(),
             orderId: order.razorpayOrderId,
             paymentId: order.razorpayPaymentId,
@@ -187,10 +213,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Payment completed and verified successfully! You are enrolled in the course.',
+      message: 'Payment completed and verified successfully! You are enrolled in the program.',
       orderId: razorpayOrderId,
       paymentId: razorpayPaymentId || `pay_${Date.now()}`,
-      courseTitle: order?.courseTitle || 'Masterclass',
+      courseTitle: order?.courseTitle || 'Frontend Developer Training & Internship',
     });
   } catch (error: any) {
     console.error('[Verify Payment Error]:', error);
