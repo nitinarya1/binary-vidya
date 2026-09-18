@@ -185,8 +185,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('bv_user');
   };
 
-  const isAdmin = user?.role === 'admin' || isSuperAdminEmail(user?.email);
-  const isSuperAdmin = Boolean(user && isSuperAdminEmail(user.email));
+  const isSuspended = user?.teamStatus === 'suspended';
+  const isSuperAdmin = Boolean(user && !isSuspended && isSuperAdminEmail(user.email));
+  const hasAnyTeamPermission = Boolean(
+    user?.permissions?.manageCourses ||
+    user?.permissions?.manageTraining ||
+    user?.permissions?.manageCareers ||
+    user?.permissions?.viewAnalytics ||
+    user?.permissions?.manageCertificates ||
+    user?.permissions?.manageTeam
+  );
+  const isAdmin = Boolean(
+    user &&
+    !isSuspended &&
+    (isSuperAdmin || (user.role === 'admin' && (!user.isTeamMember || hasAnyTeamPermission)) || hasAnyTeamPermission)
+  );
 
   return (
     <AuthContext.Provider

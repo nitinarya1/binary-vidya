@@ -22,7 +22,7 @@ async function authenticateAdmin(req: Request) {
   }
 
   await connectDB();
-  const requester = await User.findById(decoded.id);
+  const requester: any = await User.findById(decoded.id).lean();
   if (!requester) {
     return { error: 'Administrator account not found', status: 404 };
   }

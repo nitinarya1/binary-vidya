@@ -166,8 +166,42 @@ export default function SuperAdminDashboard() {
   const router = useRouter();
   const { user, token, isLoading, isAdmin, logout } = useAuth();
 
+  // Role-Based Granular Permissions
+  const isSuper = Boolean(user && isSuperAdminEmail(user.email) && user.teamStatus !== 'suspended');
+  const isSuspended = user?.teamStatus === 'suspended';
+  const isStaffAdmin = Boolean(user && (user.role === 'admin' || user.isTeamMember));
+
+  const canManageCourses = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCourses));
+  const canManageTraining = !isSuspended && (isSuper || Boolean(user?.permissions?.manageTraining));
+  const canManageCareers = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCareers));
+  const canViewAnalytics = !isSuspended && (isSuper || Boolean(user?.permissions?.viewAnalytics));
+  const canManageCertificates = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCertificates));
+  const canManageTeam = isSuper; // Strictly Super Admin only
+
+  const hasAnyAccess = isSuper || canManageCourses || canManageTraining || canManageCareers || canViewAnalytics || canManageCertificates;
+
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // Ensure active tab matches what the user is permitted to see
+  useEffect(() => {
+    const isTabPermitted = (tab: TabType): boolean => {
+      if (tab === 'overview') return canViewAnalytics;
+      if (tab === 'courses') return canManageCourses;
+      if (tab === 'training') return canManageTraining;
+      if (tab === 'careers') return canManageCareers;
+      if (tab === 'team') return canManageTeam;
+      return false;
+    };
+
+    if (!isTabPermitted(activeTab)) {
+      if (canViewAnalytics) setActiveTab('overview');
+      else if (canManageCourses) setActiveTab('courses');
+      else if (canManageTraining) setActiveTab('training');
+      else if (canManageCareers) setActiveTab('careers');
+      else if (canManageTeam) setActiveTab('team');
+    }
+  }, [activeTab, canViewAnalytics, canManageCourses, canManageTraining, canManageCareers, canManageTeam]);
 
   // Data States
   const [courses, setCourses] = useState<CourseItem[]>([]);
@@ -205,26 +239,59 @@ export default function SuperAdminDashboard() {
     }
   }, [notice]);
 
-  // Data is fetched once authenticated with valid token
-
-  // Fetch all data
+  // Fetch only data that the current user has permission to access
   const fetchData = async () => {
     if (!token) return;
     try {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [coursesRes, trainingRes, careersRes, teamRes] = await Promise.all([
-        fetch('/api/admin/courses', { headers }).then((r) => r.json()),
-        fetch('/api/admin/training-internships', { headers }).then((r) => r.json()),
-        fetch('/api/admin/careers', { headers }).then((r) => r.json()),
-        fetch('/api/admin/team', { headers }).then((r) => r.json()),
-      ]);
+      const promises: Promise<any>[] = [];
+      const keys: string[] = [];
 
-      if (coursesRes.success) setCourses(coursesRes.courses || []);
-      if (trainingRes.success) setTrainingPrograms(trainingRes.programs || []);
-      if (careersRes.success) setCareers(careersRes.careers || []);
-      if (teamRes.success) setTeamMembers(teamRes.teamMembers || []);
+      if (canManageCourses || canViewAnalytics) {
+        keys.push('courses');
+        promises.push(
+          fetch('/api/admin/courses', { headers })
+            .then((r) => r.json())
+            .catch(() => ({ success: false }))
+        );
+      }
+      if (canManageTraining || canViewAnalytics) {
+        keys.push('training');
+        promises.push(
+          fetch('/api/admin/training-internships', { headers })
+            .then((r) => r.json())
+            .catch(() => ({ success: false }))
+        );
+      }
+      if (canManageCareers || canViewAnalytics) {
+        keys.push('careers');
+        promises.push(
+          fetch('/api/admin/careers', { headers })
+            .then((r) => r.json())
+            .catch(() => ({ success: false }))
+        );
+      }
+      if (canManageTeam) {
+        keys.push('team');
+        promises.push(
+          fetch('/api/admin/team', { headers })
+            .then((r) => r.json())
+            .catch(() => ({ success: false }))
+        );
+      }
+
+      const results = await Promise.all(promises);
+      results.forEach((res, i) => {
+        const key = keys[i];
+        if (res && res.success) {
+          if (key === 'courses') setCourses(res.courses || []);
+          if (key === 'training') setTrainingPrograms(res.programs || []);
+          if (key === 'careers') setCareers(res.careers || []);
+          if (key === 'team') setTeamMembers(res.teamMembers || []);
+        }
+      });
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Failed to fetch dashboard data' });
     } finally {
@@ -233,10 +300,10 @@ export default function SuperAdminDashboard() {
   };
 
   useEffect(() => {
-    if (token && isAdmin) {
+    if (token && (isSuper || isStaffAdmin)) {
       fetchData();
     }
-  }, [token, isAdmin]);
+  }, [token, isSuper, isStaffAdmin, canManageCourses, canManageTraining, canManageCareers, canManageTeam, canViewAnalytics]);
 
   // Metric Computations
   const metrics = useMemo(() => {
@@ -595,7 +662,7 @@ export default function SuperAdminDashboard() {
     );
   }
 
-  if (!isSuperAdminEmail(user.email)) {
+  if (!isSuper && !isStaffAdmin) {
     return (
       <div className={styles.accessScreen}>
         <div className={styles.accessCard}>
@@ -610,7 +677,7 @@ export default function SuperAdminDashboard() {
           </div>
           <h2 className={styles.accessTitle}>Administrator Privileges Required</h2>
           <p className={styles.accessDesc}>
-            You are currently signed in as <strong>{user.email}</strong> which does not have Super Admin permissions.
+            You are currently signed in as <strong>{user.email}</strong> which does not have staff or administrator privileges.
           </p>
           <div className={styles.accessActions}>
             <button onClick={logout} className={styles.accessPrimaryBtn}>
@@ -618,6 +685,66 @@ export default function SuperAdminDashboard() {
             </button>
             <Link href="/my-learning" className={styles.accessSecondaryBtn}>
               Go to Student Dashboard
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSuspended) {
+    return (
+      <div className={styles.accessScreen}>
+        <div className={styles.accessCard}>
+          <img
+            src="/images/binary-vidya-logo.png"
+            alt="Binary Vidya"
+            className={styles.accessLogoImg}
+          />
+          <div className={styles.accessRestrictedPill}>
+            <AlertCircle size={14} color="#dc2626" />
+            <span>Account Suspended</span>
+          </div>
+          <h2 className={styles.accessTitle}>Administrative Access Suspended</h2>
+          <p className={styles.accessDesc}>
+            Your staff account (<strong>{user.email}</strong>) has been suspended by the Super Administrator. Please contact management to restore your access.
+          </p>
+          <div className={styles.accessActions}>
+            <button onClick={logout} className={styles.accessPrimaryBtn}>
+              Sign Out
+            </button>
+            <Link href="/" className={styles.accessSecondaryBtn}>
+              Return to Live Site
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAnyAccess) {
+    return (
+      <div className={styles.accessScreen}>
+        <div className={styles.accessCard}>
+          <img
+            src="/images/binary-vidya-logo.png"
+            alt="Binary Vidya"
+            className={styles.accessLogoImg}
+          />
+          <div className={styles.accessRestrictedPill}>
+            <AlertCircle size={14} color="#f59e0b" />
+            <span>No Module Permissions</span>
+          </div>
+          <h2 className={styles.accessTitle}>No Module Access Assigned</h2>
+          <p className={styles.accessDesc}>
+            Your account (<strong>{user.email}</strong>) is active but does not currently have permissions assigned for any modules (Courses, Training, Careers, Analytics). Please contact the Super Administrator.
+          </p>
+          <div className={styles.accessActions}>
+            <button onClick={logout} className={styles.accessPrimaryBtn}>
+              Sign Out
+            </button>
+            <Link href="/" className={styles.accessSecondaryBtn}>
+              Return to Live Site
             </Link>
           </div>
         </div>
@@ -640,62 +767,70 @@ export default function SuperAdminDashboard() {
             </Link>
             <div className={styles.superAdminPill}>
               <ShieldCheck size={13} />
-              <span>Super Admin</span>
+              <span>{isSuper ? 'Super Admin' : user?.department || 'Staff Admin'}</span>
             </div>
           </div>
 
           <div className={styles.navActions}>
-            {/* Quick Actions */}
-            <button
-              onClick={() => {
-                setEditingCourse(null);
-                setCourseModalOpen(true);
-              }}
-              className={styles.quickAddCourseBtn}
-              title="Add Course"
-            >
-              <Plus size={15} />
-              <span>Add Course</span>
-            </button>
+            {/* Quick Actions - Strictly guarded by module permissions */}
+            {canManageCourses && (
+              <button
+                onClick={() => {
+                  setEditingCourse(null);
+                  setCourseModalOpen(true);
+                }}
+                className={styles.quickAddCourseBtn}
+                title="Add Course"
+              >
+                <Plus size={15} />
+                <span>Add Course</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                setActiveTab('training');
-                setEditingTraining(null);
-                setTrainingModalOpen(true);
-              }}
-              className={styles.quickAddTrainingBtn}
-              title="Add New Training & Internship Program"
-            >
-              <Plus size={15} />
-              <span>Add Program</span>
-            </button>
+            {canManageTraining && (
+              <button
+                onClick={() => {
+                  setActiveTab('training');
+                  setEditingTraining(null);
+                  setTrainingModalOpen(true);
+                }}
+                className={styles.quickAddTrainingBtn}
+                title="Add New Training & Internship Program"
+              >
+                <Plus size={15} />
+                <span>Add Program</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                setActiveTab('careers');
-                setEditingCareer(null);
-                setCareerModalOpen(true);
-              }}
-              className={styles.quickAddCareerBtn}
-              title="Post Career Opportunity"
-            >
-              <Plus size={15} />
-              <span>Add Career</span>
-            </button>
+            {canManageCareers && (
+              <button
+                onClick={() => {
+                  setActiveTab('careers');
+                  setEditingCareer(null);
+                  setCareerModalOpen(true);
+                }}
+                className={styles.quickAddCareerBtn}
+                title="Post Career Opportunity"
+              >
+                <Plus size={15} />
+                <span>Add Career</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                setActiveTab('team');
-                setEditingMember(null);
-                setTeamModalOpen(true);
-              }}
-              className={styles.quickAddTeamBtn}
-              title="Add Team Member (HR, Sales, Content, etc.)"
-            >
-              <UserPlus size={15} />
-              <span>+ Add Team</span>
-            </button>
+            {canManageTeam && (
+              <button
+                onClick={() => {
+                  setActiveTab('team');
+                  setEditingMember(null);
+                  setTeamModalOpen(true);
+                }}
+                className={styles.quickAddTeamBtn}
+                title="Add Team Member (HR, Sales, Content, etc.)"
+              >
+                <UserPlus size={15} />
+                <span>+ Add Team</span>
+              </button>
+            )}
 
             <Link href="/" className={styles.liveSiteBtn} target="_blank" title="View Public Portal">
               <ExternalLink size={14} />
@@ -708,7 +843,7 @@ export default function SuperAdminDashboard() {
               </div>
               <div className={styles.userInfoCol}>
                 <span className={styles.userName}>{user?.name || 'Administrator'}</span>
-                <span className={styles.userRoleTag}>Super Admin</span>
+                <span className={styles.userRoleTag}>{isSuper ? 'Super Admin' : user?.department || 'Staff Member'}</span>
               </div>
             </div>
 
@@ -726,352 +861,400 @@ export default function SuperAdminDashboard() {
           <div>
             <h1 className={styles.headerTitle}>
               <Sparkles size={28} color="#60a5fa" />
-              Super Admin Control Console
+              {isSuper ? 'Super Admin Control Console' : `${user?.department || 'Staff'} Control Console`}
             </h1>
             <p className={styles.headerSubtitle}>
-              Centralized command center for managing high-impact technical courses, verified training & internship drives, staff team permissions, and career pipelines.
+              {isSuper
+                ? 'Centralized command center for managing high-impact technical courses, verified training & internship drives, staff team permissions, and career pipelines.'
+                : `Administrative workspace for managing assigned ${user?.department || 'operational'} workflows and modules.`}
             </p>
           </div>
 
           <div className={styles.headerActions}>
+            {canManageCourses && (
+              <button
+                onClick={() => {
+                  setEditingCourse(null);
+                  setCourseModalOpen(true);
+                }}
+                className={styles.primaryActionBtn}
+              >
+                <Plus size={16} /> Add New Course
+              </button>
+            )}
+
+            {canManageTraining && (
+              <button
+                onClick={() => {
+                  setEditingTraining(null);
+                  setTrainingModalOpen(true);
+                }}
+                className={styles.secondaryActionBtn}
+              >
+                <Plus size={16} /> Add Internship
+              </button>
+            )}
+
+            {canManageCareers && (
+              <button
+                onClick={() => {
+                  setEditingCareer(null);
+                  setCareerModalOpen(true);
+                }}
+                className={styles.secondaryActionBtn}
+              >
+                <Plus size={16} /> Post Career
+              </button>
+            )}
+
+            {canManageTeam && (
+              <button
+                onClick={() => {
+                  setActiveTab('team');
+                  setEditingMember(null);
+                  setTeamModalOpen(true);
+                }}
+                className={styles.secondaryActionBtn}
+                style={{ background: 'rgba(99, 102, 241, 0.3)', borderColor: '#818cf8', color: '#ffffff' }}
+              >
+                <UserPlus size={16} /> Add Team Member
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Global Key Metrics Grid - Only show allowed metrics */}
+        <section className={styles.metricsGrid}>
+          {(canManageCourses || canViewAnalytics) && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Total Courses</span>
+                <span className={styles.metricValue}>{metrics.totalCourses}</span>
+                <span className={styles.metricSubtext}>
+                  {metrics.activeCourses} Active • {metrics.totalStudentsEnrolled} Enrolled
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#eff6ff', color: '#2563eb' }}>
+                <BookOpen size={24} />
+              </div>
+            </div>
+          )}
+
+          {(canManageTraining || canViewAnalytics) && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Training & Internships</span>
+                <span className={styles.metricValue}>{metrics.totalPrograms}</span>
+                <span className={styles.metricSubtext}>
+                  {metrics.activeInternships} Open • {metrics.totalTrainingApplicants} Applicants
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#ecfdf5', color: '#059669' }}>
+                <GraduationCap size={24} />
+              </div>
+            </div>
+          )}
+
+          {(canManageCareers || canViewAnalytics) && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Career Openings</span>
+                <span className={styles.metricValue}>{metrics.totalJobs}</span>
+                <span className={styles.metricSubtext}>
+                  {metrics.activeJobs} Active • {metrics.totalCareerApplicants} Applications
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#faf5ff', color: '#7c3aed' }}>
+                <Briefcase size={24} />
+              </div>
+            </div>
+          )}
+
+          {canManageTeam && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Staff & Team</span>
+                <span className={styles.metricValue}>{metrics.totalTeam}</span>
+                <span className={styles.metricSubtext}>
+                  {metrics.activeTeam} Active Staff • HR/Sales/Content
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#eef2ff', color: '#4f46e5' }}>
+                <Users size={24} />
+              </div>
+            </div>
+          )}
+
+          {(canViewAnalytics || isSuper) && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Platform Status</span>
+                <span className={styles.metricValue} style={{ color: '#10b981', fontSize: '24px' }}>
+                  Operational
+                </span>
+                <span className={styles.metricSubtext} style={{ color: '#64748b' }}>
+                  Mongo Atlas Connected
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#f0fdf4', color: '#10b981' }}>
+                <ShieldCheck size={24} />
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Navigation Tabs - Only show tabs the admin has access to */}
+        <nav className={styles.tabsContainer}>
+          {canViewAnalytics && (
             <button
               onClick={() => {
-                setEditingCourse(null);
-                setCourseModalOpen(true);
+                setActiveTab('overview');
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
               }}
-              className={styles.primaryActionBtn}
+              className={`${styles.tabBtn} ${activeTab === 'overview' ? styles.tabBtnActive : ''}`}
             >
-              <Plus size={16} /> Add New Course
+              <TrendingUp size={16} />
+              <span>Overview & Activity</span>
             </button>
+          )}
 
+          {canManageCourses && (
             <button
               onClick={() => {
-                setEditingTraining(null);
-                setTrainingModalOpen(true);
+                setActiveTab('courses');
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
               }}
-              className={styles.secondaryActionBtn}
+              className={`${styles.tabBtn} ${activeTab === 'courses' ? styles.tabBtnActive : ''}`}
             >
-              <Plus size={16} /> Add Internship
+              <BookOpen size={16} />
+              <span>Courses</span>
+              <span className={styles.tabCountPill}>{courses.length}</span>
             </button>
+          )}
 
+          {canManageTraining && (
             <button
               onClick={() => {
-                setEditingCareer(null);
-                setCareerModalOpen(true);
+                setActiveTab('training');
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
               }}
-              className={styles.secondaryActionBtn}
+              className={`${styles.tabBtn} ${activeTab === 'training' ? styles.tabBtnActive : ''}`}
             >
-              <Plus size={16} /> Post Career
+              <GraduationCap size={16} />
+              <span>Training & Internship</span>
+              <span className={styles.tabCountPill}>{trainingPrograms.length}</span>
             </button>
+          )}
 
+          {canManageCareers && (
+            <button
+              onClick={() => {
+                setActiveTab('careers');
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
+              }}
+              className={`${styles.tabBtn} ${activeTab === 'careers' ? styles.tabBtnActive : ''}`}
+            >
+              <Briefcase size={16} />
+              <span>Careers</span>
+              <span className={styles.tabCountPill}>{careers.length}</span>
+            </button>
+          )}
+
+          {canManageTeam && (
             <button
               onClick={() => {
                 setActiveTab('team');
-                setEditingMember(null);
-                setTeamModalOpen(true);
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
               }}
-              className={styles.secondaryActionBtn}
-              style={{ background: 'rgba(99, 102, 241, 0.3)', borderColor: '#818cf8', color: '#ffffff' }}
+              className={`${styles.tabBtn} ${activeTab === 'team' ? styles.tabBtnActive : ''}`}
             >
-              <UserPlus size={16} /> Add Team Member
+              <Users size={16} />
+              <span>Team & Access</span>
+              <span className={styles.tabCountPill}>{teamMembers.length}</span>
             </button>
-          </div>
-        </section>
-
-        {/* Global Key Metrics Grid */}
-        <section className={styles.metricsGrid}>
-          <div className={styles.metricCard}>
-            <div className={styles.metricInfo}>
-              <span className={styles.metricLabel}>Total Courses</span>
-              <span className={styles.metricValue}>{metrics.totalCourses}</span>
-              <span className={styles.metricSubtext}>
-                {metrics.activeCourses} Active • {metrics.totalStudentsEnrolled} Enrolled
-              </span>
-            </div>
-            <div className={styles.metricIconWrapper} style={{ background: '#eff6ff', color: '#2563eb' }}>
-              <BookOpen size={24} />
-            </div>
-          </div>
-
-          <div className={styles.metricCard}>
-            <div className={styles.metricInfo}>
-              <span className={styles.metricLabel}>Training & Internships</span>
-              <span className={styles.metricValue}>{metrics.totalPrograms}</span>
-              <span className={styles.metricSubtext}>
-                {metrics.activeInternships} Open • {metrics.totalTrainingApplicants} Applicants
-              </span>
-            </div>
-            <div className={styles.metricIconWrapper} style={{ background: '#ecfdf5', color: '#059669' }}>
-              <GraduationCap size={24} />
-            </div>
-          </div>
-
-          <div className={styles.metricCard}>
-            <div className={styles.metricInfo}>
-              <span className={styles.metricLabel}>Career Openings</span>
-              <span className={styles.metricValue}>{metrics.totalJobs}</span>
-              <span className={styles.metricSubtext}>
-                {metrics.activeJobs} Active • {metrics.totalCareerApplicants} Applications
-              </span>
-            </div>
-            <div className={styles.metricIconWrapper} style={{ background: '#faf5ff', color: '#7c3aed' }}>
-              <Briefcase size={24} />
-            </div>
-          </div>
-
-          <div className={styles.metricCard}>
-            <div className={styles.metricInfo}>
-              <span className={styles.metricLabel}>Staff & Team</span>
-              <span className={styles.metricValue}>{metrics.totalTeam}</span>
-              <span className={styles.metricSubtext}>
-                {metrics.activeTeam} Active Staff • HR/Sales/Content
-              </span>
-            </div>
-            <div className={styles.metricIconWrapper} style={{ background: '#eef2ff', color: '#4f46e5' }}>
-              <Users size={24} />
-            </div>
-          </div>
-
-          <div className={styles.metricCard}>
-            <div className={styles.metricInfo}>
-              <span className={styles.metricLabel}>Platform Status</span>
-              <span className={styles.metricValue} style={{ color: '#10b981', fontSize: '24px' }}>
-                Operational
-              </span>
-              <span className={styles.metricSubtext} style={{ color: '#64748b' }}>
-                Mongo Atlas Connected
-              </span>
-            </div>
-            <div className={styles.metricIconWrapper} style={{ background: '#f0fdf4', color: '#10b981' }}>
-              <ShieldCheck size={24} />
-            </div>
-          </div>
-        </section>
-
-        {/* Navigation Tabs */}
-        <nav className={styles.tabsContainer}>
-          <button
-            onClick={() => {
-              setActiveTab('overview');
-              setSearchQuery('');
-              setFilterCategory('all');
-              setFilterStatus('all');
-            }}
-            className={`${styles.tabBtn} ${activeTab === 'overview' ? styles.tabBtnActive : ''}`}
-          >
-            <TrendingUp size={16} />
-            <span>Overview & Activity</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('courses');
-              setSearchQuery('');
-              setFilterCategory('all');
-              setFilterStatus('all');
-            }}
-            className={`${styles.tabBtn} ${activeTab === 'courses' ? styles.tabBtnActive : ''}`}
-          >
-            <BookOpen size={16} />
-            <span>Courses</span>
-            <span className={styles.tabCountPill}>{courses.length}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('training');
-              setSearchQuery('');
-              setFilterCategory('all');
-              setFilterStatus('all');
-            }}
-            className={`${styles.tabBtn} ${activeTab === 'training' ? styles.tabBtnActive : ''}`}
-          >
-            <GraduationCap size={16} />
-            <span>Training & Internship</span>
-            <span className={styles.tabCountPill}>{trainingPrograms.length}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('careers');
-              setSearchQuery('');
-              setFilterCategory('all');
-              setFilterStatus('all');
-            }}
-            className={`${styles.tabBtn} ${activeTab === 'careers' ? styles.tabBtnActive : ''}`}
-          >
-            <Briefcase size={16} />
-            <span>Careers</span>
-            <span className={styles.tabCountPill}>{careers.length}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('team');
-              setSearchQuery('');
-              setFilterCategory('all');
-              setFilterStatus('all');
-            }}
-            className={`${styles.tabBtn} ${activeTab === 'team' ? styles.tabBtnActive : ''}`}
-          >
-            <Users size={16} />
-            <span>Team & Access</span>
-            <span className={styles.tabCountPill}>{teamMembers.length}</span>
-          </button>
+          )}
         </nav>
 
         {/* TAB 1: OVERVIEW & RECENT ACTIVITY */}
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && canViewAnalytics && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
               {/* Courses Snapshot */}
-              <div className={styles.tableContainer} style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <BookOpen size={18} color="#2563eb" /> Active Courses Snapshot
-                  </h3>
-                  <button
-                    onClick={() => setActiveTab('courses')}
-                    style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                  >
-                    View All ({courses.length}) &rarr;
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {courses.slice(0, 4).map((c) => (
-                    <div
-                      key={c.id}
-                      style={{
-                        padding: '12px 14px',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{c.title}</div>
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                          {c.category} • {c.duration} • ₹{c.price.toLocaleString()}
-                        </div>
-                      </div>
-                      <span className={`${styles.statusBadge} ${c.status === 'active' ? styles.statusActive : styles.statusDraft}`}>
-                        {c.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Training & Internship Snapshot */}
-              <div className={styles.tableContainer} style={{ padding: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <GraduationCap size={18} color="#059669" /> Internships & Training Drives
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {canManageCourses && (
+                <div className={styles.tableContainer} style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <BookOpen size={18} color="#2563eb" /> Active Courses Snapshot
+                    </h3>
                     <button
-                      onClick={() => {
-                        setActiveTab('training');
-                        setEditingTraining(null);
-                        setTrainingModalOpen(true);
-                      }}
-                      className={styles.quickAddMiniBtn}
-                      title="Add New Program"
+                      onClick={() => setActiveTab('courses')}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
-                      <Plus size={13} /> Add Program
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('training')}
-                      style={{ background: 'none', border: 'none', color: '#059669', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                    >
-                      View All ({trainingPrograms.length}) &rarr;
+                      View All ({courses.length}) &rarr;
                     </button>
                   </div>
-                </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {trainingPrograms.slice(0, 4).map((t) => (
-                    <div
-                      key={t.id}
-                      style={{
-                        padding: '12px 14px',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{t.title}</div>
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                          {t.domain} • {t.mode.toUpperCase()} • {t.duration}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {courses.slice(0, 4).map((c) => (
+                      <div
+                        key={c.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: '#f8fafc',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{c.title}</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            {c.category} • {c.duration} • ₹{c.price.toLocaleString()}
+                          </div>
                         </div>
-                      </div>
-                      <span className={`${styles.statusBadge} ${t.status === 'open' ? styles.statusActive : styles.statusClosed}`}>
-                        {t.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Careers Openings Snapshot */}
-              <div className={styles.tableContainer} style={{ padding: '24px', gridColumn: 'span 2' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Briefcase size={18} color="#7c3aed" /> Current Job & Mentor Openings
-                  </h3>
-                  <button
-                    onClick={() => setActiveTab('careers')}
-                    style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                  >
-                    View All ({careers.length}) &rarr;
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-                  {careers.slice(0, 4).map((job) => (
-                    <div
-                      key={job.id}
-                      style={{
-                        padding: '14px 16px',
-                        background: '#f8fafc',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{job.title}</div>
-                        <div style={{ fontSize: '12px', color: '#64748b', margin: '4px 0' }}>
-                          {job.department} • {job.location}
-                        </div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#10b981' }}>{job.salary}</div>
-                      </div>
-                      <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', color: '#64748b' }}>{job.applicantsCount} Applicants</span>
-                        <span className={`${styles.statusBadge} ${job.status === 'active' ? styles.statusActive : styles.statusClosed}`}>
-                          {job.status}
+                        <span className={`${styles.statusBadge} ${c.status === 'active' ? styles.statusActive : styles.statusDraft}`}>
+                          {c.status}
                         </span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Training & Internship Snapshot */}
+              {canManageTraining && (
+                <div className={styles.tableContainer} style={{ padding: '24px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <GraduationCap size={18} color="#059669" /> Internships & Training Drives
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => {
+                          setActiveTab('training');
+                          setEditingTraining(null);
+                          setTrainingModalOpen(true);
+                        }}
+                        className={styles.quickAddMiniBtn}
+                        title="Add New Program"
+                      >
+                        <Plus size={13} /> Add Program
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('training')}
+                        style={{ background: 'none', border: 'none', color: '#059669', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                      >
+                        View All ({trainingPrograms.length}) &rarr;
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {trainingPrograms.slice(0, 4).map((t) => (
+                      <div
+                        key={t.id}
+                        style={{
+                          padding: '12px 14px',
+                          background: '#f8fafc',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{t.title}</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            {t.domain} • {t.mode.toUpperCase()} • {t.duration}
+                          </div>
+                        </div>
+                        <span className={`${styles.statusBadge} ${t.status === 'open' ? styles.statusActive : styles.statusClosed}`}>
+                          {t.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Careers Openings Snapshot */}
+              {canManageCareers && (
+                <div className={styles.tableContainer} style={{ padding: '24px', gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Briefcase size={18} color="#7c3aed" /> Current Job & Mentor Openings
+                    </h3>
+                    <button
+                      onClick={() => setActiveTab('careers')}
+                      style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      View All ({careers.length}) &rarr;
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+                    {careers.slice(0, 4).map((job) => (
+                      <div
+                        key={job.id}
+                        style={{
+                          padding: '14px 16px',
+                          background: '#f8fafc',
+                          borderRadius: '12px',
+                          border: '1px solid #e2e8f0',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{job.title}</div>
+                          <div style={{ fontSize: '12px', color: '#64748b', margin: '4px 0' }}>
+                            {job.department} • {job.location}
+                          </div>
+                          <div style={{ fontSize: '12px', fontWeight: 600, color: '#10b981' }}>{job.salary}</div>
+                        </div>
+                        <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '11px', color: '#64748b' }}>{job.applicantsCount} Applicants</span>
+                          <span className={`${styles.statusBadge} ${job.status === 'active' ? styles.statusActive : styles.statusClosed}`}>
+                            {job.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!canManageCourses && !canManageTraining && !canManageCareers && (
+                <div className={styles.tableContainer} style={{ padding: '32px', textAlign: 'center', gridColumn: 'span 2' }}>
+                  <TrendingUp size={36} color="#3b82f6" style={{ margin: '0 auto 12px' }} />
+                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
+                    Platform Overview & Analytics
+                  </h3>
+                  <p style={{ fontSize: '14px', color: '#64748b', maxWidth: '460px', margin: '0 auto' }}>
+                    You have view access to monitor system analytics, platform activity, and operational statistics.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* TAB 2: COURSES MANAGEMENT */}
-        {activeTab === 'courses' && (
+        {activeTab === 'courses' && canManageCourses && (
           <div>
             {/* Filter & Search Toolbar */}
             <div className={styles.controlBar}>
@@ -1109,15 +1292,17 @@ export default function SuperAdminDashboard() {
                   <option value="archived">Archived</option>
                 </select>
 
-                <button
-                  onClick={() => {
-                    setEditingCourse(null);
-                    setCourseModalOpen(true);
-                  }}
-                  className={styles.primaryActionBtn}
-                >
-                  <Plus size={16} /> New Course
-                </button>
+                {canManageCourses && (
+                  <button
+                    onClick={() => {
+                      setEditingCourse(null);
+                      setCourseModalOpen(true);
+                    }}
+                    className={styles.primaryActionBtn}
+                  >
+                    <Plus size={16} /> New Course
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1191,23 +1376,27 @@ export default function SuperAdminDashboard() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
-                            <button
-                              onClick={() => {
-                                setEditingCourse(c);
-                                setCourseModalOpen(true);
-                              }}
-                              className={styles.editRowBtn}
-                              title="Edit Course"
-                            >
-                              <Edit2 size={13} /> Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCourse(c.id, c.title)}
-                              className={styles.deleteRowBtn}
-                              title="Delete Course"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {canManageCourses && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingCourse(c);
+                                    setCourseModalOpen(true);
+                                  }}
+                                  className={styles.editRowBtn}
+                                  title="Edit Course"
+                                >
+                                  <Edit2 size={13} /> Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCourse(c.id, c.title)}
+                                  className={styles.deleteRowBtn}
+                                  title="Delete Course"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1220,7 +1409,7 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* TAB 3: TRAINING & INTERNSHIP MANAGEMENT */}
-        {activeTab === 'training' && (
+        {activeTab === 'training' && canManageTraining && (
           <div>
             {/* Filter & Search Toolbar */}
             <div className={styles.controlBar}>
@@ -1257,16 +1446,18 @@ export default function SuperAdminDashboard() {
                   <option value="closed">Closed</option>
                 </select>
 
-                <button
-                  onClick={() => {
-                    setEditingTraining(null);
-                    setTrainingModalOpen(true);
-                  }}
-                  className={styles.primaryActionBtn}
-                  style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
-                >
-                  <Plus size={16} /> Add Training &amp; Internship
-                </button>
+                {canManageTraining && (
+                  <button
+                    onClick={() => {
+                      setEditingTraining(null);
+                      setTrainingModalOpen(true);
+                    }}
+                    className={styles.primaryActionBtn}
+                    style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
+                  >
+                    <Plus size={16} /> Add Training &amp; Internship
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1363,16 +1554,18 @@ export default function SuperAdminDashboard() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
-                            <button
-                              onClick={() => {
-                                setEditingTraining(t);
-                                setTrainingModalOpen(true);
-                              }}
-                              className={styles.editRowBtn}
-                              title="Edit Program Details"
-                            >
-                              <Edit2 size={13} /> Edit
-                            </button>
+                            {canManageTraining && (
+                              <button
+                                onClick={() => {
+                                  setEditingTraining(t);
+                                  setTrainingModalOpen(true);
+                                }}
+                                className={styles.editRowBtn}
+                                title="Edit Program Details"
+                              >
+                                <Edit2 size={13} /> Edit
+                              </button>
+                            )}
 
                             <Link
                               href="/training-and-internship"
@@ -1384,13 +1577,15 @@ export default function SuperAdminDashboard() {
                               <ExternalLink size={13} /> View
                             </Link>
 
-                            <button
-                              onClick={() => handleDeleteTraining(t.id, t.title)}
-                              className={styles.deleteRowBtn}
-                              title="Delete Program"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {canManageTraining && (
+                              <button
+                                onClick={() => handleDeleteTraining(t.id, t.title)}
+                                className={styles.deleteRowBtn}
+                                title="Delete Program"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1403,7 +1598,7 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* TAB 4: CAREERS MANAGEMENT */}
-        {activeTab === 'careers' && (
+        {activeTab === 'careers' && canManageCareers && (
           <div>
             {/* Filter & Search Toolbar */}
             <div className={styles.controlBar}>
@@ -1439,15 +1634,17 @@ export default function SuperAdminDashboard() {
                   <option value="closed">Closed</option>
                 </select>
 
-                <button
-                  onClick={() => {
-                    setEditingCareer(null);
-                    setCareerModalOpen(true);
-                  }}
-                  className={styles.primaryActionBtn}
-                >
-                  <Plus size={16} /> Post Career
-                </button>
+                {canManageCareers && (
+                  <button
+                    onClick={() => {
+                      setEditingCareer(null);
+                      setCareerModalOpen(true);
+                    }}
+                    className={styles.primaryActionBtn}
+                  >
+                    <Plus size={16} /> Post Career
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1518,23 +1715,27 @@ export default function SuperAdminDashboard() {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
-                            <button
-                              onClick={() => {
-                                setEditingCareer(job);
-                                setCareerModalOpen(true);
-                              }}
-                              className={styles.editRowBtn}
-                              title="Edit Job"
-                            >
-                              <Edit2 size={13} /> Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCareer(job.id, job.title)}
-                              className={styles.deleteRowBtn}
-                              title="Delete Job"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {canManageCareers && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingCareer(job);
+                                    setCareerModalOpen(true);
+                                  }}
+                                  className={styles.editRowBtn}
+                                  title="Edit Job"
+                                >
+                                  <Edit2 size={13} /> Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteCareer(job.id, job.title)}
+                                  className={styles.deleteRowBtn}
+                                  title="Delete Job"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1547,7 +1748,7 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* TAB 5: TEAM & PERMISSIONS MANAGEMENT (SUPER ADMIN STRICT GUARD) */}
-        {activeTab === 'team' && (
+        {activeTab === 'team' && canManageTeam && (
           <div>
             {/* Filter & Search Toolbar */}
             <div className={styles.controlBar}>
@@ -1785,7 +1986,7 @@ export default function SuperAdminDashboard() {
       </main>
 
       {/* COURSE CREATE/EDIT MODAL */}
-      {courseModalOpen && (
+      {courseModalOpen && canManageCourses && (
         <CourseFormModal
           course={editingCourse}
           onClose={() => {
@@ -1797,7 +1998,7 @@ export default function SuperAdminDashboard() {
       )}
 
       {/* TRAINING CREATE/EDIT MODAL */}
-      {trainingModalOpen && (
+      {trainingModalOpen && canManageTraining && (
         <TrainingFormModal
           program={editingTraining}
           onClose={() => {
@@ -1809,7 +2010,7 @@ export default function SuperAdminDashboard() {
       )}
 
       {/* CAREER CREATE/EDIT MODAL */}
-      {careerModalOpen && (
+      {careerModalOpen && canManageCareers && (
         <CareerFormModal
           career={editingCareer}
           onClose={() => {
@@ -1821,7 +2022,7 @@ export default function SuperAdminDashboard() {
       )}
 
       {/* TEAM MEMBER CREATE/EDIT MODAL */}
-      {teamModalOpen && (
+      {teamModalOpen && canManageTeam && (
         <TeamMemberModal
           member={editingMember}
           onClose={() => {

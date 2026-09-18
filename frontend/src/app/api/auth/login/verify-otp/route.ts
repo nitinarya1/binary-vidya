@@ -92,6 +92,10 @@ export async function POST(req: Request) {
         phone: user.phone,
         role: user.role,
         avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {
