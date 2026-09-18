@@ -491,6 +491,12 @@ export default function SuperAdminDashboard() {
       return;
     }
     const nextStatus = member.teamStatus === 'active' ? 'suspended' : 'active';
+
+    // Optimistic UI update so the status immediately flips to "Suspended" or "Active"
+    setTeamMembers((prev) =>
+      prev.map((m) => (m.id === member.id ? { ...m, teamStatus: nextStatus } : m))
+    );
+
     try {
       const res = await fetch('/api/admin/team', {
         method: 'PUT',
@@ -502,10 +508,12 @@ export default function SuperAdminDashboard() {
         setNotice({ type: 'success', text: `Account status updated to ${nextStatus}.` });
         fetchData();
       } else {
-        setNotice({ type: 'error', text: data.message });
+        setNotice({ type: 'error', text: data.message || 'Failed to update status' });
+        fetchData();
       }
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message });
+      fetchData();
     }
   };
 
@@ -1671,8 +1679,20 @@ export default function SuperAdminDashboard() {
                           <td>
                             <div className={styles.permPillList}>
                               {member.isSuperAdmin ? (
-                                <span className={`${styles.permPill} ${styles.permPillGranted}`} style={{ background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }}>
-                                  <ShieldCheck size={12} /> Full System Access (Root)
+                                <span
+                                  className={`${styles.permPill} ${member.teamStatus === 'suspended' ? styles.permPillDenied : styles.permPillGranted}`}
+                                  style={
+                                    member.teamStatus === 'suspended'
+                                      ? { background: '#fef2f2', color: '#dc2626', borderColor: '#fecaca', textDecoration: 'none', opacity: 1 }
+                                      : { background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }
+                                  }
+                                >
+                                  <ShieldCheck size={12} />{' '}
+                                  {member.teamStatus === 'suspended'
+                                    ? 'Access Suspended'
+                                    : member.isRootSuperAdmin
+                                    ? 'Full System Access (Root)'
+                                    : 'Full System Access (Super Admin)'}
                                 </span>
                               ) : (
                                 <>
@@ -1697,13 +1717,13 @@ export default function SuperAdminDashboard() {
                           </td>
 
                           <td>
-                            {member.teamStatus === 'active' ? (
-                              <span className={styles.statusActivePill}>
-                                <span className={styles.statusActiveDot} /> Active
-                              </span>
-                            ) : (
+                            {member.teamStatus === 'suspended' ? (
                               <span className={styles.statusSuspendedPill}>
                                 <span className={styles.statusSuspendedDot} /> Suspended
+                              </span>
+                            ) : (
+                              <span className={styles.statusActivePill}>
+                                <span className={styles.statusActiveDot} /> Active
                               </span>
                             )}
                           </td>
@@ -1733,13 +1753,13 @@ export default function SuperAdminDashboard() {
                                     onClick={() => handleToggleTeamStatus(member)}
                                     className={styles.editRowBtn}
                                     style={{
-                                      background: member.teamStatus === 'active' ? '#fff7ed' : '#ecfdf5',
-                                      borderColor: member.teamStatus === 'active' ? '#fed7aa' : '#a7f3d0',
-                                      color: member.teamStatus === 'active' ? '#c2410c' : '#047857',
+                                      background: member.teamStatus === 'suspended' ? '#ecfdf5' : '#fff7ed',
+                                      borderColor: member.teamStatus === 'suspended' ? '#a7f3d0' : '#fed7aa',
+                                      color: member.teamStatus === 'suspended' ? '#047857' : '#c2410c',
                                     }}
-                                    title={member.teamStatus === 'active' ? 'Suspend Account' : 'Activate Account'}
+                                    title={member.teamStatus === 'suspended' ? 'Activate Account' : 'Suspend Account'}
                                   >
-                                    {member.teamStatus === 'active' ? 'Suspend' : 'Activate'}
+                                    {member.teamStatus === 'suspended' ? 'Activate' : 'Suspend'}
                                   </button>
 
                                   <button

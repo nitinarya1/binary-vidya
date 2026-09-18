@@ -39,6 +39,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (user.teamStatus === 'suspended') {
+      return NextResponse.json(
+        { success: false, message: 'Your account has been suspended by the Super Administrator. Please contact management.' },
+        { status: 403 }
+      );
+    }
+
     const otpRecord = await Otp.findOne({
       email: normalizedEmail,
       otp: cleanOtp,

@@ -30,10 +30,10 @@ async function authenticateSuperAdmin(req: Request) {
     return { error: 'Administrator account not found', status: 404 };
   }
 
-  // STRICT REQUIREMENT: Only Super Administrator can view, create, edit, or delete team members
-  if (!isSuperAdminEmail(requester.email)) {
+  // STRICT REQUIREMENT: Only active Super Administrator can view, create, edit, or delete team members
+  if (!isSuperAdminEmail(requester.email) || requester.teamStatus === 'suspended') {
     return {
-      error: 'Forbidden: Only Super Administrator accounts can manage staff teams and access permissions.',
+      error: 'Forbidden: Your administrator account has been suspended or you do not have permission.',
       status: 403,
     };
   }
@@ -247,13 +247,15 @@ export async function PUT(req: Request) {
       );
     }
 
-    if (name) member.name = name.trim();
-    if (phone !== undefined) member.phone = phone.trim() || undefined;
-    if (department && !isRoot) member.department = department;
-    if (teamStatus && !isRoot) member.teamStatus = teamStatus;
+    const updateFields: any = { isTeamMember: true };
+
+    if (name) updateFields.name = name.trim();
+    if (phone !== undefined) updateFields.phone = phone.trim() || undefined;
+    if (department && !isRoot) updateFields.department = department;
+    if (teamStatus && !isRoot) updateFields.teamStatus = teamStatus;
 
     if (permissions && !isRoot) {
-      member.permissions = {
+      updateFields.permissions = {
         manageCourses: Boolean(permissions.manageCourses),
         manageTraining: Boolean(permissions.manageTraining),
         manageCareers: Boolean(permissions.manageCareers),
@@ -265,25 +267,28 @@ export async function PUT(req: Request) {
 
     if (password && password.trim().length >= 6) {
       const salt = await bcrypt.genSalt(10);
-      member.password = await bcrypt.hash(password.trim(), salt);
+      updateFields.password = await bcrypt.hash(password.trim(), salt);
     }
 
-    member.isTeamMember = true;
-    await member.save();
+    const updated = await User.findByIdAndUpdate(
+      id,
+      { $set: updateFields },
+      { new: true, runValidators: false }
+    );
 
     return NextResponse.json({
       success: true,
-      message: `Team member "${member.name}" updated successfully!`,
+      message: `Account status updated successfully to "${updated?.teamStatus || teamStatus}"!`,
       member: {
-        id: member._id.toString(),
-        name: member.name,
-        email: member.email,
-        phone: member.phone,
-        department: member.department,
-        permissions: member.permissions,
-        teamStatus: member.teamStatus,
-        role: member.role,
-        updatedAt: member.updatedAt,
+        id: updated?._id?.toString() || member._id.toString(),
+        name: updated?.name || member.name,
+        email: updated?.email || member.email,
+        phone: updated?.phone || member.phone,
+        department: updated?.department || member.department,
+        permissions: updated?.permissions || member.permissions,
+        teamStatus: updated?.teamStatus || teamStatus || 'active',
+        role: updated?.role || member.role,
+        updatedAt: updated?.updatedAt,
       },
     });
   } catch (error: any) {

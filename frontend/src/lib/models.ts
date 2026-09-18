@@ -84,6 +84,22 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    isTeamMember: {
+      type: Boolean,
+      default: false,
+    },
+    department: {
+      type: String,
+      default: '',
+    },
+    permissions: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+    teamStatus: {
+      type: String,
+      default: 'active',
+    },
   },
   {
     timestamps: true,
@@ -95,6 +111,10 @@ if (mongoose.models.User) {
   mongoose.models.User.schema.add({
     dateOfBirth: { type: String, default: '' },
     gender: { type: String, default: '' },
+    isTeamMember: { type: Boolean, default: false },
+    department: { type: String, default: '' },
+    permissions: { type: Schema.Types.Mixed, default: {} },
+    teamStatus: { type: String, default: 'active' },
   });
 }
 

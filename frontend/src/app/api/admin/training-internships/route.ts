@@ -29,7 +29,7 @@ async function authenticateAdmin(req: Request) {
   }
 
   const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
-  const isSuper = isSuperAdminEmail(requester.email);
+  const isSuper = isSuperAdminEmail(requester.email) && requester.teamStatus !== 'suspended';
   const hasTrainingPerm = requester.isTeamMember && requester.teamStatus !== 'suspended' && requester.permissions?.manageTraining;
 
   if (!isSuper && !hasTrainingPerm) {
