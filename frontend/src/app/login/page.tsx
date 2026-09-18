@@ -107,8 +107,9 @@ export default function LoginPage() {
 
       // Super Admin 2FA requirement
       if (result.requireOtp) {
+        if (result.email) setEmail(result.email);
         if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
-        setSuccessMsg(result.message || 'Super Admin 4-digit OTP sent to your registered email!');
+        setSuccessMsg(result.message || 'A 4-digit verification code has been sent to your registered email!');
         setMode('superadmin-otp');
         setOtpDigits(['', '', '', '']);
         setResendCooldown(60);

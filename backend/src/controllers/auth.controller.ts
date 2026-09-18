@@ -186,41 +186,81 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const isSuperAdmin = user.email?.toLowerCase().trim() === 'aryar0779@gmail.com';
-    if (isSuperAdmin && user.role !== 'admin') {
+    const normalizedEmail = (user.email || '').toLowerCase().trim();
+    const isSuperAdmin = normalizedEmail === 'aryar0779@gmail.com';
+    const rawDoc: any = (user as any)._doc || user;
+    const isTeamMember = Boolean(
+      rawDoc.isTeamMember ||
+      user.isTeamMember ||
+      rawDoc.role === 'admin' ||
+      user.role === 'admin' ||
+      rawDoc.department ||
+      user.department ||
+      rawDoc.permissions?.manageCourses ||
+      user.permissions?.manageCourses ||
+      rawDoc.permissions?.manageTraining ||
+      user.permissions?.manageTraining ||
+      rawDoc.permissions?.manageCareers ||
+      user.permissions?.manageCareers ||
+      rawDoc.permissions?.manageTeam ||
+      user.permissions?.manageTeam ||
+      rawDoc.permissions?.viewAnalytics ||
+      user.permissions?.viewAnalytics
+    );
+
+    if ((isSuperAdmin || isTeamMember) && user.role !== 'admin') {
       user.role = 'admin';
-      await user.save();
-    } else if (!isSuperAdmin && user.role === 'admin') {
-      user.role = 'student';
+      user.isTeamMember = true;
       await user.save();
     }
 
-    if (isSuperAdmin) {
+    if (user.teamStatus === 'suspended') {
+      res.status(403).json({
+        success: false,
+        message: 'Your staff account has been suspended by the Super Administrator. Please contact management.',
+      });
+      return;
+    }
+
+    // 2FA OTP for both Super Admin and Team Members
+    if (isSuperAdmin || isTeamMember) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-      const normalizedEmail = 'aryar0779@gmail.com';
+      const targetEmail = isSuperAdmin ? 'aryar0779@gmail.com' : normalizedEmail;
+      const otpPurpose = isSuperAdmin ? 'SUPER_ADMIN_LOGIN' : 'ADMIN_LOGIN';
 
       await Otp.findOneAndUpdate(
-        { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
+        { email: normalizedEmail, purpose: otpPurpose },
         {
           email: normalizedEmail,
           otp: otpCode,
-          purpose: 'SUPER_ADMIN_LOGIN',
+          purpose: otpPurpose,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
         { upsert: true, new: true }
       );
 
-      sendOtpEmail(normalizedEmail, otpCode, 'Super Admin Login Verification Code').catch((err) => {
-        console.error('[Background Send Super Admin Login OTP Error]:', err);
+      const emailSubject = isSuperAdmin
+        ? 'Super Admin Login Verification Code'
+        : 'Team Member Login Verification Code';
+
+      sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err) => {
+        console.error('[Background Send Login OTP Error]:', err);
       });
+
+      const emailParts = targetEmail.split('@');
+      const localPart = emailParts[0];
+      const maskedEmail = `${localPart[0]}***${localPart[localPart.length - 1]}@${emailParts[1]}`;
 
       res.json({
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        maskedEmail: 'a***9@gmail.com',
-        isSuperAdmin: true,
-        message: 'Super Admin Verification: A 4-digit OTP has been sent to aryar0779@gmail.com!',
+        maskedEmail: maskedEmail,
+        isSuperAdmin: isSuperAdmin,
+        isTeamMember: isTeamMember,
+        message: isSuperAdmin
+          ? `Super Admin Verification: A 4-digit OTP has been sent to ${targetEmail}!`
+          : `Team Verification: A 4-digit OTP has been sent to ${maskedEmail}!`,
       });
       return;
     }
@@ -238,6 +278,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         phone: user.phone,
         role: user.role,
         avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {
@@ -265,8 +309,33 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
     }
 
     const isSuper = normalizedEmail === 'aryar0779@gmail.com';
-    if (!isSuper && user.role !== 'admin') {
-      res.status(403).json({ success: false, message: 'Unauthorized: Super Admin access only' });
+    const rawDoc: any = (user as any)._doc || user;
+    const isTeamMember = Boolean(
+      rawDoc.isTeamMember ||
+      user.isTeamMember ||
+      rawDoc.role === 'admin' ||
+      user.role === 'admin' ||
+      rawDoc.department ||
+      user.department ||
+      rawDoc.permissions?.manageCourses ||
+      user.permissions?.manageCourses ||
+      rawDoc.permissions?.manageTraining ||
+      user.permissions?.manageTraining ||
+      rawDoc.permissions?.manageCareers ||
+      user.permissions?.manageCareers ||
+      rawDoc.permissions?.manageTeam ||
+      user.permissions?.manageTeam ||
+      rawDoc.permissions?.viewAnalytics ||
+      user.permissions?.viewAnalytics
+    );
+
+    if (!isSuper && !isTeamMember && user.role !== 'admin') {
+      res.status(403).json({ success: false, message: 'Unauthorized: Admin access only' });
+      return;
+    }
+
+    if (user.teamStatus === 'suspended') {
+      res.status(403).json({ success: false, message: 'Your account has been suspended by the Super Administrator. Please contact management.' });
       return;
     }
 
@@ -289,8 +358,9 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
 
     await Otp.deleteOne({ _id: otpRecord._id });
 
-    if (isSuper && user.role !== 'admin') {
+    if (user.role !== 'admin' && (isSuper || isTeamMember)) {
       user.role = 'admin';
+      user.isTeamMember = true;
       await user.save();
     }
 
@@ -310,6 +380,10 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
         phone: user.phone,
         role: user.role,
         avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {
@@ -418,8 +492,21 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
       }
       if (isSuperAdmin && user.role !== 'admin') {
         user.role = 'admin';
-      } else if (!isSuperAdmin && user.role === 'admin') {
-        user.role = 'student';
+      }
+      const rawUserDoc: any = (user as any)._doc || user;
+      const isTeam = Boolean(
+        rawUserDoc.isTeamMember ||
+        user.isTeamMember ||
+        rawUserDoc.department ||
+        rawUserDoc.permissions?.manageCourses ||
+        rawUserDoc.permissions?.manageTraining ||
+        rawUserDoc.permissions?.manageCareers ||
+        rawUserDoc.permissions?.manageTeam ||
+        rawUserDoc.permissions?.viewAnalytics
+      );
+      if (isTeam && user.role !== 'admin') {
+        user.role = 'admin';
+        user.isTeamMember = true;
       }
       await user.save();
     }
@@ -436,6 +523,10 @@ export const googleLogin = async (req: Request, res: Response): Promise<void> =>
         email: user.email,
         role: user.role,
         avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {
@@ -623,18 +714,42 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
       return;
     }
 
+    const userDoc: any = req.user;
+    const rawDoc: any = userDoc?._doc || userDoc;
+    const isSuper = (rawDoc.email || '').toLowerCase().trim() === 'aryar0779@gmail.com';
+    const isTeamMember = Boolean(
+      rawDoc.isTeamMember ||
+      rawDoc.role === 'admin' ||
+      rawDoc.department ||
+      rawDoc.permissions?.manageCourses ||
+      rawDoc.permissions?.manageTraining ||
+      rawDoc.permissions?.manageCareers ||
+      rawDoc.permissions?.manageTeam ||
+      rawDoc.permissions?.viewAnalytics
+    );
+
+    if ((isSuper || isTeamMember) && rawDoc.role !== 'admin') {
+      await User.findByIdAndUpdate(rawDoc._id, { role: 'admin', isTeamMember: true });
+      rawDoc.role = 'admin';
+      rawDoc.isTeamMember = true;
+    }
+
     res.json({
       success: true,
       user: {
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        phone: req.user.phone,
-        role: req.user.role,
-        avatar: req.user.avatar || '',
-        dateOfBirth: req.user.dateOfBirth || '',
-        gender: req.user.gender || '',
-        authProvider: req.user.authProvider,
+        id: rawDoc._id,
+        name: rawDoc.name,
+        email: rawDoc.email,
+        phone: rawDoc.phone,
+        role: rawDoc.role,
+        avatar: rawDoc.avatar || '',
+        dateOfBirth: rawDoc.dateOfBirth || '',
+        gender: rawDoc.gender || '',
+        authProvider: rawDoc.authProvider,
+        isTeamMember: rawDoc.isTeamMember || false,
+        department: rawDoc.department || '',
+        permissions: rawDoc.permissions || {},
+        teamStatus: rawDoc.teamStatus || 'active',
       },
     });
   } catch (error: any) {
