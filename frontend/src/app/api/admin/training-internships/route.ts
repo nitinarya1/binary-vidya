@@ -56,7 +56,7 @@ const INITIAL_PROGRAMS = [
     sections: FRONTEND_INTERNSHIP_PROGRAM.sections,
     credentials: FRONTEND_INTERNSHIP_PROGRAM.credentials,
     eligibility: FRONTEND_INTERNSHIP_PROGRAM.schedule.flexibility,
-    perks: FRONTEND_INTERNSHIP_PROGRAM.highlights,
+    perks: (FRONTEND_INTERNSHIP_PROGRAM as any).benefits || [],
     deadline: 'Rolling Admissions',
     status: 'open',
     applicantsCount: 128,
@@ -129,7 +129,7 @@ export async function GET(req: Request) {
       // Ensure frontend developer program exists in DB
       const feProg = await TrainingInternship.findOne({ slug: FRONTEND_INTERNSHIP_PROGRAM.slug });
       if (!feProg) {
-        await TrainingInternship.create(INITIAL_PROGRAMS[0]);
+        await TrainingInternship.create(INITIAL_PROGRAMS[0] as any);
       }
     }
 

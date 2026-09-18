@@ -7,16 +7,13 @@ import {
   MapPin,
   Clock,
   IndianRupee,
-  CheckCircle2,
   ArrowRight,
   Sparkles,
   Users,
   Laptop,
-  HeartHandshake,
   Coffee,
   X,
   Send,
-  Building,
 } from 'lucide-react';
 import styles from './careers.module.css';
 

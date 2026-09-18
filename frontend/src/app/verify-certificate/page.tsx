@@ -12,11 +12,7 @@ import {
   CheckCircle2,
   Lock,
   ArrowRight,
-  ExternalLink,
-  ChevronRight,
   Sparkles,
-  Building2,
-  HelpCircle,
 } from 'lucide-react';
 import styles from './verify.module.css';
 

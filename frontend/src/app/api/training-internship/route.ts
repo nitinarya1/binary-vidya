@@ -57,7 +57,7 @@ export async function GET(req: Request) {
             : FRONTEND_INTERNSHIP_PROGRAM.credentials,
           highlights: p.perks && p.perks.length > 0
             ? p.perks
-            : FRONTEND_INTERNSHIP_PROGRAM.highlights,
+            : (FRONTEND_INTERNSHIP_PROGRAM as any).benefits || [],
         };
 
         return NextResponse.json({

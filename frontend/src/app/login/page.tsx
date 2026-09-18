@@ -19,9 +19,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   AlertCircle,
-  KeyRound,
   ArrowLeft,
-  Sparkles,
 } from 'lucide-react';
 
 type AuthMode = 'signin' | 'register' | 'superadmin-otp';
