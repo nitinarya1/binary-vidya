@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import styles from './home.module.css';
 import {
@@ -13,9 +14,8 @@ import {
   Users,
   Award,
   Star,
-  CheckCircle,
+  CheckCircle2,
   LogOut,
-  User as UserIcon,
   Terminal,
   Cpu,
   Cloud,
@@ -30,6 +30,18 @@ import {
   X,
   PlayCircle,
   Zap,
+  Briefcase,
+  Search,
+  FileCheck2,
+  Menu,
+  ChevronDown,
+  Building2,
+  Lock,
+  ArrowUp,
+  CreditCard,
+  Mail,
+  Phone,
+  MapPin,
 } from 'lucide-react';
 
 interface VideoLesson {
@@ -67,13 +79,73 @@ interface CourseItem {
   enrolledCount?: number;
 }
 
+const SAMPLE_CERT_IDS = [
+  'BV-CERT-FRONTEND-2026',
+  'BV-CERT-FULLSTACK-9842',
+  'BV-CERT-DEVOPS-5120',
+  'BV-CERT-AI-3301',
+];
+
+const HIRING_PARTNERS = [
+  'Google',
+  'Microsoft',
+  'Amazon',
+  'Razorpay',
+  'Flipkart',
+  'Swiggy',
+  'Infosys',
+  'TCS',
+  'Zomato',
+  'CRED',
+  'Paytm',
+];
+
+const FAQS = [
+  {
+    q: 'When are the live classes conducted for the Training & Internship program?',
+    a: 'Classes are strictly held on Weekends (Every Saturday and Sunday) to ensure zero conflict with college exams, university schedules, or working hours. In addition, all live sessions are recorded in HD and available 24/7 in your dashboard.',
+  },
+  {
+    q: 'Is the 2-Month Industrial Internship really 100% Free of Cost?',
+    a: 'Yes! The 2-Month Industrial Internship is bundled completely free of charge (₹0 fee) along with the Frontend Developer training tuition (₹2,400). You receive full industrial mentorship, code reviews, and live production experience at no additional charge.',
+  },
+  {
+    q: 'What official credentials do I receive upon program completion?',
+    a: 'Upon successful completion of the training and 2-month internship projects, you receive 4 verifiable credentials: (1) Training Completion Certificate, (2) 2-Month Industrial Internship Experience Letter, (3) Official Letter of Recommendation (LOR), and (4) Comprehensive Project & Course Transcript.',
+  },
+  {
+    q: 'How does the Certificate Verification system work?',
+    a: 'Every certificate and experience letter issued by Binary Vidya contains a unique tamper-proof ID (e.g., BV-CERT-FRONTEND-2026) and a dynamic QR code. Recruiters and employers can instantly verify credential authenticity by entering the ID into our public verification portal.',
+  },
+  {
+    q: 'What payment modes are supported for course and training enrollments?',
+    a: 'We use authentic Razorpay Checkout integration supporting all Indian payment methods including UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards (Visa, Mastercard, RuPay), NetBanking from 50+ banks, and Wallets.',
+  },
+  {
+    q: 'Can I apply for career opportunities and instructor roles at Binary Vidya?',
+    a: 'Absolutely! We are actively expanding our mentor network and engineering team. You can check our open roles on the Careers page and submit your profile directly.',
+  },
+];
+
 export default function HomePage() {
+  const router = useRouter();
   const { user, logout, isLoading, isAdmin } = useAuth();
+
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [categories, setCategories] = useState<string[]>([]);
   const [previewCourse, setPreviewCourse] = useState<CourseItem | null>(null);
+
+  // Verification Search State
+  const [verifyInput, setVerifyInput] = useState<string>('');
+  const [verifyError, setVerifyError] = useState<string>('');
+
+  // Mobile Drawer State
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  // FAQ Accordion State
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   useEffect(() => {
     async function loadCourses() {
@@ -100,675 +172,1146 @@ export default function HomePage() {
     loadCourses();
   }, [selectedCategory]);
 
+  const handleInstantVerify = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanId = verifyInput.trim();
+    if (!cleanId) {
+      setVerifyError('Please enter a valid Certificate ID');
+      return;
+    }
+    setVerifyError('');
+    router.push(`/certificates/${encodeURIComponent(cleanId)}`);
+  };
+
+  const handleSampleVerify = (id: string) => {
+    setVerifyInput(id);
+    setVerifyError('');
+    router.push(`/certificates/${encodeURIComponent(id)}`);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className={styles.container}>
-      {/* Sticky Navigation Bar */}
+      {/* =====================================================================
+          STICKY NAVBAR (Light Mode, Blue Shades UI, Required Action Buttons)
+          ===================================================================== */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
+          {/* Brand Logo with Official Company Logo */}
           <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+            <img
+              src="/images/binary-vidya-logo.png"
+              alt="Binary Vidya - Technical Academy"
+              className={styles.brandLogoImg}
+            />
           </Link>
 
+          {/* Desktop Navigation Links */}
           <div className={styles.navLinks}>
-            <Link
-              href="/training-and-internship"
-              className={styles.navLink}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: '#2563eb',
-                fontWeight: 800,
-                background: '#eff6ff',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid #bfdbfe',
-              }}
-            >
-              <Sparkles size={14} color="#2563eb" />
-              <span>Training &amp; Internship</span>
-              <span
-                style={{
-                  background: '#2563eb',
-                  color: '#fff',
-                  fontSize: '9px',
-                  fontWeight: 900,
-                  padding: '2px 6px',
-                  borderRadius: '100px',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Weekend Batch
-              </span>
-            </Link>
-            <a href="#about" className={styles.navLink}>
-              About Us
-            </a>
+            {/* 1. Course Button */}
             <a href="#courses" className={styles.navLink}>
-              Courses
+              <BookOpen size={16} />
+              <span>Courses</span>
             </a>
-            <a href="#features" className={styles.navLink}>
-              Features
-            </a>
-            <a href="#curriculum" className={styles.navLink}>
-              Curriculum
-            </a>
+
+            {/* 2. Training & Internships Button (Prominent Weekend Badge) */}
+            <Link href="/training-and-internship" className={styles.navTrainingHighlight}>
+              <Sparkles size={15} color="#2563eb" />
+              <span>Training &amp; Internships</span>
+              <span className={styles.navBadgeWeekend}>Weekend Batch</span>
+            </Link>
+
+            {/* 3. Verify Certificate Button */}
+            <Link href="/verify-certificate" className={styles.navVerifyBtn}>
+              <ShieldCheck size={16} color="#0284c7" />
+              <span>Verify Certificate</span>
+            </Link>
+
+            {/* 4. Careers Button */}
+            <Link href="/careers" className={styles.navCareersBtn}>
+              <Briefcase size={15} />
+              <span>Careers</span>
+              <span className={styles.navHiringPill}>Hiring</span>
+            </Link>
           </div>
 
+          {/* User Actions / Auth Controls */}
           <div className={styles.navActions}>
             {isLoading ? (
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Link
-                  href="/my-learning"
-                  id="nav-my-learning-btn"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    background: 'rgba(37, 99, 235, 0.1)',
-                    color: '#2563eb',
-                    border: '1px solid rgba(147, 197, 253, 0.5)',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link href="/my-learning" className={styles.myLearningBtn}>
                   <BookOpen size={15} /> My Learning
                 </Link>
+
                 {isAdmin && (
-                  <Link
-                    href="/admin/dashboard"
-                    id="nav-admin-btn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      background: 'rgba(15, 23, 42, 0.06)',
-                      color: '#0f172a',
-                      border: '1px solid #cbd5e1',
-                      textDecoration: 'none',
-                    }}
-                  >
+                  <Link href="/super-admin" className={styles.adminBtn}>
                     Admin
                   </Link>
                 )}
-                <div className={styles.userPill}>
-                  <Link
-                    href="/profile"
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}
-                    title="View & Edit Profile"
-                  >
-                    <div className={styles.userAvatar}>
-                      {user.avatar ? (
-                        <img src={user.avatar} alt={user.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                      ) : (
-                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
-                      )}
-                    </div>
-                    <div className={styles.userName}>{user.name}</div>
-                  </Link>
-                </div>
+
+                <Link href="/profile" className={styles.userPill} title="Profile Settings">
+                  <div className={styles.userAvatar}>
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={user.name || 'User'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                      />
+                    ) : user.name ? (
+                      user.name.charAt(0).toUpperCase()
+                    ) : (
+                      'U'
+                    )}
+                  </div>
+                  <span className={styles.userName}>{user.name}</span>
+                </Link>
               </div>
             ) : (
               <>
-                <Link href="/login" id="nav-login-link" className={styles.signInBtn}>
+                <Link href="/login" className={styles.signInBtn}>
                   Sign In
                 </Link>
-                <Link href="/login" id="nav-register-link" className={styles.signUpBtn}>
+                <Link href="/login" className={styles.signUpBtn}>
                   Get Started <ArrowRight size={15} />
                 </Link>
               </>
             )}
+
+            {/* Mobile Hamburger Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={styles.mobileMenuToggle}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
+      {/* Mobile Drawer */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
+          <div className={styles.mobileDrawerCard} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.mobileDrawerHeader}>
+              <img
+                src="/images/binary-vidya-logo.png"
+                alt="Binary Vidya"
+                style={{ height: '38px', width: 'auto' }}
+              />
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className={styles.mobileDrawerLinks}>
+              <a
+                href="#courses"
+                className={styles.mobileDrawerLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <BookOpen size={18} color="#2563eb" /> Courses
+              </a>
+
+              <Link
+                href="/training-and-internship"
+                className={`${styles.mobileDrawerLink} ${styles.mobileDrawerLinkHighlight}`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Sparkles size={18} color="#2563eb" /> Training &amp; Internships
+              </Link>
+
+              <Link
+                href="/verify-certificate"
+                className={styles.mobileDrawerLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <ShieldCheck size={18} color="#0284c7" /> Verify Certificate
+              </Link>
+
+              <Link
+                href="/careers"
+                className={styles.mobileDrawerLink}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Briefcase size={18} color="#059669" /> Careers (We're Hiring)
+              </Link>
+
+              {user && (
+                <>
+                  <Link
+                    href="/my-learning"
+                    className={styles.mobileDrawerLink}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <BookOpen size={18} color="#2563eb" /> My Learning Dashboard
+                  </Link>
+                  <Link
+                    href="/profile"
+                    className={styles.mobileDrawerLink}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Users size={18} /> My Profile
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div style={{ marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+              {user ? (
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    border: '1px solid #fecaca',
+                    background: '#fef2f2',
+                    color: '#dc2626',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <Link
+                    href="/login"
+                    className={styles.signInBtn}
+                    style={{ textAlign: 'center' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login"
+                    className={styles.signUpBtn}
+                    style={{ justifyContent: 'center' }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Get Started <ArrowRight size={15} />
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          HERO SECTION (Light Mode + Blue Shades UI)
+          ===================================================================== */}
       <section className={styles.hero}>
-        <div className={styles.heroContent}>
-          <div className={styles.heroTag}>
-            <Sparkles size={15} /> Next-Gen Technical Academy & Masterclasses
-          </div>
-          <h1 className={styles.heroTitle}>
-            Master Computer Science with{' '}
-            <span className={styles.heroGradientText}>Binary Vidya</span>
-          </h1>
-          <p className={styles.heroSubtitle}>
-            Accelerate your engineering career with hands-on roadmaps, interactive code assessments,
-            and industry-verified certifications in Full-Stack, DSA, Cloud, and AI.
-          </p>
+        <div className={styles.heroGlowOrb} />
+        <div className={styles.heroContainer}>
+          {/* Left Column: Authoritative Messaging & CTAs */}
+          <div className={styles.heroLeft}>
+            <div className={styles.heroTag}>
+              <Sparkles size={15} color="#2563eb" />
+              <span>Admissions Open • Weekend Live Batches 2026</span>
+            </div>
 
-          <div className={styles.heroCtaRow}>
-            <Link href="/login" id="hero-cta-start" className={styles.heroPrimaryBtn}>
-              Start Learning Today <ArrowRight size={18} />
-            </Link>
-            <a href="#courses" className={styles.heroSecondaryBtn}>
-              Explore Courses <ChevronRight size={18} />
-            </a>
-          </div>
+            <h1 className={styles.heroTitle}>
+              Accelerate Your Software Career with{' '}
+              <span className={styles.heroGradientText}>Binary Vidya</span>
+            </h1>
 
-          {/* Key Metrics Counter */}
-          <div className={styles.metricsGrid}>
-            <div className={styles.metricCard}>
-              <div className={styles.metricValue}>15,000+</div>
-              <div className={styles.metricLabel}>Active Learners</div>
-            </div>
-            <div className={styles.metricCard}>
-              <div className={styles.metricValue}>120+</div>
-              <div className={styles.metricLabel}>Technical Masterclasses</div>
-            </div>
-            <div className={styles.metricCard}>
-              <div className={styles.metricValue}>96%</div>
-              <div className={styles.metricLabel}>Career Success Rate</div>
-            </div>
-            <div className={styles.metricCard}>
-              <div className={styles.metricValue}>4.9/5</div>
-              <div className={styles.metricLabel}>Student Satisfaction</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Us Section */}
-      <section id="about" className={styles.section}>
-        <div className={styles.sectionHeader}>
-          <div className={styles.sectionBadge}>
-            <BookOpen size={14} /> Who We Are
-          </div>
-          <h2 className={styles.sectionTitle}>Built for Engineers by Engineers</h2>
-          <p className={styles.sectionSubtitle}>
-            Binary Vidya was founded to bridge the gap between academic theory and high-impact
-            production software engineering.
-          </p>
-        </div>
-
-        <div className={styles.aboutGrid}>
-          <div className={styles.aboutTextCard}>
-            <div className={styles.aboutLead}>
-              We transform ambitious learners into world-class software developers through rigorous,
-              project-driven education.
-            </div>
-            <p className={styles.aboutBody}>
-              Traditional education moves too slow for modern tech. At Binary Vidya, every syllabus
-              is continuously updated to match modern industry demands. Whether you are mastering
-              MERN architecture, optimizing algorithms, or orchestrating cloud containers, you write
-              production-grade code from day one.
+            <p className={styles.heroSubtitle}>
+              India's premier modern technical academy. Master modern full-stack web engineering, algorithms, and cloud systems with live weekend masterclasses, 2-month industrial internships, and 4 verified credentials.
             </p>
 
-            <div className={styles.aboutPillars}>
-              <div className={styles.pillarCard}>
-                <div className={styles.pillarIcon}>
-                  <Terminal size={20} />
-                </div>
-                <div className={styles.pillarTitle}>Project-Driven Code</div>
-                <div className={styles.pillarDesc}>
-                  Real-world architecture, API design, unit tests, and CI/CD pipelines.
-                </div>
-              </div>
+            <div className={styles.heroCtaGroup}>
+              <Link href="/training-and-internship" className={styles.heroPrimaryBtn}>
+                <Sparkles size={16} /> Explore Training &amp; Internship
+              </Link>
+              <a href="#courses" className={styles.heroSecondaryBtn}>
+                <BookOpen size={16} /> Browse All Courses
+              </a>
+              <Link href="/verify-certificate" className={styles.heroVerifyLink}>
+                <ShieldCheck size={16} /> Verify Credentials &rarr;
+              </Link>
+            </div>
 
-              <div className={styles.pillarCard}>
-                <div className={styles.pillarIcon}>
-                  <ShieldCheck size={20} />
-                </div>
-                <div className={styles.pillarTitle}>Enterprise Security</div>
-                <div className={styles.pillarDesc}>
-                  End-to-end OAuth, JWT sessions, encrypted storage, and data protection.
-                </div>
+            <div className={styles.heroMetricsBar}>
+              <div className={styles.heroMetricBox}>
+                <span className={styles.heroMetricValue}>15,000+</span>
+                <span className={styles.heroMetricLabel}>Enrolled Engineers</span>
               </div>
-
-              <div className={styles.pillarCard}>
-                <div className={styles.pillarIcon}>
-                  <Award size={20} />
-                </div>
-                <div className={styles.pillarTitle}>Verified Credentials</div>
-                <div className={styles.pillarDesc}>
-                  Shareable, cryptographic digital certifications for LinkedIn and resumes.
-                </div>
+              <div className={styles.heroMetricBox}>
+                <span className={styles.heroMetricValue}>100% Free</span>
+                <span className={styles.heroMetricLabel}>2-Month Internship</span>
               </div>
-
-              <div className={styles.pillarCard}>
-                <div className={styles.pillarIcon}>
-                  <Users size={20} />
-                </div>
-                <div className={styles.pillarTitle}>Peer Mentorship</div>
-                <div className={styles.pillarDesc}>
-                  Live code review sessions, active community Discord, and mentor guidance.
-                </div>
+              <div className={styles.heroMetricBox}>
+                <span className={styles.heroMetricValue}>4 Verified</span>
+                <span className={styles.heroMetricLabel}>Career Credentials</span>
+              </div>
+              <div className={styles.heroMetricBox}>
+                <span className={styles.heroMetricValue}>₹12.5 LPA</span>
+                <span className={styles.heroMetricLabel}>Avg Package Placed</span>
               </div>
             </div>
           </div>
 
-          <div className={styles.aboutVisualCard}>
-            <div className={styles.visualHeader}>
-              <div className={styles.visualAvatar}>BV</div>
-              <div>
-                <div style={{ fontSize: '18px', fontWeight: 800 }}>The Binary Vidya Standard</div>
-                <div style={{ fontSize: '13px', color: '#93c5fd' }}>Empowering 15,000+ developers</div>
+          {/* Right Column: Spotlight Card (Frontend Dev Training & 2-Month Internship) */}
+          <div className={styles.heroRight}>
+            <div className={styles.spotlightCard}>
+              <div className={styles.spotlightHeader}>
+                <span className={styles.spotlightBadge}>Flagship Cohort</span>
+                <span className={styles.spotlightWeekendBadge}>Saturday &amp; Sunday Live</span>
               </div>
-            </div>
 
-            <div className={styles.visualQuote}>
-              &ldquo;The only way to master modern development is by shipping real systems. We don&apos;t just
-              teach syntax; we build technical instincts, clean architecture, and problem-solving resilience.&rdquo;
-            </div>
-
-            <div className={styles.visualHighlights}>
-              <div className={styles.visualItem}>
-                <Check size={18} color="#60a5fa" />
-                <span>Zero fluff. 100% practical, hands-on masterclasses</span>
-              </div>
-              <div className={styles.visualItem}>
-                <Check size={18} color="#60a5fa" />
-                <span>Dual verification: Email & phone based multi-factor security</span>
-              </div>
-              <div className={styles.visualItem}>
-                <Check size={18} color="#60a5fa" />
-                <span>One-click Google authentication with Chrome profile discovery</span>
-              </div>
-              <div className={styles.visualItem}>
-                <Check size={18} color="#60a5fa" />
-                <span>Instant interactive assessments & live course dashboard</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Courses Section */}
-      <section id="courses" className={styles.section} style={{ background: '#ffffff', maxWidth: '100%', padding: '90px 24px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionBadge}>
-              <Code2 size={14} /> Comprehensive Tracks
-            </div>
-            <h2 className={styles.sectionTitle}>Flagship Engineering Masterclasses</h2>
-            <p className={styles.sectionSubtitle}>
-              Curated roadmaps designed to take you from foundational logic to production-grade engineering mastery.
-            </p>
-          </div>
-
-          {/* Category Filter Bar */}
-          <div className={styles.filterBarContainer}>
-            <button
-              onClick={() => setSelectedCategory('all')}
-              className={`${styles.filterPill} ${selectedCategory === 'all' ? styles.filterPillActive : ''}`}
-            >
-              All Tracks ({courses.length})
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`${styles.filterPill} ${selectedCategory === cat ? styles.filterPillActive : ''}`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* Dynamic Courses Grid */}
-          {loadingCourses ? (
-            <div className={styles.coursesGrid}>
-              {[1, 2, 3].map((n) => (
-                <div key={n} className={styles.courseCard} style={{ minHeight: '380px', opacity: 0.6 }}>
-                  <div style={{ height: '180px', background: '#f1f5f9' }} />
-                  <div style={{ padding: '24px' }}>
-                    <div style={{ height: '14px', width: '40%', background: '#e2e8f0', borderRadius: '4px', marginBottom: '12px' }} />
-                    <div style={{ height: '22px', width: '80%', background: '#e2e8f0', borderRadius: '4px', marginBottom: '12px' }} />
-                    <div style={{ height: '50px', width: '100%', background: '#f1f5f9', borderRadius: '4px', marginBottom: '16px' }} />
-                    <div style={{ height: '20px', width: '50%', background: '#e2e8f0', borderRadius: '4px' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : courses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
-              <BookOpen size={40} color="#94a3b8" style={{ marginBottom: '12px' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#1e293b', marginBottom: '6px' }}>
-                No courses found in this category
-              </h3>
-              <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '18px' }}>
-                Try selecting &ldquo;All Tracks&rdquo; or check back shortly as new curricula are published.
+              <h2 className={styles.spotlightTitle}>Frontend Developer Training &amp; 2-Month Internship</h2>
+              <p className={styles.spotlightSubtitle}>
+                Master React 18, Next.js 14 App Router, TypeScript, and complete an industrial internship with 4 verified credentials.
               </p>
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={styles.filterPill}
-                style={{ background: '#2563eb', color: '#fff', borderColor: '#2563eb' }}
-              >
-                Show All Courses
-              </button>
-            </div>
-          ) : (
-            <div className={styles.coursesGrid}>
-              {courses.map((course) => (
-                <div key={course.id} className={styles.courseCard}>
-                  {/* Thumbnail / Header Banner */}
-                  {course.thumbnail ? (
-                    <div className={styles.thumbnailWrapper}>
-                      <img src={course.thumbnail} alt={course.title} className={styles.thumbnailImg} />
-                      <div className={styles.thumbnailOverlay}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span className={styles.levelPill}>{course.level || 'All Levels'}</span>
-                          <span style={{ fontSize: '11px', color: '#ffffff', fontWeight: 700, background: 'rgba(0,0,0,0.6)', padding: '2px 8px', borderRadius: '4px' }}>
-                            {course.duration}
-                          </span>
-                        </div>
-                        <div className={styles.courseTrackBadge} style={{ alignSelf: 'flex-start' }}>
-                          {course.category}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={styles.courseBanner}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div className={styles.courseTrackBadge}>{course.category}</div>
-                        <span className={styles.levelPill}>{course.level || 'All Levels'}</span>
-                      </div>
-                      <div className={styles.courseDuration}>
-                        {course.duration} • {course.totalLessons || 15} Lessons
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Body Content */}
-                  <div className={styles.courseBody}>
-                    <div className={styles.courseRating}>
-                      <Star size={15} fill="#f59e0b" color="#f59e0b" />
-                      <span>{course.rating || 4.9}</span>
-                      <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 500 }}>
-                        ({(course.enrolledCount || 120).toLocaleString()} enrolled)
-                      </span>
-                    </div>
-
-                    <h3 className={styles.courseTitle}>{course.title}</h3>
-                    <p className={styles.courseDesc}>{course.description}</p>
-
-                    {/* Metadata Pill Row */}
-                    <div className={styles.metaRow}>
-                      <span className={styles.metaItem}>
-                        <Layers size={14} color="#2563eb" />
-                        <strong>{course.chaptersCount || course.chapters?.length || 1}</strong> Chapters
-                      </span>
-                      <span>•</span>
-                      <span className={styles.metaItem}>
-                        <Video size={14} color="#2563eb" />
-                        <strong>{course.totalLessons || 12}</strong> Video Lectures
-                      </span>
-                    </div>
-
-                    {/* Curriculum Preview Modal Trigger */}
-                    {course.chapters && course.chapters.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewCourse(course)}
-                        className={styles.curriculumLinkBtn}
-                      >
-                        <PlayCircle size={14} /> View Syllabus &amp; Lectures
-                      </button>
-                    )}
-
-                    <div className={styles.courseFooter}>
-                      <span className={styles.coursePrice}>
-                        {course.price && course.price > 0 ? `₹${course.price.toLocaleString('en-IN')}` : 'Free Access'}
-                      </span>
-                      <Link href={`/courses/${course.slug || course.id}`} className={styles.courseActionBtn}>
-                        Enroll Now
-                      </Link>
-                    </div>
-                  </div>
+              <div className={styles.spotlightPriceBox}>
+                <div className={styles.spotlightPriceRow}>
+                  <span className={styles.spotlightPriceMain}>₹2,400</span>
+                  <span className={styles.spotlightPriceOld}>₹7,999</span>
+                  <span className={styles.spotlightDiscountPill}>70% OFF</span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className={styles.spotlightFreeInternshipTag}>
+                  <CheckCircle2 size={16} color="#059669" />
+                  <span>2-Month Industrial Internship Included (₹0 Fee)</span>
+                </div>
+              </div>
 
-          {/* Bottom All Courses Link */}
-          <div style={{ textAlign: 'center', marginTop: '48px' }}>
-            <Link
-              href="/courses"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 28px',
-                borderRadius: '12px',
-                background: '#f8fafc',
-                border: '1.5px solid #cbd5e1',
-                color: '#1e293b',
-                fontSize: '14px',
-                fontWeight: 700,
-                textDecoration: 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Explore All Courses &amp; Specializations <ArrowRight size={16} />
-            </Link>
+              <div className={styles.spotlightFeatures}>
+                <div className={styles.spotlightFeatureItem}>
+                  <Clock size={16} color="#2563eb" />
+                  <span>Weekend Live Sessions + 24/7 HD Recordings</span>
+                </div>
+                <div className={styles.spotlightFeatureItem}>
+                  <Code2 size={16} color="#2563eb" />
+                  <span>Minor &amp; Major Production Cloud Projects</span>
+                </div>
+                <div className={styles.spotlightFeatureItem}>
+                  <Award size={16} color="#2563eb" />
+                  <span>4 Credentials: Certificate, Experience Letter, LOR &amp; Transcript</span>
+                </div>
+              </div>
+
+              <div className={styles.spotlightActions}>
+                <Link href="/training-and-internship" className={styles.spotlightEnrollBtn}>
+                  Enroll Now <ArrowRight size={15} />
+                </Link>
+                <Link href="/training-and-internship" className={styles.spotlightViewBtn}>
+                  View Syllabus
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Platform Features Section */}
-      <section id="features" className={styles.section}>
-        <div className={styles.sectionHeader}>
+      {/* =====================================================================
+          HIRING PARTNERS & ALUMNI MARQUEE
+          ===================================================================== */}
+      <section className={styles.partnersSection}>
+        <div className={styles.partnersHeading}>
+          Our Learners &amp; Interns Are Hired By Top Global Tech Companies
+        </div>
+        <div className={styles.partnersGrid}>
+          {HIRING_PARTNERS.map((partner) => (
+            <div key={partner} className={styles.partnerBadge}>
+              <Building2 size={16} color="#2563eb" />
+              <span>{partner}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* =====================================================================
+          FLAGSHIP SPOTLIGHT: 3 DEDICATED CURRICULUM SECTIONS
+          ===================================================================== */}
+      <section className={styles.curriculumSpotlightSection}>
+        <div className={styles.sectionHeaderCenter}>
           <div className={styles.sectionBadge}>
-            <Sparkles size={14} /> Interactive Platform
+            <Layers size={14} /> Comprehensive 3-Tier Architecture
           </div>
-          <h2 className={styles.sectionTitle}>The Binary Vidya Learning Experience</h2>
-          <p className={styles.sectionSubtitle}>
-            Modern web technology meets pedagogy for maximum knowledge retention.
+          <h2 className={styles.sectionMainTitle}>
+            Industrial Engineering Curriculum &amp; Projects
+          </h2>
+          <p className={styles.sectionDescription}>
+            Designed by senior tech architects from top product firms. From foundational HTML5/CSS3 to enterprise React 18, Next.js 14, and real-world microservices.
           </p>
         </div>
 
-        <div className={styles.featuresGrid}>
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <ShieldCheck size={24} />
+        <div className={styles.curriculum3Cards}>
+          {/* Section 1 */}
+          <div className={styles.currSectionCard}>
+            <div className={styles.currCardHeader}>
+              <div className={styles.currNumberBox}>1</div>
+              <div>
+                <span className={styles.currSectionTag}>Intensive Live Training</span>
+                <h3 className={styles.currCardTitle}>Frontend Engineering Mastery</h3>
+              </div>
             </div>
-            <h3 className={styles.featureTitle}>Dual Email / Mobile Auth</h3>
-            <p className={styles.featureDesc}>
-              Log in seamlessly via your email address or mobile number with Bcrypt encryption and 7-day
-              signed JWT tokens.
+            <p className={styles.currCardDesc}>
+              Weekend live cohorts covering Semantic HTML5, CSS Grid/Flexbox, ES6+ Javascript event loop, TypeScript scalability, and Next.js 14 App Router architectures.
             </p>
+            <ul className={styles.currModulesList}>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Responsive Glassmorphism &amp; CSS Variables</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Promises, Async/Await &amp; REST API Integration</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Next.js 14 Server Components &amp; SSR Optimizations</span>
+              </li>
+            </ul>
           </div>
 
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <Cpu size={24} />
+          {/* Section 2 */}
+          <div className={styles.currSectionCard}>
+            <div className={styles.currCardHeader}>
+              <div className={styles.currNumberBox}>2</div>
+              <div>
+                <span className={styles.currSectionTag}>Minor Project Architecture</span>
+                <h3 className={styles.currCardTitle}>Dynamic SaaS Dashboard</h3>
+              </div>
             </div>
-            <h3 className={styles.featureTitle}>Google Instant OAuth</h3>
-            <p className={styles.featureDesc}>
-              One-click Google authentication with active Chrome profile discovery and verified account
-              synchronization.
+            <p className={styles.currCardDesc}>
+              Construct an end-to-end analytics and management dashboard with role-based auth, client-side caching, dark/light modes, and real-time state management.
             </p>
+            <ul className={styles.currModulesList}>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Modular React Components with TypeScript</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Real-time Filtering, Pagination &amp; Search</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Clean Git branching &amp; pull request reviews</span>
+              </li>
+            </ul>
           </div>
 
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <Cloud size={24} />
+          {/* Section 3 */}
+          <div className={styles.currSectionCard}>
+            <div className={styles.currCardHeader}>
+              <div className={styles.currNumberBox}>3</div>
+              <div>
+                <span className={styles.currSectionTag}>Major Capstone Project</span>
+                <h3 className={styles.currCardTitle}>Cloud LMS &amp; AI Platform</h3>
+              </div>
             </div>
-            <h3 className={styles.featureTitle}>Secure Nodemailer Recovery</h3>
-            <p className={styles.featureDesc}>
-              Fast 4-digit transactional email OTP password reset with anti-spam inbox optimization and
-              plain-text fallbacks.
+            <p className={styles.currCardDesc}>
+              A production-ready, full-scale learning management and streaming platform featuring Razorpay payments, video pipelines, and cloud database indexing.
             </p>
-          </div>
-
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <Laptop size={24} />
-            </div>
-            <h3 className={styles.featureTitle}>Interactive Video Assessments</h3>
-            <p className={styles.featureDesc}>
-              Watch high-definition lectures with embedded coding quizzes and instant feedback checkpoints.
-            </p>
-          </div>
-
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <Code2 size={24} />
-            </div>
-            <h3 className={styles.featureTitle}>Live In-Browser Code Labs</h3>
-            <p className={styles.featureDesc}>
-              Practice programming challenges directly in your browser without installing local compilers
-              or complex configurations.
-            </p>
-          </div>
-
-          <div className={styles.featureBox}>
-            <div className={styles.featureIconWrapper}>
-              <Award size={24} />
-            </div>
-            <h3 className={styles.featureTitle}>Digital Certificates</h3>
-            <p className={styles.featureDesc}>
-              Earn shareable, tamper-proof credentials to showcase your projects on LinkedIn and to
-              prospective recruiters.
-            </p>
+            <ul className={styles.currModulesList}>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Authentic Razorpay Payment Gateway Integration</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Streaming Video Player with progress tracking</span>
+              </li>
+              <li className={styles.currModuleItem}>
+                <Check size={16} color="#2563eb" />
+                <span>Vercel / AWS Cloud Production Deployment</span>
+              </li>
+            </ul>
           </div>
         </div>
-      </section>
 
-      {/* Call to Action Banner */}
-      <section className={styles.ctaWrapper}>
-        <div className={styles.ctaCard}>
-          <h2 className={styles.ctaTitle}>Ready to Master the Future of Code?</h2>
-          <p className={styles.ctaSubtitle}>
-            Join thousands of developers mastering computer science with Binary Vidya. Create your free
-            account and start learning today.
-          </p>
-          <Link href="/login" id="cta-bottom-register-btn" className={styles.ctaBtn}>
-            Create Free Account <ArrowRight size={18} />
+        <div style={{ textAlign: 'center' }}>
+          <Link href="/training-and-internship" className={styles.heroPrimaryBtn}>
+            <span>View Complete Training &amp; Internship Syllabus</span>
+            <ArrowRight size={16} />
           </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className={styles.footerWrapper}>
-          <div>
-            <div className={styles.brandLink}>
-              <div className={styles.brandLogo}>BV</div>
-              <span className={styles.brandName}>Binary Vidya</span>
+      {/* =====================================================================
+          COURSES SECTION (#courses)
+          ===================================================================== */}
+      <section id="courses" className={styles.coursesSection}>
+        <div className={styles.sectionHeaderCenter}>
+          <div className={styles.sectionBadge}>
+            <BookOpen size={14} /> Comprehensive Catalog
+          </div>
+          <h2 className={styles.sectionMainTitle}>Explore Masterclasses &amp; Video Courses</h2>
+          <p className={styles.sectionDescription}>
+            Self-paced, high-definition courses with interactive chapters, downloadable code repositories, and verifiable certificates.
+          </p>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className={styles.categoryFilterBar}>
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`${styles.catBtn} ${selectedCategory === 'all' ? styles.catBtnActive : ''}`}
+          >
+            All Courses
+          </button>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`${styles.catBtn} ${selectedCategory === cat ? styles.catBtnActive : ''}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Courses Cards Grid */}
+        {loadingCourses ? (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
+            Loading courses catalog...
+          </div>
+        ) : courses.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#64748b' }}>
+            No courses found in this category.
+          </div>
+        ) : (
+          <div className={styles.coursesGrid}>
+            {courses.map((course) => (
+              <div key={course.id} className={styles.courseCard}>
+                <div className={styles.courseThumbWrap}>
+                  {course.thumbnail ? (
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className={styles.courseThumbImg}
+                    />
+                  ) : (
+                    <div className={styles.courseThumbPlaceholder}>
+                      <Code2 size={40} />
+                      <span style={{ fontSize: '12px', fontWeight: 700 }}>Binary Vidya Academy</span>
+                    </div>
+                  )}
+                  <span className={styles.courseCategoryPill}>{course.category}</span>
+                  <span className={styles.courseLevelPill}>{course.level}</span>
+                </div>
+
+                <div className={styles.courseBody}>
+                  <h3 className={styles.courseTitle}>{course.title}</h3>
+                  <p className={styles.courseDesc}>{course.description}</p>
+
+                  <div className={styles.courseMetaRow}>
+                    <div className={styles.courseMetaItem}>
+                      <Clock size={13} color="#2563eb" />
+                      <span>{course.duration || '12+ Hours'}</span>
+                    </div>
+                    <div className={styles.courseMetaItem}>
+                      <Film size={13} color="#0284c7" />
+                      <span>{course.totalLessons || 24} Lessons</span>
+                    </div>
+                    <div className={styles.courseMetaItem}>
+                      <Star size={13} color="#f59e0b" fill="#f59e0b" />
+                      <span>{course.rating || 4.9}</span>
+                    </div>
+                  </div>
+
+                  <div className={styles.courseFooter}>
+                    <div className={styles.coursePrice}>₹{course.price}</div>
+                    <div className={styles.courseActions}>
+                      <button
+                        onClick={() => setPreviewCourse(course)}
+                        className={styles.syllabusBtn}
+                      >
+                        Syllabus
+                      </button>
+                      <Link
+                        href={`/courses/${course.slug || course.id}`}
+                        className={styles.enrollBtn}
+                      >
+                        Enroll <ArrowRight size={13} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* =====================================================================
+          4 VERIFIED CREDENTIALS WITH INTERACTIVE LIVE VERIFICATION
+          ===================================================================== */}
+      <section className={styles.credentialsSection}>
+        <div className={styles.credentialsContainer}>
+          <div className={styles.sectionHeaderCenter}>
+            <div className={styles.sectionBadge}>
+              <Award size={14} /> Career Security
             </div>
-            <p className={styles.footerBrandDesc}>
-              Binary Vidya is an engineering-first technical academy providing premier masterclasses,
-              interactive assessments, and verified software engineering credentials.
+            <h2 className={styles.sectionMainTitle}>
+              4 Official Credentials with Instant Verification
+            </h2>
+            <p className={styles.sectionDescription}>
+              Stand out to recruiters with verifiable, tamper-proof credentials issued by Binary Vidya.
             </p>
           </div>
 
-          <div>
-            <div className={styles.footerColTitle}>Navigation</div>
-            <ul className={styles.footerColLinks}>
-              <li>
-                <Link href="/" className={styles.footerLink}>
-                  Home
-                </Link>
-              </li>
-              <li>
-                <a href="#about" className={styles.footerLink}>
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a href="#courses" className={styles.footerLink}>
-                  Courses
-                </a>
-              </li>
-              <li>
-                <a href="#features" className={styles.footerLink}>
-                  Platform
-                </a>
-              </li>
-            </ul>
+          {/* Interactive Live Certificate Verification Box right on the page */}
+          <div className={styles.instantVerifyCard}>
+            <div className={styles.instantVerifyHeader}>
+              <div className={styles.instantVerifyTitleWrap}>
+                <div className={styles.instantVerifyIconWrap}>
+                  <ShieldCheck size={28} color="#2563eb" />
+                </div>
+                <div>
+                  <h3 className={styles.instantVerifyTitle}>Instant Credential Verification</h3>
+                  <p className={styles.instantVerifySubtitle}>
+                    Enter any Certificate or Internship ID to authenticate student credentials directly from our central registry.
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: '#059669' }}>
+                <CheckCircle2 size={16} /> Live Verified Registry
+              </div>
+            </div>
+
+            <form onSubmit={handleInstantVerify} className={styles.instantVerifyForm}>
+              <input
+                type="text"
+                value={verifyInput}
+                onChange={(e) => {
+                  setVerifyInput(e.target.value);
+                  if (verifyError) setVerifyError('');
+                }}
+                placeholder="Enter Certificate ID (e.g. BV-CERT-FRONTEND-2026)"
+                className={styles.instantVerifyInput}
+              />
+              <button type="submit" className={styles.instantVerifySubmitBtn}>
+                <Search size={16} /> Verify Credential
+              </button>
+            </form>
+
+            {verifyError && (
+              <div style={{ color: '#dc2626', fontSize: '13px', fontWeight: 600, marginBottom: '12px' }}>
+                {verifyError}
+              </div>
+            )}
+
+            <div className={styles.sampleBadgesRow}>
+              <span className={styles.sampleBadgeLabel}>Try Sample Verifiable IDs:</span>
+              {SAMPLE_CERT_IDS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => handleSampleVerify(id)}
+                  className={styles.sampleBtn}
+                >
+                  {id}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div>
-            <div className={styles.footerColTitle}>Tracks</div>
-            <ul className={styles.footerColLinks}>
-              <li>
-                <a href="#courses" className={styles.footerLink}>
-                  Full-Stack MERN
-                </a>
-              </li>
-              <li>
-                <a href="#courses" className={styles.footerLink}>
-                  Data Structures & Algorithms
-                </a>
-              </li>
-              <li>
-                <a href="#courses" className={styles.footerLink}>
-                  Cloud & DevOps
-                </a>
-              </li>
-              <li>
-                <a href="#courses" className={styles.footerLink}>
-                  Machine Learning
-                </a>
-              </li>
-            </ul>
-          </div>
+          {/* 4 Credentials Grid */}
+          <div className={styles.credentials4Grid}>
+            <div className={styles.credCardItem}>
+              <div className={styles.credCardIcon}>
+                <Award size={24} color="#2563eb" />
+              </div>
+              <div className={styles.credCardNumber}>Credential 1</div>
+              <h3>Training Completion Certificate</h3>
+              <p>
+                Validates in-depth mastery of the full curriculum, hands-on lab assignments, and weekend workshop participation.
+              </p>
+            </div>
 
-          <div>
-            <div className={styles.footerColTitle}>Account & Access</div>
-            <ul className={styles.footerColLinks}>
-              <li>
-                <Link href="/login" className={styles.footerLink}>
-                  Sign In
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className={styles.footerLink}>
-                  Create Free Account
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className={styles.footerLink}>
-                  Forgot Password
-                </Link>
-              </li>
-              <li>
-                <a href="#about" className={styles.footerLink}>
-                  Community Guidelines
-                </a>
-              </li>
-            </ul>
+            <div className={styles.credCardItem}>
+              <div className={styles.credCardIcon}>
+                <Briefcase size={24} color="#0284c7" />
+              </div>
+              <div className={styles.credCardNumber}>Credential 2</div>
+              <h3>2-Month Internship Experience Letter</h3>
+              <p>
+                Official proof of 2-month industrial internship completion, real-world agile workflow contributions, and team code reviews.
+              </p>
+            </div>
+
+            <div className={styles.credCardItem}>
+              <div className={styles.credCardIcon}>
+                <FileCheck2 size={24} color="#059669" />
+              </div>
+              <div className={styles.credCardNumber}>Credential 3</div>
+              <h3>Letter of Recommendation (LOR)</h3>
+              <p>
+                Personalized letter signed by lead engineering mentors highlighting code architecture quality and algorithmic mastery.
+              </p>
+            </div>
+
+            <div className={styles.credCardItem}>
+              <div className={styles.credCardIcon}>
+                <ShieldCheck size={24} color="#7c3aed" />
+              </div>
+              <div className={styles.credCardNumber}>Credential 4</div>
+              <h3>Official Course &amp; Project Transcript</h3>
+              <p>
+                Detailed transcript outlining the minor and major production capstone projects, Git metrics, and module evaluations.
+              </p>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className={styles.footerBottom}>
-          <div>&copy; {new Date().getFullYear()} Binary Vidya Inc. All rights reserved.</div>
-          <div style={{ display: 'flex', gap: '24px' }}>
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-            <span>Security</span>
+      {/* =====================================================================
+          WHY CHOOSE BINARY VIDYA (6 Core Pillars)
+          ===================================================================== */}
+      <section className={styles.whySection}>
+        <div className={styles.sectionHeaderCenter}>
+          <div className={styles.sectionBadge}>
+            <Zap size={14} /> The Binary Vidya Advantage
+          </div>
+          <h2 className={styles.sectionMainTitle}>Why Thousands of Engineers Choose Us</h2>
+          <p className={styles.sectionDescription}>
+            We combine rigorous academic foundations with industrial engineering standards.
+          </p>
+        </div>
+
+        <div className={styles.whyGrid}>
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <Clock size={26} color="#2563eb" />
+            </div>
+            <h3>Strictly Weekend Live Batches</h3>
+            <p>
+              Designed for college students and working professionals. Zero conflict with semester exams or weekday jobs, backed by 24/7 session recordings.
+            </p>
+          </div>
+
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <Briefcase size={26} color="#059669" />
+            </div>
+            <h3>100% Free 2-Month Internship</h3>
+            <p>
+              Every student gets bundled access to our 2-month industrial internship at ₹0 additional cost, gaining real corporate project experience.
+            </p>
+          </div>
+
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <ShieldCheck size={26} color="#0284c7" />
+            </div>
+            <h3>QR-Verifiable Credentials</h3>
+            <p>
+              Tamper-proof digital certificates and experience letters easily shareable on LinkedIn and instantly verifiable by hiring recruiters.
+            </p>
+          </div>
+
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <CreditCard size={26} color="#7c3aed" />
+            </div>
+            <h3>Authentic Razorpay Integration</h3>
+            <p>
+              Seamless, secure checkout supporting UPI (GPay, PhonePe, Paytm), Credit/Debit cards, NetBanking, and digital wallets.
+            </p>
+          </div>
+
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <Users size={26} color="#e11d48" />
+            </div>
+            <h3>1-on-1 Mentor Guidance</h3>
+            <p>
+              Live doubt clearance sessions, personalized code audits, and resume/LinkedIn optimization workshops with experienced SDEs.
+            </p>
+          </div>
+
+          <div className={styles.whyCard}>
+            <div className={styles.whyIconWrap}>
+              <Cloud size={26} color="#0891b2" />
+            </div>
+            <h3>Production Cloud Deployments</h3>
+            <p>
+              Deploy full-stack applications to AWS and Vercel with CI/CD automation, custom domain routing, and cloud database indexing.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          CAREERS / WE'RE HIRING BANNER
+          ===================================================================== */}
+      <section className={styles.careersBannerSection}>
+        <div className={styles.careersBannerWrapper}>
+          <div className={styles.careersBannerContent}>
+            <h2>Join the Binary Vidya Team • We Are Hiring!</h2>
+            <p>
+              Are you passionate about developer education, mentoring aspiring engineers, or building scalable learning platforms? Explore open full-time, part-time, and mentor roles.
+            </p>
+          </div>
+          <Link href="/careers" className={styles.careersBannerBtn}>
+            <Briefcase size={16} /> Explore Open Positions <ArrowRight size={16} />
+          </Link>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          STUDENT TESTIMONIALS
+          ===================================================================== */}
+      <section className={styles.testimonialsSection}>
+        <div className={styles.sectionHeaderCenter}>
+          <div className={styles.sectionBadge}>
+            <Star size={14} /> Student Reviews
+          </div>
+          <h2 className={styles.sectionMainTitle}>Loved by Ambitious Coders Across India</h2>
+          <p className={styles.sectionDescription}>
+            Hear how Binary Vidya's weekend cohorts and industrial internship launched high-growth careers.
+          </p>
+        </div>
+
+        <div className={styles.testimonialsGrid}>
+          <div className={styles.testimonialCard}>
+            <div className={styles.testimonialRating}>
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={15} fill="#f59e0b" color="#f59e0b" />
+              ))}
+            </div>
+            <p className={styles.testimonialText}>
+              "The weekend classes fit perfectly into my final-year engineering schedule. The 2-month internship gave me real production Git workflow experience that impressed my interviewers at Flipkart!"
+            </p>
+            <div className={styles.testimonialAuthor}>
+              <div className={styles.testimonialAvatar}>A</div>
+              <div>
+                <div className={styles.testimonialName}>Ananya Sharma</div>
+                <div className={styles.testimonialRole}>Frontend Engineer • Flipkart</div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.testimonialCard}>
+            <div className={styles.testimonialRating}>
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={15} fill="#f59e0b" color="#f59e0b" />
+              ))}
+            </div>
+            <p className={styles.testimonialText}>
+              "The 4 credentials with the instant QR code verification made my resume stand out. The mentor-led capstone project helped me land a 12 LPA SDE offer before graduation."
+            </p>
+            <div className={styles.testimonialAuthor}>
+              <div className={styles.testimonialAvatar}>R</div>
+              <div>
+                <div className={styles.testimonialName}>Rohan Verma</div>
+                <div className={styles.testimonialRole}>Software Engineer • Razorpay</div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.testimonialCard}>
+            <div className={styles.testimonialRating}>
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} size={15} fill="#f59e0b" color="#f59e0b" />
+              ))}
+            </div>
+            <p className={styles.testimonialText}>
+              "Getting the 2-month industrial internship completely free with the ₹2,400 training fee was unbeatable. You build actual production code, not just basic todo apps."
+            </p>
+            <div className={styles.testimonialAuthor}>
+              <div className={styles.testimonialAvatar}>P</div>
+              <div>
+                <div className={styles.testimonialName}>Priya Nair</div>
+                <div className={styles.testimonialRole}>Full-Stack Developer • Swiggy</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          FAQ SECTION
+          ===================================================================== */}
+      <section className={styles.faqSection}>
+        <div className={styles.sectionHeaderCenter}>
+          <div className={styles.sectionBadge}>
+            <CheckCircle2 size={14} /> Got Questions?
+          </div>
+          <h2 className={styles.sectionMainTitle}>Frequently Asked Questions</h2>
+          <p className={styles.sectionDescription}>
+            Everything you need to know about our training programs, internship, certificates, and payment process.
+          </p>
+        </div>
+
+        <div className={styles.faqContainer}>
+          {FAQS.map((faq, idx) => (
+            <div
+              key={idx}
+              className={`${styles.faqItem} ${openFaqIndex === idx ? styles.faqItemOpen : ''}`}
+            >
+              <button
+                className={styles.faqQuestion}
+                onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+              >
+                <span>{faq.q}</span>
+                <ChevronDown
+                  size={18}
+                  style={{
+                    transform: openFaqIndex === idx ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+              </button>
+              {openFaqIndex === idx && <div className={styles.faqAnswer}>{faq.a}</div>}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* =====================================================================
+          BOTTOM CTA SECTION
+          ===================================================================== */}
+      <section className={styles.bottomCtaSection}>
+        <div className={styles.bottomCtaContainer}>
+          <h2>Ready to Launch Your Software Engineering Career?</h2>
+          <p>
+            Join thousands of ambitious learners who have accelerated their skills with Binary Vidya. Limited seats available for the upcoming weekend batch!
+          </p>
+          <div className={styles.bottomCtaActions}>
+            <Link href="/training-and-internship" className={styles.bottomCtaPrimary}>
+              <Sparkles size={16} /> Enroll in Training &amp; Internship
+            </Link>
+            <Link href="/verify-certificate" className={styles.bottomCtaSecondary}>
+              <ShieldCheck size={16} /> Verify Credentials
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================================
+          COMPREHENSIVE RICH FOOTER (Everything provided by Binary Vidya)
+          ===================================================================== */}
+      <footer className={styles.footer}>
+        <div className={styles.footerWrapper}>
+          <div className={styles.footerTopGrid}>
+            {/* Brand Column */}
+            <div className={styles.footerBrandCol}>
+              <img
+                src="/images/binary-vidya-logo.png"
+                alt="Binary Vidya Academy"
+                className={styles.footerLogoImg}
+              />
+              <p className={styles.footerBrandDesc}>
+                Binary Vidya is India's leading modern technical academy providing industry-grade software engineering training, 2-month verified industrial internships, production project mentorship, and verifiable ISO-compliant credentials.
+              </p>
+              <div className={styles.footerContactList}>
+                <div className={styles.footerContactItem}>
+                  <Mail size={14} color="#3b82f6" />
+                  <span>support@binaryvidya.com</span>
+                </div>
+                <div className={styles.footerContactItem}>
+                  <Phone size={14} color="#3b82f6" />
+                  <span>+91 98765 43210 / +91 80 4567 8900</span>
+                </div>
+                <div className={styles.footerContactItem}>
+                  <MapPin size={14} color="#3b82f6" />
+                  <span>Outer Ring Road, Bellandur, Bengaluru, Karnataka 560103</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 1: Programs & Tracks */}
+            <div>
+              <div className={styles.footerColTitle}>Programs &amp; Tracks</div>
+              <ul className={styles.footerLinksList}>
+                <li>
+                  <Link href="/training-and-internship">
+                    <Sparkles size={12} color="#3b82f6" /> Frontend Dev (Weekend)
+                  </Link>
+                </li>
+                <li>
+                  <a href="#courses">Full Stack Web Engineering</a>
+                </li>
+                <li>
+                  <a href="#courses">Data Structures &amp; Algorithms</a>
+                </li>
+                <li>
+                  <a href="#courses">Cloud &amp; DevOps Engineering</a>
+                </li>
+                <li>
+                  <a href="#courses">Applied AI &amp; Deep Learning</a>
+                </li>
+                <li>
+                  <a href="#courses">System Design Masterclass</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 2: Internships & Projects */}
+            <div>
+              <div className={styles.footerColTitle}>Internships &amp; Labs</div>
+              <ul className={styles.footerLinksList}>
+                <li>
+                  <Link href="/training-and-internship">2-Month Free Internship</Link>
+                </li>
+                <li>
+                  <a href="#curriculum">Minor Production SaaS Project</a>
+                </li>
+                <li>
+                  <a href="#curriculum">Major Enterprise Cloud LMS</a>
+                </li>
+                <li>
+                  <a href="#curriculum">Live Code Review Audits</a>
+                </li>
+                <li>
+                  <a href="#curriculum">GitHub Portfolio Building</a>
+                </li>
+                <li>
+                  <a href="#curriculum">Pre-Placement Offer (PPO) Prep</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Credentials & Verification */}
+            <div>
+              <div className={styles.footerColTitle}>Credentials &amp; Trust</div>
+              <ul className={styles.footerLinksList}>
+                <li>
+                  <Link href="/verify-certificate">
+                    <ShieldCheck size={12} color="#3b82f6" /> Verify Certificate Portal
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/verify-certificate">Training Completion Certificate</Link>
+                </li>
+                <li>
+                  <Link href="/verify-certificate">2-Month Internship Letter</Link>
+                </li>
+                <li>
+                  <Link href="/verify-certificate">Official Recommendation (LOR)</Link>
+                </li>
+                <li>
+                  <Link href="/verify-certificate">Course &amp; Project Transcript</Link>
+                </li>
+                <li>
+                  <Link href="/verify-certificate">LinkedIn 1-Click Integration</Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Careers & Mentorship */}
+            <div>
+              <div className={styles.footerColTitle}>Careers &amp; Network</div>
+              <ul className={styles.footerLinksList}>
+                <li>
+                  <Link href="/careers">
+                    <Briefcase size={12} color="#059669" /> We're Hiring (All Roles)
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/careers">Become a Technical Mentor</Link>
+                </li>
+                <li>
+                  <Link href="/careers">Campus Ambassador Program</Link>
+                </li>
+                <li>
+                  <a href="#partners">Hiring Partner Companies</a>
+                </li>
+                <li>
+                  <a href="#testimonials">Student Success Stories</a>
+                </li>
+                <li>
+                  <a href="mailto:careers@binaryvidya.com">Contact Recruitment</a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 5: Student Hub & Policies */}
+            <div>
+              <div className={styles.footerColTitle}>Student Hub &amp; Legal</div>
+              <ul className={styles.footerLinksList}>
+                <li>
+                  <Link href="/login">Student Sign In</Link>
+                </li>
+                <li>
+                  <Link href="/my-learning">My Learning Dashboard</Link>
+                </li>
+                <li>
+                  <Link href="/profile">Profile &amp; Account Settings</Link>
+                </li>
+                <li>
+                  <a href="#terms">Terms &amp; Conditions</a>
+                </li>
+                <li>
+                  <a href="#privacy">Privacy Policy</a>
+                </li>
+                <li>
+                  <a href="#refund">Refund &amp; Cancellation Policy</a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Trust Badges Strip */}
+          <div className={styles.footerTrustStrip}>
+            <div className={styles.trustBadgeItem}>
+              <ShieldCheck size={18} color="#3b82f6" />
+              <span>ISO 9001:2015 Educational Standard Certified</span>
+            </div>
+            <div className={styles.trustBadgeItem}>
+              <CreditCard size={18} color="#059669" />
+              <span>100% Authentic Razorpay 256-Bit Encrypted Payments</span>
+            </div>
+            <div className={styles.trustBadgeItem}>
+              <Lock size={18} color="#0284c7" />
+              <span>Tamper-Proof QR Credential Registry</span>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className={styles.footerBottomBar}>
+            <div>
+              &copy; {new Date().getFullYear()} Binary Vidya Technologies Pvt. Ltd. All rights reserved.
+            </div>
+            <div className={styles.footerBottomLinks}>
+              <span>Privacy Policy</span>
+              <span>Terms of Service</span>
+              <span>Security Compliance</span>
+              <button onClick={scrollToTop} className={styles.backToTopBtn}>
+                <ArrowUp size={14} /> Back to Top
+              </button>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* Syllabus Preview Modal */}
+      {/* =====================================================================
+          SYLLABUS PREVIEW MODAL
+          ===================================================================== */}
       {previewCourse && (
         <div className={styles.syllabusModalOverlay} onClick={() => setPreviewCourse(null)}>
           <div className={styles.syllabusModalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.syllabusModalHeader}>
               <div>
-                <span className={styles.levelPill} style={{ marginBottom: '6px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563eb', background: '#eff6ff', padding: '3px 8px', borderRadius: '6px' }}>
                   {previewCourse.category}
                 </span>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+                <h3 style={{ margin: '8px 0 4px', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
                   {previewCourse.title}
                 </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
                   Complete Course Curriculum • {previewCourse.chapters?.length || 0} Chapters • {previewCourse.totalLessons || 0} Lectures
                 </p>
               </div>
@@ -800,37 +1343,35 @@ export default function HomePage() {
                     )}
 
                     <div>
-                      {ch.lessons && ch.lessons.map((les, lIdx) => (
-                        <div key={les.id || lIdx} className={styles.syllabusLessonRow}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                            {les.thumbnail ? (
-                              <img src={les.thumbnail} alt={les.title} className={styles.syllabusLessonThumb} />
-                            ) : (
-                              <div className={styles.syllabusLessonThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
-                                <Film size={16} />
+                      {ch.lessons &&
+                        ch.lessons.map((les, lIdx) => (
+                          <div key={les.id || lIdx} className={styles.syllabusLessonRow}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+                              <div className={styles.syllabusLessonThumb}>
+                                <Film size={16} color="#2563eb" />
                               </div>
-                            )}
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
-                                {les.title}
+                              <div>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
+                                  {les.title}
+                                </div>
+                                {les.description && (
+                                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                                    {les.description}
+                                  </div>
+                                )}
                               </div>
-                              {les.description && (
-                                <div style={{ fontSize: '11px', color: '#64748b' }}>{les.description}</div>
-                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                              <Clock size={12} /> {les.duration || '15 Mins'}
                             </div>
                           </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                            <Clock size={12} /> {les.duration || '15 Mins'}
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 ))
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  No syllabus uploaded yet for this course.
+                  Comprehensive syllabus being finalized. Check back soon!
                 </div>
               )}
 
@@ -855,7 +1396,7 @@ export default function HomePage() {
                   style={{
                     padding: '10px 24px',
                     borderRadius: '10px',
-                    background: '#2563eb',
+                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                     border: 'none',
                     fontSize: '13px',
                     fontWeight: 700,
