@@ -56,6 +56,10 @@ export async function GET(req: Request) {
         dateOfBirth: user.dateOfBirth || '',
         gender: user.gender || '',
         authProvider: user.authProvider,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {

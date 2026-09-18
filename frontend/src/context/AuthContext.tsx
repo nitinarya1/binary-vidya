@@ -4,6 +4,15 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiRequest } from '../lib/api';
 import { isSuperAdminEmail } from '../lib/auth-helpers';
 
+export interface TeamPermissions {
+  manageCourses?: boolean;
+  manageTraining?: boolean;
+  manageCareers?: boolean;
+  viewAnalytics?: boolean;
+  manageCertificates?: boolean;
+  manageTeam?: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -14,6 +23,10 @@ export interface User {
   authProvider?: string;
   dateOfBirth?: string;
   gender?: string;
+  isTeamMember?: boolean;
+  department?: string;
+  permissions?: TeamPermissions;
+  teamStatus?: 'active' | 'suspended';
 }
 
 export interface LoginResult {

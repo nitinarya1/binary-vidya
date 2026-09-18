@@ -28,8 +28,11 @@ async function authenticateAdmin(req: Request) {
   }
 
   const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
-  if (!isSuperAdminEmail(requester.email)) {
-    return { error: 'Access denied: Super Administrator access only', status: 403 };
+  const isSuper = isSuperAdminEmail(requester.email);
+  const hasCoursePerm = requester.isTeamMember && requester.teamStatus !== 'suspended' && requester.permissions?.manageCourses;
+
+  if (!isSuper && !hasCoursePerm) {
+    return { error: 'Access denied: Super Administrator or Course Management permission required', status: 403 };
   }
 
   return { requester };

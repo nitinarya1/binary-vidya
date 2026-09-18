@@ -12,6 +12,17 @@ export interface IUser extends Document {
   authProvider: 'local' | 'google';
   googleId?: string;
   isVerified: boolean;
+  isTeamMember?: boolean;
+  department?: string;
+  permissions?: {
+    manageCourses?: boolean;
+    manageTraining?: boolean;
+    manageCareers?: boolean;
+    viewAnalytics?: boolean;
+    manageCertificates?: boolean;
+    manageTeam?: boolean;
+  };
+  teamStatus?: 'active' | 'suspended';
   createdAt: Date;
   updatedAt: Date;
 }

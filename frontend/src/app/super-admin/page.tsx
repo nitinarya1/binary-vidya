@@ -36,6 +36,14 @@ import {
   Zap,
   Trash,
   ArrowRight,
+  UserPlus,
+  UserCheck,
+  ShieldAlert,
+  Key,
+  Settings2,
+  UserX,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
 
@@ -127,7 +135,31 @@ interface CareerItem {
   applicantsCount: number;
 }
 
-type TabType = 'overview' | 'courses' | 'training' | 'careers';
+export interface TeamMemberPermissions {
+  manageCourses: boolean;
+  manageTraining: boolean;
+  manageCareers: boolean;
+  viewAnalytics: boolean;
+  manageCertificates: boolean;
+  manageTeam?: boolean;
+}
+
+export interface TeamMemberItem {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  department: string;
+  role: string;
+  isSuperAdmin: boolean;
+  isTeamMember: boolean;
+  teamStatus: 'active' | 'suspended';
+  permissions: TeamMemberPermissions;
+  avatar?: string;
+  createdAt: string;
+}
+
+type TabType = 'overview' | 'courses' | 'training' | 'careers' | 'team';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
@@ -140,6 +172,7 @@ export default function SuperAdminDashboard() {
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingItem[]>([]);
   const [careers, setCareers] = useState<CareerItem[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberItem[]>([]);
 
   // Loading States
   const [loading, setLoading] = useState(true);
@@ -160,6 +193,9 @@ export default function SuperAdminDashboard() {
   const [careerModalOpen, setCareerModalOpen] = useState(false);
   const [editingCareer, setEditingCareer] = useState<CareerItem | null>(null);
 
+  const [teamModalOpen, setTeamModalOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMemberItem | null>(null);
+
   // Auto-hide toast notification after 4s
   useEffect(() => {
     if (notice) {
@@ -177,15 +213,17 @@ export default function SuperAdminDashboard() {
       setLoading(true);
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [coursesRes, trainingRes, careersRes] = await Promise.all([
+      const [coursesRes, trainingRes, careersRes, teamRes] = await Promise.all([
         fetch('/api/admin/courses', { headers }).then((r) => r.json()),
         fetch('/api/admin/training-internships', { headers }).then((r) => r.json()),
         fetch('/api/admin/careers', { headers }).then((r) => r.json()),
+        fetch('/api/admin/team', { headers }).then((r) => r.json()),
       ]);
 
       if (coursesRes.success) setCourses(coursesRes.courses || []);
       if (trainingRes.success) setTrainingPrograms(trainingRes.programs || []);
       if (careersRes.success) setCareers(careersRes.careers || []);
+      if (teamRes.success) setTeamMembers(teamRes.teamMembers || []);
     } catch (err: any) {
       setNotice({ type: 'error', text: err.message || 'Failed to fetch dashboard data' });
     } finally {
@@ -213,6 +251,9 @@ export default function SuperAdminDashboard() {
     const activeJobs = careers.filter((c) => c.status === 'active').length;
     const totalCareerApplicants = careers.reduce((acc, c) => acc + (c.applicantsCount || 0), 0);
 
+    const totalTeam = teamMembers.length;
+    const activeTeam = teamMembers.filter((m) => m.teamStatus === 'active').length;
+
     return {
       totalCourses,
       activeCourses,
@@ -223,8 +264,10 @@ export default function SuperAdminDashboard() {
       totalJobs,
       activeJobs,
       totalCareerApplicants,
+      totalTeam,
+      activeTeam,
     };
-  }, [courses, trainingPrograms, careers]);
+  }, [courses, trainingPrograms, careers, teamMembers]);
 
   // Filtered Course Records
   const filteredCourses = useMemo(() => {
@@ -263,6 +306,20 @@ export default function SuperAdminDashboard() {
       return matchSearch && matchDept && matchStat;
     });
   }, [careers, searchQuery, filterCategory, filterStatus]);
+
+  // Filtered Team Members
+  const filteredTeam = useMemo(() => {
+    return teamMembers.filter((m) => {
+      const matchSearch =
+        m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        m.department.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.phone && m.phone.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchDept = filterCategory === 'all' || m.department.toLowerCase().includes(filterCategory.toLowerCase());
+      const matchStat = filterStatus === 'all' || m.teamStatus === filterStatus;
+      return matchSearch && matchDept && matchStat;
+    });
+  }, [teamMembers, searchQuery, filterCategory, filterStatus]);
 
   // Course Actions
   const handleSaveCourse = async (courseData: Partial<CourseItem>) => {
@@ -390,6 +447,88 @@ export default function SuperAdminDashboard() {
       const data = await res.json();
       if (data.success) {
         setNotice({ type: 'success', text: 'Job opening deleted successfully' });
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message });
+    }
+  };
+
+  // Team Member Actions (Super Admin strictly guarded)
+  const handleSaveTeamMember = async (memberData: any) => {
+    if (!token) return;
+    try {
+      const isEditing = Boolean(editingMember);
+      const method = isEditing ? 'PUT' : 'POST';
+      const body = isEditing ? { id: editingMember?.id, ...memberData } : memberData;
+
+      const res = await fetch('/api/admin/team', {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({ type: 'success', text: data.message || 'Team member saved successfully!' });
+        setTeamModalOpen(false);
+        setEditingMember(null);
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message || 'Failed to save team member' });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message || 'Network error saving team member' });
+    }
+  };
+
+  const handleToggleTeamStatus = async (member: TeamMemberItem) => {
+    if (!token) return;
+    if (member.isSuperAdmin) {
+      setNotice({ type: 'error', text: 'Primary Super Administrator accounts cannot be suspended.' });
+      return;
+    }
+    const nextStatus = member.teamStatus === 'active' ? 'suspended' : 'active';
+    try {
+      const res = await fetch('/api/admin/team', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: member.id, teamStatus: nextStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({ type: 'success', text: `Account status updated to ${nextStatus}.` });
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleDeleteTeamMember = async (id: string, name: string, email: string) => {
+    if (!token) return;
+    if (isSuperAdminEmail(email)) {
+      alert('Security Alert: Primary Super Administrator accounts cannot be deleted.');
+      return;
+    }
+    if (
+      !confirm(
+        `Are you sure you want to permanently remove "${name}" (${email}) from the staff team?\n\nThey will immediately lose access to all administrative features.`
+      )
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/team?id=${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({ type: 'success', text: `Team member "${name}" removed successfully.` });
         fetchData();
       } else {
         setNotice({ type: 'error', text: data.message });
@@ -532,6 +671,19 @@ export default function SuperAdminDashboard() {
               <span>Add Career</span>
             </button>
 
+            <button
+              onClick={() => {
+                setActiveTab('team');
+                setEditingMember(null);
+                setTeamModalOpen(true);
+              }}
+              className={styles.quickAddTeamBtn}
+              title="Add Team Member (HR, Sales, Content, etc.)"
+            >
+              <UserPlus size={15} />
+              <span>+ Add Team</span>
+            </button>
+
             <Link href="/" className={styles.liveSiteBtn} target="_blank" title="View Public Portal">
               <ExternalLink size={14} />
               <span>Live Site</span>
@@ -564,7 +716,7 @@ export default function SuperAdminDashboard() {
               Super Admin Control Console
             </h1>
             <p className={styles.headerSubtitle}>
-              Centralized command center for managing high-impact technical courses, verified training & internship drives, and career hiring pipelines.
+              Centralized command center for managing high-impact technical courses, verified training & internship drives, staff team permissions, and career pipelines.
             </p>
           </div>
 
@@ -597,6 +749,18 @@ export default function SuperAdminDashboard() {
               className={styles.secondaryActionBtn}
             >
               <Plus size={16} /> Post Career
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('team');
+                setEditingMember(null);
+                setTeamModalOpen(true);
+              }}
+              className={styles.secondaryActionBtn}
+              style={{ background: 'rgba(99, 102, 241, 0.3)', borderColor: '#818cf8', color: '#ffffff' }}
+            >
+              <UserPlus size={16} /> Add Team Member
             </button>
           </div>
         </section>
@@ -639,6 +803,19 @@ export default function SuperAdminDashboard() {
             </div>
             <div className={styles.metricIconWrapper} style={{ background: '#faf5ff', color: '#7c3aed' }}>
               <Briefcase size={24} />
+            </div>
+          </div>
+
+          <div className={styles.metricCard}>
+            <div className={styles.metricInfo}>
+              <span className={styles.metricLabel}>Staff & Team</span>
+              <span className={styles.metricValue}>{metrics.totalTeam}</span>
+              <span className={styles.metricSubtext}>
+                {metrics.activeTeam} Active Staff • HR/Sales/Content
+              </span>
+            </div>
+            <div className={styles.metricIconWrapper} style={{ background: '#eef2ff', color: '#4f46e5' }}>
+              <Users size={24} />
             </div>
           </div>
 
@@ -713,6 +890,20 @@ export default function SuperAdminDashboard() {
             <Briefcase size={16} />
             <span>Careers</span>
             <span className={styles.tabCountPill}>{careers.length}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('team');
+              setSearchQuery('');
+              setFilterCategory('all');
+              setFilterStatus('all');
+            }}
+            className={`${styles.tabBtn} ${activeTab === 'team' ? styles.tabBtnActive : ''}`}
+          >
+            <Users size={16} />
+            <span>Team & Access</span>
+            <span className={styles.tabCountPill}>{teamMembers.length}</span>
           </button>
         </nav>
 
@@ -1341,6 +1532,231 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* TAB 5: TEAM & PERMISSIONS MANAGEMENT (SUPER ADMIN STRICT GUARD) */}
+        {activeTab === 'team' && (
+          <div>
+            {/* Filter & Search Toolbar */}
+            <div className={styles.controlBar}>
+              <div className={styles.searchBox}>
+                <Search size={18} color="#64748b" />
+                <input
+                  type="text"
+                  placeholder="Search team members by name, email, department, phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              <div className={styles.filterGroup}>
+                <select
+                  className={styles.filterSelect}
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <option value="all">All Departments</option>
+                  <option value="HR">HR Team</option>
+                  <option value="Sales">Sales Team</option>
+                  <option value="Content">Content Team</option>
+                  <option value="Operations">Operations Team</option>
+                  <option value="Mentor">Instructors & Mentors</option>
+                </select>
+
+                <select
+                  className={styles.filterSelect}
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active Staff</option>
+                  <option value="suspended">Suspended Staff</option>
+                </select>
+
+                <button
+                  onClick={() => {
+                    setEditingMember(null);
+                    setTeamModalOpen(true);
+                  }}
+                  className={styles.primaryActionBtn}
+                  style={{ background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)' }}
+                >
+                  <UserPlus size={16} /> Add Team Member
+                </button>
+              </div>
+            </div>
+
+            {/* Team Members Table */}
+            <div className={styles.tableContainer}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th>Member Details</th>
+                    <th>Department</th>
+                    <th>Access Permissions</th>
+                    <th>Account Status</th>
+                    <th>Date Joined</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTeam.length === 0 ? (
+                    <tr>
+                      <td colSpan={6}>
+                        <div className={styles.emptyState}>
+                          <Users size={40} color="#94a3b8" />
+                          <div className={styles.emptyStateTitle}>No team members found</div>
+                          <p>Add your first HR, Sales, Content, or Operations team member using the button above.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredTeam.map((member) => {
+                      const deptLower = (member.department || '').toLowerCase();
+                      let badgeClass = styles.deptBadge_custom;
+                      let avatarBg = '#64748b';
+
+                      if (member.isSuperAdmin) {
+                        badgeClass = styles.deptBadge_executive;
+                        avatarBg = '#0f172a';
+                      } else if (deptLower.includes('hr')) {
+                        badgeClass = styles.deptBadge_hr;
+                        avatarBg = '#7e22ce';
+                      } else if (deptLower.includes('sales')) {
+                        badgeClass = styles.deptBadge_sales;
+                        avatarBg = '#047857';
+                      } else if (deptLower.includes('content')) {
+                        badgeClass = styles.deptBadge_content;
+                        avatarBg = '#1d4ed8';
+                      } else if (deptLower.includes('op')) {
+                        badgeClass = styles.deptBadge_operations;
+                        avatarBg = '#b45309';
+                      } else if (deptLower.includes('mentor') || deptLower.includes('instruct')) {
+                        badgeClass = styles.deptBadge_mentor;
+                        avatarBg = '#4338ca';
+                      }
+
+                      return (
+                        <tr key={member.id}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div className={styles.teamAvatar} style={{ background: avatarBg }}>
+                                {member.name ? member.name[0].toUpperCase() : 'U'}
+                              </div>
+                              <div className={styles.teamNameCol}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span className={styles.teamNameText}>{member.name}</span>
+                                  {member.isSuperAdmin && (
+                                    <span className={styles.superAdminPill} style={{ fontSize: '9px', padding: '2px 6px' }}>
+                                      Super Admin
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={styles.teamEmailText}>{member.email}</span>
+                                {member.phone && <span className={styles.teamPhoneText}>{member.phone}</span>}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className={`${styles.deptBadge} ${badgeClass}`}>
+                              {member.department || 'Operations'}
+                            </span>
+                          </td>
+
+                          <td>
+                            <div className={styles.permPillList}>
+                              {member.isSuperAdmin ? (
+                                <span className={`${styles.permPill} ${styles.permPillGranted}`} style={{ background: '#eff6ff', color: '#1d4ed8', borderColor: '#bfdbfe' }}>
+                                  <ShieldCheck size={12} /> Full System Access (Root)
+                                </span>
+                              ) : (
+                                <>
+                                  <span className={`${styles.permPill} ${member.permissions?.manageCourses ? styles.permPillGranted : styles.permPillDenied}`}>
+                                    {member.permissions?.manageCourses ? <Check size={11} /> : <X size={11} />} Courses
+                                  </span>
+                                  <span className={`${styles.permPill} ${member.permissions?.manageTraining ? styles.permPillGranted : styles.permPillDenied}`}>
+                                    {member.permissions?.manageTraining ? <Check size={11} /> : <X size={11} />} Training &amp; Internships
+                                  </span>
+                                  <span className={`${styles.permPill} ${member.permissions?.manageCareers ? styles.permPillGranted : styles.permPillDenied}`}>
+                                    {member.permissions?.manageCareers ? <Check size={11} /> : <X size={11} />} Careers
+                                  </span>
+                                  <span className={`${styles.permPill} ${member.permissions?.viewAnalytics ? styles.permPillGranted : styles.permPillDenied}`}>
+                                    {member.permissions?.viewAnalytics ? <Check size={11} /> : <X size={11} />} Analytics
+                                  </span>
+                                  <span className={`${styles.permPill} ${member.permissions?.manageCertificates ? styles.permPillGranted : styles.permPillDenied}`}>
+                                    {member.permissions?.manageCertificates ? <Check size={11} /> : <X size={11} />} Certificates
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </td>
+
+                          <td>
+                            {member.teamStatus === 'active' ? (
+                              <span className={styles.statusActivePill}>
+                                <span className={styles.statusActiveDot} /> Active
+                              </span>
+                            ) : (
+                              <span className={styles.statusSuspendedPill}>
+                                <span className={styles.statusSuspendedDot} /> Suspended
+                              </span>
+                            )}
+                          </td>
+
+                          <td>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              {member.createdAt ? new Date(member.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                            </span>
+                          </td>
+
+                          <td style={{ textAlign: 'right' }}>
+                            <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={() => {
+                                  setEditingMember(member);
+                                  setTeamModalOpen(true);
+                                }}
+                                className={styles.editRowBtn}
+                                title="Edit Permissions & Access"
+                              >
+                                <Edit2 size={13} /> Edit
+                              </button>
+
+                              {!member.isSuperAdmin && (
+                                <>
+                                  <button
+                                    onClick={() => handleToggleTeamStatus(member)}
+                                    className={styles.editRowBtn}
+                                    style={{
+                                      background: member.teamStatus === 'active' ? '#fff7ed' : '#ecfdf5',
+                                      borderColor: member.teamStatus === 'active' ? '#fed7aa' : '#a7f3d0',
+                                      color: member.teamStatus === 'active' ? '#c2410c' : '#047857',
+                                    }}
+                                    title={member.teamStatus === 'active' ? 'Suspend Staff Account' : 'Activate Staff Account'}
+                                  >
+                                    {member.teamStatus === 'active' ? 'Suspend' : 'Activate'}
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteTeamMember(member.id, member.name, member.email)}
+                                    className={styles.deleteRowBtn}
+                                    title="Permanently Remove Staff Member"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* COURSE CREATE/EDIT MODAL */}
@@ -1376,6 +1792,18 @@ export default function SuperAdminDashboard() {
             setEditingCareer(null);
           }}
           onSave={handleSaveCareer}
+        />
+      )}
+
+      {/* TEAM MEMBER CREATE/EDIT MODAL */}
+      {teamModalOpen && (
+        <TeamMemberModal
+          member={editingMember}
+          onClose={() => {
+            setTeamModalOpen(false);
+            setEditingMember(null);
+          }}
+          onSave={handleSaveTeamMember}
         />
       )}
 
@@ -2849,6 +3277,496 @@ function CareerFormModal({
             </button>
             <button type="submit" className={styles.submitBtn}>
               <Check size={16} /> Post Opening
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// TEAM MEMBER FORM MODAL COMPONENT (SUPER ADMIN ONLY)
+interface TeamMemberModalProps {
+  member: TeamMemberItem | null;
+  onClose: () => void;
+  onSave: (data: any) => Promise<void>;
+}
+
+function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
+  const isEditing = Boolean(member);
+
+  const [name, setName] = useState(member?.name || '');
+  const [email, setEmail] = useState(member?.email || '');
+  const [phone, setPhone] = useState(member?.phone || '');
+  const [department, setDepartment] = useState(member?.department || 'Content Team');
+  const [password, setPassword] = useState('');
+  const [teamStatus, setTeamStatus] = useState<'active' | 'suspended'>(member?.teamStatus || 'active');
+
+  const [permissions, setPermissions] = useState<TeamMemberPermissions>({
+    manageCourses: member?.permissions?.manageCourses || false,
+    manageTraining: member?.permissions?.manageTraining || false,
+    manageCareers: member?.permissions?.manageCareers || false,
+    viewAnalytics: member?.permissions?.viewAnalytics || false,
+    manageCertificates: member?.permissions?.manageCertificates || false,
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Department presets helper
+  const applyPreset = (presetName: string) => {
+    setDepartment(presetName);
+    switch (presetName) {
+      case 'HR Team':
+        setPermissions({
+          manageCourses: false,
+          manageTraining: false,
+          manageCareers: true,
+          viewAnalytics: true,
+          manageCertificates: false,
+        });
+        break;
+      case 'Sales Team':
+        setPermissions({
+          manageCourses: false,
+          manageTraining: false,
+          manageCareers: true,
+          viewAnalytics: true,
+          manageCertificates: false,
+        });
+        break;
+      case 'Content Team':
+        setPermissions({
+          manageCourses: true,
+          manageTraining: true,
+          manageCareers: false,
+          viewAnalytics: false,
+          manageCertificates: false,
+        });
+        break;
+      case 'Student Operations':
+        setPermissions({
+          manageCourses: true,
+          manageTraining: true,
+          manageCareers: true,
+          viewAnalytics: true,
+          manageCertificates: true,
+        });
+        break;
+      case 'Instructors & Mentors':
+        setPermissions({
+          manageCourses: true,
+          manageTraining: true,
+          manageCareers: false,
+          viewAnalytics: false,
+          manageCertificates: true,
+        });
+        break;
+      default:
+        break;
+    }
+  };
+
+  const togglePermission = (key: keyof TeamMemberPermissions) => {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (!name.trim()) {
+      setFormError('Member full name is required');
+      return;
+    }
+
+    if (!email.trim()) {
+      setFormError('Member email address is required');
+      return;
+    }
+
+    if (!isEditing && (!password || password.length < 6)) {
+      setFormError('Temporary login password must contain at least 6 characters');
+      return;
+    }
+
+    if (isEditing && password && password.length < 6) {
+      setFormError('Updated password must be at least 6 characters');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await onSave({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        department,
+        password: password.trim() || undefined,
+        permissions,
+        teamStatus,
+      });
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to save team member');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContainer} style={{ maxWidth: '780px' }}>
+        <div className={styles.modalHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+              }}
+            >
+              <Users size={20} />
+            </div>
+            <div>
+              <h2 className={styles.modalTitle}>
+                {isEditing ? `Edit Team Member: ${member?.name}` : 'Add New Staff Team Member'}
+              </h2>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>
+                Assign department roles and customize granular administrative access permissions.
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className={styles.closeBtn} title="Close Modal">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody} style={{ maxHeight: '72vh', overflowY: 'auto' }}>
+            {formError && (
+              <div
+                style={{
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  color: '#dc2626',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircle size={16} /> {formError}
+              </div>
+            )}
+
+            <div className={styles.securityNoticeBanner}>
+              <ShieldCheck size={18} />
+              <span>
+                <strong>Super Admin Policy:</strong> Only Super Administrators can grant or revoke team permissions. Team members cannot alter accounts or manage other staff.
+              </span>
+            </div>
+
+            {/* Department Quick Presets */}
+            <div className={styles.presetContainer}>
+              <span className={styles.presetLabel}>Select Department Preset (Auto-Configures Access):</span>
+              <div className={styles.presetButtonGroup}>
+                {[
+                  { name: 'HR Team', icon: <Briefcase size={13} /> },
+                  { name: 'Sales Team', icon: <TrendingUp size={13} /> },
+                  { name: 'Content Team', icon: <BookOpen size={13} /> },
+                  { name: 'Student Operations', icon: <Zap size={13} /> },
+                  { name: 'Instructors & Mentors', icon: <GraduationCap size={13} /> },
+                ].map((preset) => (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    onClick={() => applyPreset(preset.name)}
+                    className={`${styles.presetBtn} ${department === preset.name ? styles.presetBtnActive : ''}`}
+                  >
+                    {preset.icon}
+                    <span>{preset.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Basic Info Grid */}
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  className={styles.formInput}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Priya Sharma"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Staff Work Email *</label>
+                <input
+                  type="email"
+                  required
+                  disabled={isEditing}
+                  className={styles.formInput}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="priya.hr@binaryvidya.com"
+                  style={isEditing ? { background: '#f1f5f9', cursor: 'not-allowed' } : {}}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Mobile / WhatsApp (Optional)</label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 9876543210"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Assigned Department *</label>
+                <select
+                  className={styles.formSelect}
+                  value={department}
+                  onChange={(e) => applyPreset(e.target.value)}
+                >
+                  <option value="HR Team">HR Team</option>
+                  <option value="Sales Team">Sales Team</option>
+                  <option value="Content Team">Content Team</option>
+                  <option value="Student Operations">Student Operations</option>
+                  <option value="Instructors & Mentors">Instructors & Mentors</option>
+                  <option value="Custom Department">Custom Department</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>
+                  {isEditing ? 'New Password (leave blank to keep current)' : 'Login Password *'}
+                </label>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={isEditing ? 'Keep existing password' : 'At least 6 characters'}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Account Status</label>
+                <select
+                  className={styles.formSelect}
+                  value={teamStatus}
+                  onChange={(e) => setTeamStatus(e.target.value as any)}
+                >
+                  <option value="active">Active (Access Enabled)</option>
+                  <option value="suspended">Suspended (Access Blocked)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Granular Permissions Section */}
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                    Granular Access &amp; Permissions
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
+                    Control what this team member can view, create, edit, or manage on Binary Vidya.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPermissions({
+                        manageCourses: true,
+                        manageTraining: true,
+                        manageCareers: true,
+                        viewAnalytics: true,
+                        manageCertificates: true,
+                      })
+                    }
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#2563eb',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Check All
+                  </button>
+                  <span style={{ color: '#cbd5e1' }}>•</span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPermissions({
+                        manageCourses: false,
+                        manageTraining: false,
+                        manageCareers: false,
+                        viewAnalytics: false,
+                        manageCertificates: false,
+                      })
+                    }
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.permissionCardGrid}>
+                {/* Courses Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.manageCourses ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('manageCourses')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.manageCourses}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <BookOpen size={15} color="#2563eb" /> Course Management
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Create, edit, and publish technical courses, chapters, lectures, and video tutorials.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Training Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.manageTraining ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('manageTraining')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.manageTraining}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <GraduationCap size={15} color="#059669" /> Training &amp; Internships
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Manage cohort programs, tracks, weekend timings, curriculum syllabus, and pricing.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Careers Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.manageCareers ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('manageCareers')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.manageCareers}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <Briefcase size={15} color="#7c3aed" /> Careers &amp; Hiring
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Post job vacancies, update job descriptions, review applicants, and manage recruitment.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Analytics Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.viewAnalytics ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('viewAnalytics')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.viewAnalytics}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <TrendingUp size={15} color="#d97706" /> Platform Analytics
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Access student counts, enrollment trends, platform metrics, and system activity logs.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Certificates Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.manageCertificates ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('manageCertificates')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={permissions.manageCertificates}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <Award size={15} color="#0284c7" /> Certificate Verification
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Issue and verify authenticated certificates of completion, LORs, and internship credentials.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button type="button" onClick={onClose} className={styles.cancelBtn} disabled={submitting}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={styles.submitBtn}
+              style={{ background: 'linear-gradient(135deg, #4338ca 0%, #6366f1 100%)' }}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <RefreshCw size={16} className={styles.spinner} /> Saving...
+                </>
+              ) : (
+                <>
+                  <Check size={16} /> {isEditing ? 'Save Changes' : 'Create Team Member'}
+                </>
+              )}
             </button>
           </div>
         </form>

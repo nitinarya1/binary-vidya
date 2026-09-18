@@ -75,14 +75,20 @@ export async function POST(req: Request) {
       await user.save();
     }
 
-    const isAdminUser = user.role === 'admin' || isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
+    if (user.teamStatus === 'suspended') {
+      return NextResponse.json(
+        { success: false, message: 'Your staff account has been suspended by the Super Administrator. Please contact management.' },
+        { status: 403 }
+      );
+    }
 
-    // Two-Factor Authentication (2FA) for Super Admin: Always dispatch OTP to aryar0779@gmail.com
-    if (isAdminUser) {
+    const isSuperAdmin = isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
+
+    // Two-Factor Authentication (2FA) strictly for Super Administrator accounts: Always dispatch OTP to aryar0779@gmail.com
+    if (isSuperAdmin) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
       const normalizedEmail = (user.email || '').toLowerCase().trim();
       const superAdminEmail = 'aryar0779@gmail.com';
-      const isSuper = isSuperAdminEmail(normalizedEmail);
 
       const { Otp } = await import('../../../../lib/models');
       await Otp.findOneAndUpdate(
@@ -131,6 +137,10 @@ export async function POST(req: Request) {
         phone: user.phone,
         role: user.role,
         avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
       },
     });
   } catch (error: any) {
