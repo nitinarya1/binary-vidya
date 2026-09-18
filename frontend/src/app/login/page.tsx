@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from './login.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { GoogleLoginBtn } from '../../components/GoogleLoginBtn';
@@ -10,33 +12,29 @@ import {
   Mail,
   Lock,
   User as UserIcon,
+  Phone,
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
-  Check,
-  AlertCircle,
   ShieldCheck,
-  Zap,
-  BookOpen,
-  Phone,
   CheckCircle2,
-  RefreshCw,
+  AlertCircle,
   KeyRound,
+  ArrowLeft,
+  Sparkles,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
-type AuthStep = 'email' | 'password' | 'register' | 'superadmin-otp';
+type AuthMode = 'signin' | 'register' | 'superadmin-otp';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, verifySuperAdminOtp, registerUser, logout, user, isLoading } = useAuth();
+  const { login, verifySuperAdminOtp, registerUser, user, isLoading } = useAuth();
 
-  // Current Authentication Step
-  const [step, setStep] = useState<AuthStep>('email');
+  // Mode: Sign In, Register, or 2FA OTP
+  const [mode, setMode] = useState<AuthMode>('signin');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Form Fields
+  // Form State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+91');
@@ -44,21 +42,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
 
-  // Verified User Cache from Step 1
-  const [verifiedUser, setVerifiedUser] = useState<any | null>(null);
-
-  // Status & Modal States
+  // Status & Feedback
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
-  // Super Admin 2FA States
+  // Super Admin 2FA State
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '']);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [maskedEmail, setMaskedEmail] = useState<string>('');
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Countdown timer for 2FA resend
   useEffect(() => {
     let interval: any;
     if (resendCooldown > 0) {
@@ -67,7 +63,7 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [resendCooldown]);
 
-  // Auto-redirect if already authenticated
+  // Auto-redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
       if (isSuperAdminEmail(user.email)) {
@@ -78,8 +74,10 @@ export default function LoginPage() {
     }
   }, [isLoading, user, router]);
 
-  // Step 1: Verify Email / Identifier
-  const handleVerifyEmail = async (e: React.FormEvent) => {
+  // =========================================================================
+  // 1. Handle Sign In
+  // =========================================================================
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -90,36 +88,6 @@ export default function LoginPage() {
       return;
     }
 
-    try {
-      setLoading(true);
-      const res = await fetch('/api/auth/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: loginId }),
-      });
-
-      const data = await res.json();
-      if (data.success && data.exists) {
-        setVerifiedUser(data.user);
-        setStep('password');
-      } else {
-        setErrorMsg(
-          data.message || 'No account found with this email. Please check spelling or create an account.'
-        );
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to verify email. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Sign In with Password
-  const handlePasswordSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
     if (!password) {
       setErrorMsg('Please enter your password.');
       return;
@@ -127,12 +95,13 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const result = await login(email, password);
+      const result = await login(loginId, password);
 
+      // Super Admin 2FA requirement
       if (result.requireOtp) {
         if (result.maskedEmail) setMaskedEmail(result.maskedEmail);
         setSuccessMsg(result.message || 'Super Admin 4-digit OTP sent to your registered email!');
-        setStep('superadmin-otp');
+        setMode('superadmin-otp');
         setOtpDigits(['', '', '', '']);
         setResendCooldown(60);
         setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
@@ -142,20 +111,70 @@ export default function LoginPage() {
       if (result.user) {
         if (isSuperAdminEmail(result.user.email)) {
           setSuccessMsg('Welcome, Super Admin! Opening Super Admin Console...');
-          setTimeout(() => router.push('/super-admin'), 200);
+          setTimeout(() => router.push('/super-admin'), 250);
         } else {
           setSuccessMsg('Welcome back! Logging you in...');
-          setTimeout(() => router.push('/'), 200);
+          setTimeout(() => router.push('/'), 250);
         }
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid password. Please check your credentials or reset password.');
+      setErrorMsg(err.message || 'Invalid email or password. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Super Admin OTP digit change
+  // =========================================================================
+  // 2. Handle Register New Account
+  // =========================================================================
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!name.trim()) {
+      setErrorMsg('Please enter your full name.');
+      return;
+    }
+
+    const rawPhone = phone.replace(/\D/g, '');
+    if (!rawPhone || rawPhone.length < 10) {
+      setErrorMsg('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    if (!email.trim() || !password) {
+      setErrorMsg('Please enter a valid email address and password.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const fullPhone = `${countryCode}${rawPhone}`;
+      const newUser = await registerUser(name.trim(), email.trim(), password, fullPhone);
+
+      if (isSuperAdminEmail(newUser?.email)) {
+        setSuccessMsg('Super Admin account created! Opening Super Admin Console...');
+        setTimeout(() => router.push('/super-admin'), 250);
+      } else {
+        setSuccessMsg('Account created successfully! Welcome to Binary Vidya...');
+        setTimeout(() => router.push('/'), 250);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Registration failed. An account may already exist with this email/phone.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================================================================
+  // 3. Handle Super Admin 2FA OTP
+  // =========================================================================
   const handleOtpDigitChange = (index: number, val: string) => {
     if (val.length > 1) {
       const pasted = val.replace(/\D/g, '').slice(0, 4).split('');
@@ -184,7 +203,6 @@ export default function LoginPage() {
     }
   };
 
-  // Step 2FA: Verify Super Admin Login OTP
   const handleSuperAdminOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -192,7 +210,7 @@ export default function LoginPage() {
 
     const fullOtp = otpDigits.join('');
     if (fullOtp.length < 4) {
-      setErrorMsg('Please enter the complete 4-digit OTP code.');
+      setErrorMsg('Please enter the complete 4-digit verification code.');
       return;
     }
 
@@ -202,14 +220,14 @@ export default function LoginPage() {
       if (verified) {
         if (isSuperAdminEmail(verified.email)) {
           setSuccessMsg('Super Admin 2FA Verified! Opening Super Admin Console...');
-          setTimeout(() => router.push('/super-admin'), 200);
+          setTimeout(() => router.push('/super-admin'), 250);
         } else {
           setSuccessMsg('Admin 2FA Verified! Opening Admin Console...');
-          setTimeout(() => router.push('/admin'), 200);
+          setTimeout(() => router.push('/admin'), 250);
         }
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid or expired OTP code.');
+      setErrorMsg(err.message || 'Invalid or expired OTP code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -235,619 +253,403 @@ export default function LoginPage() {
     }
   };
 
-  // Step 3: Register New User
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    setSuccessMsg(null);
-
-    if (!name.trim()) {
-      setErrorMsg('Please enter your full name.');
-      return;
-    }
-
-    const rawDigits = phone.replace(/\D/g, '');
-    if (!rawDigits || rawDigits.length < 10) {
-      setErrorMsg('Please enter a valid 10-digit mobile number.');
-      return;
-    }
-
-    if (!email || !password) {
-      setErrorMsg('Please enter a valid email address and password.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const fullPhone = `${countryCode}${phone.replace(/\D/g, '')}`;
-      const newUser = await registerUser(name, email, password, fullPhone);
-
-      if (isSuperAdminEmail(newUser?.email)) {
-        setSuccessMsg('Super Admin account ready! Opening Super Admin Console...');
-        setTimeout(() => router.push('/super-admin'), 200);
-      } else {
-        setSuccessMsg('Account created successfully! Redirecting...');
-        setTimeout(() => router.push('/'), 200);
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <main className={styles.pageContainer}>
-      <div className={styles.authWrapper}>
-        {/* Left Hero Section */}
-        <section className={styles.heroSection}>
-          <div className={styles.brandHeader}>
-            <div className={styles.brandLogo}>BV</div>
-            <span className={styles.brandName}>Binary Vidya</span>
-          </div>
+      <div className={styles.glowOrbTop} />
 
-          <div className={styles.heroContent}>
-            <div className={styles.heroTag}>
-              <Sparkles size={14} /> Next-Gen Technical Academy
-            </div>
-            <h1 className={styles.heroTitle}>Master the Code. Shape the Future.</h1>
-            <p className={styles.heroSubtitle}>
-              Experience interactive computer science, real-world development masterclasses, and verified certifications.
-            </p>
+      <div className={styles.authCard}>
+        {/* Brand Header with Official Company Logo */}
+        <div className={styles.brandHeader}>
+          <Link href="/" className={styles.logoLink} title="Binary Vidya Home">
+            <img
+              src="/images/binary-vidya-logo.png"
+              alt="Binary Vidya"
+              className={styles.brandLogoImg}
+            />
+          </Link>
 
-            <div className={styles.featuresList}>
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
-                  <Zap size={14} />
-                </div>
-                <span>Curated Industry Grade Roadmaps & Projects</span>
-              </div>
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
-                  <ShieldCheck size={14} />
-                </div>
-                <span>End-to-End Enterprise Auth & Security</span>
-              </div>
-              <div className={styles.featureItem}>
-                <div className={styles.featureIcon}>
-                  <BookOpen size={14} />
-                </div>
-                <span>Interactive Video Player & Live Assessments</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.heroFooter}>
-            <span>&copy; {new Date().getFullYear()} Binary Vidya Inc.</span>
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-          </div>
-        </section>
-
-        {/* Right Form Section */}
-        <section className={styles.formSection}>
-          {/* Form Header */}
-          <div className={styles.formHeader}>
-            {step === 'superadmin-otp' && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '5px 12px',
-                  borderRadius: '20px',
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                  border: '1px solid #f59e0b',
-                  color: '#92400e',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  marginBottom: '10px',
-                  letterSpacing: '0.03em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                <ShieldCheck size={14} /> {isSuperAdminEmail(email) ? 'Super Admin 2FA Security' : 'Admin Authorization 2FA'}
-              </div>
-            )}
-            {step === 'password' && verifiedUser?.role === 'admin' && (
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '20px',
-                  background: '#eff6ff',
-                  border: '1px solid #bfdbfe',
-                  color: '#1d4ed8',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  marginBottom: '10px',
-                }}
-              >
-                <ShieldCheck size={14} /> Administrator Account Verified
-              </div>
-            )}
-
-            <h2 className={styles.formTitle}>
-              {step === 'register'
-                ? 'Create your account'
-                : step === 'superadmin-otp'
-                ? isSuperAdminEmail(email) ? 'Super Admin 2FA Verification' : 'Admin Security Verification'
-                : step === 'password'
-                ? `Welcome back${verifiedUser?.name ? `, ${verifiedUser.name.split(' ')[0]}` : ''}`
-                : 'Sign in to Binary Vidya'}
-            </h2>
-            <p className={styles.formSubtitle}>
-              {step === 'register'
-                ? 'Start your journey with hands-on technical excellence'
-                : step === 'superadmin-otp'
-                ? `Enter the 4-digit code dispatched to ${maskedEmail || email || 'aryar0779@gmail.com'}`
-                : step === 'password'
-                ? 'Enter your password to access your courses and dashboard'
-                : 'Enter your email or mobile number to continue'}
-            </p>
-          </div>
-
-          {/* Alert Messages */}
-          {errorMsg && (
-            <div id="auth-error-alert" className={styles.errorBox}>
-              <AlertCircle size={18} />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {successMsg && (
-            <div id="auth-success-alert" className={styles.successBox}>
-              <Check size={18} />
-              <span>{successMsg}</span>
-            </div>
-          )}
-
-          {/* STEP 1: ASK FOR EMAIL FIRST */}
-          {step === 'email' && (
-            <form onSubmit={handleVerifyEmail} id="auth-email-form">
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="auth-email">
-                  Email Address or Mobile Number
-                </label>
-                <div className={styles.inputFieldWrapper}>
-                  <Mail size={18} color="#94a3b8" />
-                  <input
-                    type="text"
-                    id="auth-email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="learner@binaryvidya.edu or 98765 43210"
-                    required
-                    autoFocus
-                    className={styles.inputField}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                id="auth-continue-btn"
-                disabled={loading}
-                className={styles.submitBtn}
-                style={{ opacity: loading ? 0.7 : 1 }}
-              >
-                {loading ? 'Verifying email...' : <>Continue <ArrowRight size={16} /></>}
-              </button>
-            </form>
-          )}
-
-          {/* STEP 2: ASK FOR PASSWORD (AFTER EMAIL IS VERIFIED) */}
-          {step === 'password' && (
-            <form onSubmit={handlePasswordSignIn} id="auth-password-form">
-              {/* Verified Account Pill */}
-              <div className={styles.verifiedEmailBadge}>
-                <div className={styles.verifiedEmailText}>
-                  <CheckCircle2 size={16} color="#16a34a" />
-                  <span>{verifiedUser?.email || email}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('email');
-                    setPassword('');
-                    setErrorMsg(null);
-                  }}
-                  className={styles.changeEmailBtn}
-                  title="Change email"
-                >
-                  Change
-                </button>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="auth-password">
-                  Password
-                </label>
-                <div className={styles.inputFieldWrapper}>
-                  <Lock size={18} color="#94a3b8" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="auth-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    required
-                    autoFocus
-                    className={styles.inputField}
-                  />
-                  <button
-                    type="button"
-                    id="toggle-password-visibility"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={styles.togglePasswordBtn}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Forgot password button right under password */}
-              <div className={styles.forgotPassRow}>
-                <button
-                  type="button"
-                  id="forgot-password-link"
-                  onClick={() => setIsForgotModalOpen(true)}
-                  className={styles.forgotPassLink}
-                >
-                  Forgot password?
-                </button>
-              </div>
-
-              <button
-                type="submit"
-                id="auth-submit-btn"
-                disabled={loading}
-                className={styles.submitBtn}
-                style={{
-                  opacity: loading ? 0.7 : 1,
-                  background: verifiedUser?.role === 'admin' ? 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' : undefined,
-                }}
-              >
-                {loading ? (
-                  'Signing in...'
-                ) : (
-                  <>
-                    Sign In to Account <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* STEP 2.5: SUPER ADMIN 2FA OTP VERIFICATION */}
-          {step === 'superadmin-otp' && (
-            <form onSubmit={handleSuperAdminOtpSubmit} id="superadmin-otp-form">
-              {/* Email Pill Badge */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  marginBottom: '18px',
-                  fontSize: '13px',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <ShieldCheck size={16} color="#2563eb" />
-                  <span style={{ fontWeight: 600, color: '#1e293b' }}>{email}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep('password');
-                    setErrorMsg(null);
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#2563eb',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textDecoration: 'underline',
-                  }}
-                >
-                  Change
-                </button>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} style={{ textAlign: 'center', display: 'block', marginBottom: '8px' }}>
-                  Enter 4-Digit Security Code
-                </label>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    margin: '12px 0 18px 0',
-                  }}
-                >
-                  {otpDigits.map((digit, idx) => (
-                    <input
-                      key={idx}
-                      ref={(el) => {
-                        otpInputsRef.current[idx] = el;
-                      }}
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                      autoFocus={idx === 0}
-                      id={`superadmin-otp-input-${idx}`}
-                      style={{
-                        width: '56px',
-                        height: '60px',
-                        textAlign: 'center',
-                        fontSize: '24px',
-                        fontWeight: 700,
-                        borderRadius: '12px',
-                        border: digit ? '2px solid #2563eb' : '1.5px solid #cbd5e1',
-                        background: digit ? '#eff6ff' : '#ffffff',
-                        color: '#0f172a',
-                        outline: 'none',
-                        transition: 'all 0.15s ease-in-out',
-                        boxShadow: digit ? '0 0 0 3px rgba(37, 99, 235, 0.15)' : 'none',
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Resend OTP button */}
-              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                {resendCooldown > 0 ? (
-                  <span style={{ fontSize: '13px', color: '#64748b' }}>
-                    Resend code in <strong>{resendCooldown}s</strong>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResendSuperAdminOtp}
-                    disabled={loading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#2563eb',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    Resend OTP Code
-                  </button>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                id="superadmin-otp-submit-btn"
-                disabled={loading || otpDigits.some((d) => !d)}
-                className={styles.submitBtn}
-                style={{
-                  opacity: loading || otpDigits.some((d) => !d) ? 0.6 : 1,
-                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
-                }}
-              >
-                {loading ? 'Verifying OTP...' : <>Verify & Enter Super Admin Console <ArrowRight size={16} /></>}
-              </button>
-            </form>
-          )}
-
-          {/* STEP 3: CREATE ACCOUNT FORM */}
-          {step === 'register' && (
-            <form onSubmit={handleRegisterSubmit} id="auth-register-form">
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="register-name">
-                  Full Name
-                </label>
-                <div className={styles.inputFieldWrapper}>
-                  <UserIcon size={18} color="#94a3b8" />
-                  <input
-                    type="text"
-                    id="register-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Jane Doe"
-                    required
-                    autoFocus
-                    className={styles.inputField}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="register-phone">
-                  Mobile Number
-                </label>
-                <div className={styles.inputFieldWrapper} style={{ padding: 0, overflow: 'hidden' }}>
-                  <select
-                    value={countryCode}
-                    onChange={(e) => setCountryCode(e.target.value)}
-                    className={styles.countryCodeSelect}
-                    id="register-country-code"
-                  >
-                    <option value="+91">🇮🇳 +91</option>
-                    <option value="+1">🇺🇸 +1</option>
-                    <option value="+44">🇬🇧 +44</option>
-                    <option value="+971">🇦🇪 +971</option>
-                    <option value="+61">🇦🇺 +61</option>
-                    <option value="+65">🇸🇬 +65</option>
-                  </select>
-                  <div style={{ display: 'flex', alignItems: 'center', flex: 1, padding: '12px 14px', gap: '10px' }}>
-                    <Phone size={18} color="#94a3b8" />
-                    <input
-                      type="tel"
-                      id="register-phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="98765 43210"
-                      required
-                      className={styles.inputField}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="register-email">
-                  Email Address
-                </label>
-                <div className={styles.inputFieldWrapper}>
-                  <Mail size={18} color="#94a3b8" />
-                  <input
-                    type="email"
-                    id="register-email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="learner@binaryvidya.edu"
-                    required
-                    className={styles.inputField}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel} htmlFor="register-password">
-                  Password
-                </label>
-                <div className={styles.inputFieldWrapper}>
-                  <Lock size={18} color="#94a3b8" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    id="register-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    required
-                    className={styles.inputField}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={styles.togglePasswordBtn}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                id="auth-register-btn"
-                disabled={loading}
-                className={styles.submitBtn}
-                style={{ opacity: loading ? 0.7 : 1 }}
-              >
-                {loading ? 'Creating Account...' : <>Create Free Account <ArrowRight size={16} /></>}
-              </button>
-            </form>
-          )}
-
-          {/* Divider and Google Login (hidden during Super Admin 2FA) */}
-          {step !== 'superadmin-otp' && (
+          {mode !== 'superadmin-otp' && (
             <>
-              <div className={styles.divider}>
-                <span>Or continue with</span>
-              </div>
-
-              <GoogleLoginBtn
-                onSuccess={(googleUser) => {
-                  if (googleUser?.requireOtp) {
-                    setStep('superadmin-otp');
-                    setEmail(googleUser.email);
-                    if (googleUser.maskedEmail) setMaskedEmail(googleUser.maskedEmail);
-                    setSuccessMsg(googleUser.message || 'OTP sent to aryar0779@gmail.com for Super Admin verification.');
-                    setResendCooldown(60);
-                    return;
-                  }
-                  if (isSuperAdminEmail(googleUser?.email)) {
-                    setSuccessMsg('Super Admin account confirmed! Opening Super Admin Console...');
-                    setTimeout(() => router.push('/super-admin'), 200);
-                  } else if (googleUser?.role === 'admin') {
-                    setSuccessMsg('Google verification confirmed (Admin)! Redirecting to Admin Console...');
-                    setTimeout(() => router.push('/admin'), 200);
-                  } else {
-                    setSuccessMsg('Google sign-in successful! Redirecting...');
-                    setTimeout(() => router.push('/'), 200);
-                  }
-                }}
-                onError={(msg) => setErrorMsg(msg)}
-              />
+              <h1 className={styles.cardTitle}>
+                {mode === 'signin' ? 'Welcome Back' : 'Create Your Account'}
+              </h1>
+              <p className={styles.cardSubtitle}>
+                {mode === 'signin'
+                  ? 'Sign in to access your courses, internship, and credentials.'
+                  : 'Start your software engineering journey with Binary Vidya.'}
+              </p>
             </>
           )}
+        </div>
 
-          {/* Bottom Link: Don't have an account? Create one / Already have an account? Sign in */}
-          <div className={styles.footerSwitchRow}>
-            {step === 'superadmin-otp' ? (
-              <span>
-                Want to use a different account?{' '}
-                <button
-                  type="button"
-                  id="link-switch-to-signin-from-otp"
-                  onClick={() => {
-                    setStep('email');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className={styles.footerSwitchBtn}
-                >
-                  Return to Sign In
-                </button>
-              </span>
-            ) : step === 'register' ? (
-              <span>
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  id="link-switch-to-signin"
-                  onClick={() => {
-                    setStep('email');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className={styles.footerSwitchBtn}
-                >
-                  Sign In
-                </button>
-              </span>
-            ) : (
-              <span>
-                Don&apos;t have an account?{' '}
-                <button
-                  type="button"
-                  id="link-switch-to-register"
-                  onClick={() => {
-                    setStep('register');
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                  }}
-                  className={styles.footerSwitchBtn}
-                >
-                  Create one
-                </button>
-              </span>
-            )}
+        {/* Segmented Tab Switcher (Only in signin/register mode) */}
+        {mode !== 'superadmin-otp' && (
+          <div className={styles.tabSwitcher}>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signin');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
+              className={`${styles.tabBtn} ${mode === 'signin' ? styles.tabBtnActive : ''}`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('register');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
+              className={`${styles.tabBtn} ${mode === 'register' ? styles.tabBtnActive : ''}`}
+            >
+              Create Account
+            </button>
           </div>
-        </section>
+        )}
+
+        {/* Feedback Alert Banners */}
+        {errorMsg && (
+          <div className={styles.errorAlert}>
+            <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {successMsg && (
+          <div className={styles.successAlert}>
+            <CheckCircle2 size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{successMsg}</span>
+          </div>
+        )}
+
+        {/* ===================================================================
+            MODE 1: SIGN IN
+            =================================================================== */}
+        {mode === 'signin' && (
+          <form onSubmit={handleSignIn} className={styles.form}>
+            {/* Email / Identifier */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Email Address or Mobile</label>
+              <div className={styles.inputWrapper}>
+                <Mail size={18} className={styles.inputIcon} />
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com or 9876543210"
+                  className={styles.input}
+                  autoComplete="username"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className={styles.formGroup}>
+              <div className={styles.label}>
+                <span>Password</span>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(true)}
+                  className={styles.forgotBtn}
+                >
+                  Forgot Password?
+                </button>
+              </div>
+              <div className={styles.inputWrapper}>
+                <Lock size={18} className={styles.inputIcon} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`${styles.input} ${styles.inputPassword}`}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={styles.eyeToggleBtn}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember Me Option */}
+            <div className={styles.optionsRow}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className={styles.checkbox}
+                />
+                <span>Remember me on this device</span>
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className={styles.submitBtn}>
+              {loading ? 'Signing In...' : 'Sign In'} <ArrowRight size={16} />
+            </button>
+
+            {/* Social Divider */}
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>or continue with</span>
+              <div className={styles.dividerLine} />
+            </div>
+
+            {/* Google Login */}
+            <GoogleLoginBtn
+              onSuccess={(authUser) => {
+                if (isSuperAdminEmail(authUser?.email)) {
+                  router.push('/super-admin');
+                } else {
+                  router.push('/');
+                }
+              }}
+              onError={(err) => setErrorMsg(err)}
+            />
+
+            {/* Switch to Register */}
+            <div className={styles.switchRow}>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('register');
+                  setErrorMsg(null);
+                }}
+                className={styles.switchBtn}
+              >
+                Create Account
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ===================================================================
+            MODE 2: CREATE ACCOUNT (REGISTER)
+            =================================================================== */}
+        {mode === 'register' && (
+          <form onSubmit={handleRegister} className={styles.form}>
+            {/* Full Name */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Full Name</label>
+              <div className={styles.inputWrapper}>
+                <UserIcon size={18} className={styles.inputIcon} />
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className={styles.input}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Email Address */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Email Address</label>
+              <div className={styles.inputWrapper}>
+                <Mail size={18} className={styles.inputIcon} />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className={styles.input}
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            {/* Mobile Number */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Mobile Number (WhatsApp updates)</label>
+              <div className={styles.phoneRow}>
+                <select
+                  value={countryCode}
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  className={styles.countryCodeSelect}
+                >
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+971">🇦🇪 +971</option>
+                </select>
+                <div className={styles.inputWrapper} style={{ flex: 1 }}>
+                  <Phone size={18} className={styles.inputIcon} />
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    className={styles.input}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className={styles.formGroup}>
+              <label className={styles.label}>Create Password</label>
+              <div className={styles.inputWrapper}>
+                <Lock size={18} className={styles.inputIcon} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 6 characters"
+                  className={`${styles.input} ${styles.inputPassword}`}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className={styles.eyeToggleBtn}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button type="submit" disabled={loading} className={styles.submitBtn}>
+              {loading ? 'Creating Account...' : 'Create Free Account'} <ArrowRight size={16} />
+            </button>
+
+            {/* Social Divider */}
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>or sign up with</span>
+              <div className={styles.dividerLine} />
+            </div>
+
+            {/* Google Register */}
+            <GoogleLoginBtn
+              onSuccess={() => router.push('/')}
+              onError={(err) => setErrorMsg(err)}
+            />
+
+            {/* Switch to Sign In */}
+            <div className={styles.switchRow}>
+              Already have an account?{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('signin');
+                  setErrorMsg(null);
+                }}
+                className={styles.switchBtn}
+              >
+                Sign In
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* ===================================================================
+            MODE 3: SUPER ADMIN 2FA OTP VERIFICATION
+            =================================================================== */}
+        {mode === 'superadmin-otp' && (
+          <div className={styles.otpCard}>
+            <div className={styles.otpShieldWrap}>
+              <ShieldCheck size={32} color="#2563eb" />
+            </div>
+
+            <h2 className={styles.otpTitle}>Two-Factor Authentication</h2>
+            <p className={styles.otpSubtitle}>
+              Please enter the 4-digit authorization code sent to{' '}
+              <strong style={{ color: '#0f172a' }}>{maskedEmail || email}</strong>
+            </p>
+
+            <form onSubmit={handleSuperAdminOtpSubmit}>
+              <div className={styles.otpInputsGroup}>
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      otpInputsRef.current[index] = el;
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpDigitChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    className={styles.otpInputBox}
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </div>
+
+              <div className={styles.resendRow}>
+                <span>Didn't receive the code?</span>
+                <button
+                  type="button"
+                  disabled={resendCooldown > 0 || loading}
+                  onClick={handleResendSuperAdminOtp}
+                  className={styles.resendBtn}
+                >
+                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+                </button>
+              </div>
+
+              <button type="submit" disabled={loading} className={styles.submitBtn}>
+                {loading ? 'Verifying...' : 'Verify & Enter Console'} <ArrowRight size={16} />
+              </button>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('signin');
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                  }}
+                  className={styles.backToSignInBtn}
+                >
+                  <ArrowLeft size={14} /> Back to Sign In
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
-      {/* Forgot Password OTP Modal */}
+      {/* Page Footer Navigation */}
+      <div className={styles.pageFooter}>
+        <Link href="/" className={styles.footerLink}>
+          &larr; Back to Home
+        </Link>
+        <span>•</span>
+        <Link href="/verify-certificate" className={styles.footerLink}>
+          Verify Certificate
+        </Link>
+        <span>•</span>
+        <Link href="/training-and-internship" className={styles.footerLink}>
+          Training &amp; Internships
+        </Link>
+      </div>
+
+      {/* Forgot Password Modal */}
       <ForgotPasswordModal
         isOpen={isForgotModalOpen}
         onClose={() => setIsForgotModalOpen(false)}
