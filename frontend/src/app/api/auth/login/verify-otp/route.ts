@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const isAdminUser = user.role === 'admin' || isDefaultAdminEmail(normalizedEmail) || isSuperAdminEmail(normalizedEmail);
+    const isAdminUser = user.role === 'admin' || user.isTeamMember || isDefaultAdminEmail(normalizedEmail) || isSuperAdminEmail(normalizedEmail);
     if (!isAdminUser) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized: Admin access only' },

@@ -198,7 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = Boolean(
     user &&
     !isSuspended &&
-    (isSuperAdmin || (user.role === 'admin' && (!user.isTeamMember || hasAnyTeamPermission)) || hasAnyTeamPermission)
+    (isSuperAdmin || hasAnyTeamPermission)
   );
 
   return (
