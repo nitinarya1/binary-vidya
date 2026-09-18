@@ -171,14 +171,23 @@ export default function SuperAdminDashboard() {
   const isSuspended = user?.teamStatus === 'suspended';
   const isStaffAdmin = Boolean(user && (user.role === 'admin' || user.isTeamMember));
 
+  const isHRTeam = Boolean(
+    user &&
+    !isSuspended &&
+    (
+      (user.department && user.department.toLowerCase().includes('hr')) ||
+      Boolean(user.permissions?.manageTeam)
+    )
+  );
+
   const canManageCourses = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCourses));
   const canManageTraining = !isSuspended && (isSuper || Boolean(user?.permissions?.manageTraining));
   const canManageCareers = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCareers));
   const canViewAnalytics = !isSuspended && (isSuper || Boolean(user?.permissions?.viewAnalytics));
   const canManageCertificates = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCertificates));
-  const canManageTeam = isSuper; // Strictly Super Admin only
+  const canManageTeam = !isSuspended && (isSuper || isHRTeam); // aryar0779@gmail.com / Super Admins and HR Team
 
-  const hasAnyAccess = isSuper || canManageCourses || canManageTraining || canManageCareers || canViewAnalytics || canManageCertificates;
+  const hasAnyAccess = isSuper || canManageCourses || canManageTraining || canManageCareers || canViewAnalytics || canManageCertificates || canManageTeam;
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -1937,18 +1946,20 @@ export default function SuperAdminDashboard() {
 
                           <td style={{ textAlign: 'right' }}>
                             <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
-                              <button
-                                onClick={() => {
-                                  setEditingMember(member);
-                                  setTeamModalOpen(true);
-                                }}
-                                className={styles.editRowBtn}
-                                title="Edit Permissions & Access"
-                              >
-                                <Edit2 size={13} /> Edit
-                              </button>
+                              {(!member.isSuperAdmin || isSuper) && (
+                                <button
+                                  onClick={() => {
+                                    setEditingMember(member);
+                                    setTeamModalOpen(true);
+                                  }}
+                                  className={styles.editRowBtn}
+                                  title="Edit Permissions & Access"
+                                >
+                                  <Edit2 size={13} /> Edit
+                                </button>
+                              )}
 
-                              {!member.isRootSuperAdmin && member.email.toLowerCase() !== (user?.email || '').toLowerCase() && (
+                              {!member.isRootSuperAdmin && (!member.isSuperAdmin || isSuper) && member.email.toLowerCase() !== (user?.email || '').toLowerCase() && (
                                 <>
                                   <button
                                     onClick={() => handleToggleTeamStatus(member)}
@@ -3534,6 +3545,7 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
     manageCareers: member?.permissions?.manageCareers || false,
     viewAnalytics: member?.permissions?.viewAnalytics || false,
     manageCertificates: member?.permissions?.manageCertificates || false,
+    manageTeam: member?.permissions?.manageTeam || false,
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -3550,6 +3562,7 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
           manageCareers: true,
           viewAnalytics: true,
           manageCertificates: false,
+          manageTeam: true,
         });
         break;
       case 'Sales Team':
@@ -3696,7 +3709,7 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
             <div className={styles.securityNoticeBanner}>
               <ShieldCheck size={18} />
               <span>
-                <strong>Super Admin Policy:</strong> Only Super Administrators can grant or revoke team permissions. Team members cannot alter accounts or manage other staff.
+                <strong>Access Policy:</strong> Super Administrators and the HR Team have authorization to add staff members and assign departmental roles. Root Super Admin (aryar0779@gmail.com) remains permanently protected.
               </span>
             </div>
 
@@ -3826,6 +3839,7 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
                         manageCareers: true,
                         viewAnalytics: true,
                         manageCertificates: true,
+                        manageTeam: true,
                       })
                     }
                     style={{
@@ -3849,6 +3863,7 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
                         manageCareers: false,
                         viewAnalytics: false,
                         manageCertificates: false,
+                        manageTeam: false,
                       })
                     }
                     style={{
@@ -3967,6 +3982,27 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
                     </span>
                     <span className={styles.permissionDesc}>
                       Issue and verify authenticated certificates of completion, LORs, and internship credentials.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Team Management Permission */}
+                <div
+                  className={`${styles.permissionCard} ${permissions.manageTeam ? styles.permissionCardActive : ''}`}
+                  onClick={() => togglePermission('manageTeam')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={Boolean(permissions.manageTeam)}
+                    onChange={() => {}}
+                    className={styles.permissionCheckbox}
+                  />
+                  <div className={styles.permissionContent}>
+                    <span className={styles.permissionTitle}>
+                      <Users size={15} color="#4338ca" /> Team &amp; Staff Management
+                    </span>
+                    <span className={styles.permissionDesc}>
+                      Add new staff team members, configure department roles, and manage access permissions (HR &amp; Leadership).
                     </span>
                   </div>
                 </div>

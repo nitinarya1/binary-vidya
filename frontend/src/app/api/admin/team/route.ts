@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
-// Strict Super Administrator authentication guard
-async function authenticateSuperAdmin(req: Request) {
+// Super Administrator or HR Team member authentication guard
+async function authenticateTeamAdmin(req: Request) {
   const authHeader = req.headers.get('authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return { error: 'Authorization token required', status: 401 };
@@ -30,21 +30,38 @@ async function authenticateSuperAdmin(req: Request) {
     return { error: 'Administrator account not found', status: 404 };
   }
 
-  // STRICT REQUIREMENT: Only active Super Administrator can view, create, edit, or delete team members
-  if (!isSuperAdminEmail(requester.email) || requester.teamStatus === 'suspended') {
+  if (requester.teamStatus === 'suspended') {
     return {
-      error: 'Forbidden: Your administrator account has been suspended or you do not have permission.',
+      error: 'Forbidden: Your administrator account has been suspended.',
       status: 403,
     };
   }
 
-  return { requester };
+  const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+  const isSuper = isSuperAdminEmail(requester.email);
+  const isHRTeam = Boolean(
+    requester.isTeamMember &&
+    (
+      (requester.department && requester.department.toLowerCase().includes('hr')) ||
+      requester.permissions?.manageTeam
+    )
+  );
+
+  // Both aryar0779@gmail.com / Super Admins and HR team members can manage the team
+  if (!isSuper && !isHRTeam) {
+    return {
+      error: 'Forbidden: Super Administrator or HR Team access required to manage team members.',
+      status: 403,
+    };
+  }
+
+  return { requester, isSuper, isHRTeam };
 }
 
 // GET: Fetch all team members and access statistics
 export async function GET(req: Request) {
   try {
-    const authResult = await authenticateSuperAdmin(req);
+    const authResult = await authenticateTeamAdmin(req);
     if ('error' in authResult) {
       return NextResponse.json({ success: false, message: authResult.error }, { status: authResult.status });
     }
@@ -70,6 +87,7 @@ export async function GET(req: Request) {
     const formatted = teamMembers.map((m: any) => {
       const isSuper = isSuperAdminEmail(m.email);
       const isRoot = isRootSuperAdminEmail(m.email);
+      const isMemberHR = (m.department || '').toLowerCase().includes('hr');
       return {
         id: m._id.toString(),
         name: m.name,
@@ -96,7 +114,7 @@ export async function GET(req: Request) {
               manageCareers: Boolean(m.permissions?.manageCareers),
               viewAnalytics: Boolean(m.permissions?.viewAnalytics),
               manageCertificates: Boolean(m.permissions?.manageCertificates),
-              manageTeam: false,
+              manageTeam: Boolean(m.permissions?.manageTeam) || isMemberHR,
             },
         avatar: m.avatar || '',
         createdAt: m.createdAt,
@@ -126,10 +144,10 @@ export async function GET(req: Request) {
   }
 }
 
-// POST: Add a new team member with department & permissions (Super Admin Only)
+// POST: Add a new team member with department & permissions (Super Admin & HR Team)
 export async function POST(req: Request) {
   try {
-    const authResult = await authenticateSuperAdmin(req);
+    const authResult = await authenticateTeamAdmin(req);
     if ('error' in authResult) {
       return NextResponse.json({ success: false, message: authResult.error }, { status: authResult.status });
     }
@@ -152,6 +170,16 @@ export async function POST(req: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    // HR restriction: HR team cannot create Super Administrator accounts
+    const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    if (!authResult.isSuper && isSuperAdminEmail(normalizedEmail)) {
+      return NextResponse.json(
+        { success: false, message: 'HR Team members cannot create Super Administrator accounts.' },
+        { status: 403 }
+      );
+    }
+
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return NextResponse.json(
@@ -166,13 +194,14 @@ export async function POST(req: Request) {
 
     // Normalize department & permissions
     const memberDepartment = department || 'General Team';
+    const isMemberHR = memberDepartment.toLowerCase().includes('hr');
     const memberPermissions = {
       manageCourses: Boolean(permissions?.manageCourses),
       manageTraining: Boolean(permissions?.manageTraining),
       manageCareers: Boolean(permissions?.manageCareers),
       viewAnalytics: Boolean(permissions?.viewAnalytics),
       manageCertificates: Boolean(permissions?.manageCertificates),
-      manageTeam: false, // Team management can never be granted to regular team members
+      manageTeam: Boolean(permissions?.manageTeam) || isMemberHR,
     };
 
     const newMember: any = await User.create({
@@ -216,10 +245,10 @@ export async function POST(req: Request) {
   }
 }
 
-// PUT: Update team member permissions, department, status, or password (Super Admin Only)
+// PUT: Update team member permissions, department, status, or password (Super Admin & HR Team)
 export async function PUT(req: Request) {
   try {
-    const authResult = await authenticateSuperAdmin(req);
+    const authResult = await authenticateTeamAdmin(req);
     if ('error' in authResult) {
       return NextResponse.json({ success: false, message: authResult.error }, { status: authResult.status });
     }
@@ -236,14 +265,21 @@ export async function PUT(req: Request) {
       return NextResponse.json({ success: false, message: 'Team member record not found' }, { status: 404 });
     }
 
-    // Safety guard: Protect primary super admin accounts from modification
     // Safety guard: Protect root super admin account (aryar0779@gmail.com) from suspension
-    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    const { isRootSuperAdminEmail, isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
     const isRoot = isRootSuperAdminEmail(member.email);
     if (isRoot && teamStatus === 'suspended') {
       return NextResponse.json(
         { success: false, message: 'Root Super Administrator account (aryar0779@gmail.com) cannot be suspended.' },
         { status: 400 }
+      );
+    }
+
+    // HR restriction: HR cannot modify Super Administrator accounts
+    if (!authResult.isSuper && isSuperAdminEmail(member.email)) {
+      return NextResponse.json(
+        { success: false, message: 'HR Team members cannot modify Super Administrator accounts.' },
+        { status: 403 }
       );
     }
 
@@ -255,13 +291,14 @@ export async function PUT(req: Request) {
     if (teamStatus && !isRoot) updateFields.teamStatus = teamStatus;
 
     if (permissions && !isRoot) {
+      const isMemberHR = (department || member.department || '').toLowerCase().includes('hr');
       updateFields.permissions = {
         manageCourses: Boolean(permissions.manageCourses),
         manageTraining: Boolean(permissions.manageTraining),
         manageCareers: Boolean(permissions.manageCareers),
         viewAnalytics: Boolean(permissions.viewAnalytics),
         manageCertificates: Boolean(permissions.manageCertificates),
-        manageTeam: false,
+        manageTeam: Boolean(permissions.manageTeam) || isMemberHR,
       };
     }
 
@@ -300,10 +337,10 @@ export async function PUT(req: Request) {
   }
 }
 
-// DELETE: Remove team member or other super admin (Super Admin Only)
+// DELETE: Remove team member (Super Admin & HR Team)
 export async function DELETE(req: Request) {
   try {
-    const authResult = await authenticateSuperAdmin(req);
+    const authResult = await authenticateTeamAdmin(req);
     if ('error' in authResult) {
       return NextResponse.json({ success: false, message: authResult.error }, { status: authResult.status });
     }
@@ -322,7 +359,7 @@ export async function DELETE(req: Request) {
 
     const { requester } = authResult;
 
-    // Self-deletion guard: A super admin cannot delete themselves
+    // Self-deletion guard: An admin cannot delete themselves
     if (requester._id.toString() === member._id.toString()) {
       return NextResponse.json(
         {
@@ -334,7 +371,7 @@ export async function DELETE(req: Request) {
     }
 
     // STRICT IMMUTABILITY GUARD: The root Super Admin (aryar0779@gmail.com) can NEVER be deleted by anyone!
-    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    const { isRootSuperAdminEmail, isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
     if (isRootSuperAdminEmail(member.email)) {
       return NextResponse.json(
         {
@@ -345,7 +382,15 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // All other super admins and staff members CAN be deleted
+    // HR restriction: HR cannot delete Super Administrator accounts
+    if (!authResult.isSuper && isSuperAdminEmail(member.email)) {
+      return NextResponse.json(
+        { success: false, message: 'HR Team members cannot delete Super Administrator accounts.' },
+        { status: 403 }
+      );
+    }
+
+    // All other super admins (by super admins) and staff members (by super admins or HR) CAN be deleted
     await User.findByIdAndDelete(id);
 
     return NextResponse.json({
