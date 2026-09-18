@@ -78,14 +78,18 @@ export async function POST(req: Request) {
 
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
     const isSuper = isSuperAdminEmail(normalizedEmail);
+    const mustChangePassword = Boolean(user.mustChangePassword);
 
     return NextResponse.json({
       success: true,
       message: isSuper
         ? 'Super Admin 2FA verified successfully! Redirecting to Super Admin Console...'
+        : mustChangePassword
+        ? 'Verification successful! Please choose a new permanent password.'
         : 'Admin 2FA verified successfully! Redirecting to Admin Console...',
       token,
       isSuperAdmin: isSuper,
+      mustChangePassword,
       user: {
         id: user._id,
         name: user.name,
@@ -97,6 +101,7 @@ export async function POST(req: Request) {
         department: user.department || '',
         permissions: user.permissions || {},
         teamStatus: user.teamStatus || 'active',
+        mustChangePassword,
       },
     });
   } catch (error: any) {

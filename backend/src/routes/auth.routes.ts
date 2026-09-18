@@ -10,6 +10,7 @@ import {
   resetPassword,
   getMe,
   updateProfile,
+  changeFirstPassword,
 } from '../controllers/auth.controller';
 import { protect } from '../middleware/auth.middleware';
 
@@ -23,6 +24,9 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/login/verify-otp', verifyLoginOtp);
 router.post('/google', googleLogin);
+
+// First-time password change
+router.post('/change-first-password', protect, changeFirstPassword);
 
 // Forgot password OTP flow
 router.post('/forgot-password/send-otp', sendForgotPasswordOtp);

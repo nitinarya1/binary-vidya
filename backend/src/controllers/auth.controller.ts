@@ -365,14 +365,18 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
     }
 
     const token = generateToken(user._id.toString());
+    const mustChangePassword = Boolean(user.mustChangePassword);
 
     res.json({
       success: true,
       message: isSuper
         ? 'Super Admin 2FA verified successfully!'
+        : mustChangePassword
+        ? 'Verification successful! Please choose a new permanent password.'
         : 'Admin 2FA verified successfully!',
       token,
       isSuperAdmin: isSuper,
+      mustChangePassword,
       user: {
         id: user._id,
         name: user.name,
@@ -384,6 +388,7 @@ export const verifyLoginOtp = async (req: Request, res: Response): Promise<void>
         department: user.department || '',
         permissions: user.permissions || {},
         teamStatus: user.teamStatus || 'active',
+        mustChangePassword,
       },
     });
   } catch (error: any) {
@@ -750,6 +755,7 @@ export const getMe = async (req: AuthenticatedRequest, res: Response): Promise<v
         department: rawDoc.department || '',
         permissions: rawDoc.permissions || {},
         teamStatus: rawDoc.teamStatus || 'active',
+        mustChangePassword: Boolean(rawDoc.mustChangePassword),
       },
     });
   } catch (error: any) {
@@ -840,4 +846,53 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ success: false, message: error.message || 'Failed to update profile' });
   }
 };
+
+// 9. CHANGE FIRST PASSWORD (MANDATORY UPON FIRST LOGIN)
+export const changeFirstPassword = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+
+    const { newPassword } = req.body;
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+      res.status(400).json({ success: false, message: 'New password must be at least 6 characters long' });
+      return;
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ success: false, message: 'User account not found' });
+      return;
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword.trim(), salt);
+    user.mustChangePassword = false;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Your permanent password has been set successfully! Welcome to the administration console.',
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        avatar: user.avatar,
+        isTeamMember: user.isTeamMember || false,
+        department: user.department || '',
+        permissions: user.permissions || {},
+        teamStatus: user.teamStatus || 'active',
+        mustChangePassword: false,
+      },
+    });
+  } catch (error: any) {
+    console.error('[Change First Password Error]:', error);
+    res.status(500).json({ success: false, message: error.message || 'Server error while updating password' });
+  }
+};
+
 

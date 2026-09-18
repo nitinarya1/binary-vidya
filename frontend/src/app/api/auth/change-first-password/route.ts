@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
 import { User } from '../../../../lib/models';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,63 +22,58 @@ export async function GET(req: Request) {
     let decoded: any;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
-    } catch (e) {
+    } catch (err) {
       return NextResponse.json(
-        { success: false, message: 'Invalid or expired token' },
+        { success: false, message: 'Invalid or expired session' },
         { status: 401 }
       );
     }
 
-    await connectDB();
-    const user: any = await User.findById(decoded.id).lean();
+    const body = await req.json();
+    const { newPassword } = body;
 
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.trim().length < 6) {
+      return NextResponse.json(
+        { success: false, message: 'New password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+    const user = await User.findById(decoded.id);
     if (!user) {
       return NextResponse.json(
-        { success: false, message: 'User not found' },
+        { success: false, message: 'User account not found' },
         { status: 404 }
       );
     }
 
-    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
-    const isTeamMember = Boolean(
-      user.isTeamMember ||
-      user.role === 'admin' ||
-      user.department ||
-      user.permissions?.manageCourses ||
-      user.permissions?.manageTraining ||
-      user.permissions?.manageCareers ||
-      user.permissions?.manageTeam ||
-      user.permissions?.viewAnalytics
-    );
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword.trim(), salt);
 
-    if ((isDefaultAdminEmail(user.email) || isTeamMember) && user.role !== 'admin') {
-      user.role = 'admin';
-      await User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true });
-    }
+    user.password = hashedPassword;
+    user.mustChangePassword = false;
+    await user.save();
 
     return NextResponse.json({
       success: true,
+      message: 'Your permanent password has been set successfully! Welcome to the administration console.',
       user: {
-        id: user._id,
+        id: user._id.toString(),
         name: user.name,
         email: user.email,
-        phone: user.phone,
         role: user.role,
-        avatar: user.avatar || '',
-        dateOfBirth: user.dateOfBirth || '',
-        gender: user.gender || '',
-        authProvider: user.authProvider,
         isTeamMember: user.isTeamMember || false,
         department: user.department || '',
         permissions: user.permissions || {},
         teamStatus: user.teamStatus || 'active',
-        mustChangePassword: Boolean(user.mustChangePassword),
+        mustChangePassword: false,
       },
     });
   } catch (error: any) {
-    console.error('[API Me Error]:', error);
+    console.error('[API Change First Password Error]:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'Server error' },
+      { success: false, message: error.message || 'Server error while updating password' },
       { status: 500 }
     );
   }

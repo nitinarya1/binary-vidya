@@ -164,7 +164,7 @@ type TabType = 'overview' | 'courses' | 'training' | 'careers' | 'team';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
-  const { user, token, isLoading, isAdmin, logout } = useAuth();
+  const { user, token, isLoading, isAdmin, logout, changeFirstPassword } = useAuth();
 
   // Role-Based Granular Permissions
   const isSuper = Boolean(user && isSuperAdminEmail(user.email) && user.teamStatus !== 'suspended');
@@ -251,6 +251,41 @@ export default function SuperAdminDashboard() {
 
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMemberItem | null>(null);
+
+  // Forced First Login Password Change State
+  const [firstPassValue, setFirstPassValue] = useState('');
+  const [firstPassConfirm, setFirstPassConfirm] = useState('');
+  const [firstPassError, setFirstPassError] = useState<string | null>(null);
+  const [firstPassSubmitting, setFirstPassSubmitting] = useState(false);
+
+  const handleFirstLoginPasswordChangeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFirstPassError(null);
+
+    if (!firstPassValue || firstPassValue.length < 6) {
+      setFirstPassError('New permanent password must be at least 6 characters long.');
+      return;
+    }
+
+    if (firstPassValue !== firstPassConfirm) {
+      setFirstPassError('Passwords do not match. Please re-enter your password.');
+      return;
+    }
+
+    try {
+      setFirstPassSubmitting(true);
+      const success = await changeFirstPassword(firstPassValue);
+      if (success) {
+        setNotice({ type: 'success', text: 'Permanent password saved successfully! Welcome to your dashboard.' });
+      } else {
+        setFirstPassError('Failed to save permanent password. Please try again.');
+      }
+    } catch (err: any) {
+      setFirstPassError(err.message || 'Error updating password.');
+    } finally {
+      setFirstPassSubmitting(false);
+    }
+  };
 
   // Auto-hide toast notification after 4s
   useEffect(() => {
@@ -678,6 +713,71 @@ export default function SuperAdminDashboard() {
               Return to Live Site
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.mustChangePassword) {
+    return (
+      <div className={styles.accessScreen}>
+        <div className={styles.accessCard} style={{ maxWidth: '480px' }}>
+          <img
+            src="/images/binary-vidya-logo.png"
+            alt="Binary Vidya"
+            className={styles.accessLogoImg}
+          />
+          <div className={styles.accessPill} style={{ background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}>
+            <Key size={14} color="#b45309" />
+            <span>Action Required: Set Permanent Password</span>
+          </div>
+          <h2 className={styles.accessTitle}>Update Temporary Password</h2>
+          <p className={styles.accessDesc}>
+            Welcome to the Binary Vidya team! Because you signed in using temporary credentials, you must choose a secure new permanent password to unlock the administration console.
+          </p>
+
+          <form onSubmit={handleFirstLoginPasswordChangeSubmit} style={{ marginTop: '20px', textAlign: 'left', width: '100%' }}>
+            {firstPassError && (
+              <div style={{ padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '13px', marginBottom: '14px' }}>
+                {firstPassError}
+              </div>
+            )}
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                New Permanent Password
+              </label>
+              <input
+                type="password"
+                required
+                value={firstPassValue}
+                onChange={(e) => setFirstPassValue(e.target.value)}
+                placeholder="At least 6 characters"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                autoFocus
+              />
+            </div>
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                required
+                value={firstPassConfirm}
+                onChange={(e) => setFirstPassConfirm(e.target.value)}
+                placeholder="Re-enter your new password"
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={firstPassSubmitting}
+              className={styles.accessPrimaryBtn}
+              style={{ width: '100%', justifyContent: 'center' }}
+            >
+              {firstPassSubmitting ? 'Saving Password...' : 'Save Password & Enter Console'}
+            </button>
+          </form>
         </div>
       </div>
     );

@@ -27,6 +27,7 @@ export interface User {
   department?: string;
   permissions?: TeamPermissions;
   teamStatus?: 'active' | 'suspended';
+  mustChangePassword?: boolean;
 }
 
 export interface LoginResult {
@@ -35,6 +36,7 @@ export interface LoginResult {
   email?: string;
   maskedEmail?: string;
   message?: string;
+  mustChangePassword?: boolean;
 }
 
 interface AuthContextType {
@@ -45,6 +47,7 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   login: (identifier: string, pass: string) => Promise<LoginResult>;
   verifySuperAdminOtp: (email: string, otp: string) => Promise<User | null>;
+  changeFirstPassword: (newPassword: string) => Promise<boolean>;
   registerUser: (name: string, email: string, pass: string, phone?: string) => Promise<User | null>;
   googleAuth: (data: string | { credential?: string; accessToken?: string }) => Promise<User | null>;
   updateUser: (updatedData: Partial<User>) => void;
@@ -126,10 +129,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (res.token && res.user) {
+      if (res.mustChangePassword !== undefined) {
+        res.user.mustChangePassword = Boolean(res.mustChangePassword);
+      }
       handleAuthSuccess(res.token, res.user);
       return res.user;
     }
     return null;
+  };
+
+  const changeFirstPassword = async (newPassword: string): Promise<boolean> => {
+    const res = await apiRequest('/auth/change-first-password', {
+      method: 'POST',
+      body: JSON.stringify({ newPassword }),
+    });
+
+    if (res.success) {
+      if (res.user) {
+        setUser(res.user);
+        localStorage.setItem('bv_user', JSON.stringify(res.user));
+      } else if (user) {
+        const updated = { ...user, mustChangePassword: false };
+        setUser(updated);
+        localStorage.setItem('bv_user', JSON.stringify(updated));
+      }
+      return true;
+    }
+    return false;
   };
 
   const registerUser = async (name: string, email: string, pass: string, phone?: string): Promise<User | null> => {
@@ -211,6 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSuperAdmin,
         login,
         verifySuperAdminOtp,
+        changeFirstPassword,
         registerUser,
         googleAuth,
         updateUser,

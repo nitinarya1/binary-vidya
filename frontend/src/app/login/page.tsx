@@ -22,11 +22,11 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 
-type AuthMode = 'signin' | 'register' | 'superadmin-otp';
+type AuthMode = 'signin' | 'register' | 'superadmin-otp' | 'first-login-change-password';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, verifySuperAdminOtp, registerUser, user, isLoading } = useAuth();
+  const { login, verifySuperAdminOtp, changeFirstPassword, registerUser, user, isLoading } = useAuth();
 
   // Mode: Sign In, Register, or 2FA OTP
   const [mode, setMode] = useState<AuthMode>('signin');
@@ -39,6 +39,11 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+
+  // First Login Force Change Password State
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Status & Feedback
   const [loading, setLoading] = useState(false);
@@ -64,6 +69,10 @@ export default function LoginPage() {
   // Auto-redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
+      if (user.mustChangePassword) {
+        setMode('first-login-change-password');
+        return;
+      }
       const isStaffOrAdmin = Boolean(
         isSuperAdminEmail(user.email) ||
         user.role === 'admin' ||
@@ -237,6 +246,14 @@ export default function LoginPage() {
       setLoading(true);
       const verified = await verifySuperAdminOtp(email, fullOtp);
       if (verified) {
+        if (verified.mustChangePassword) {
+          setSuccessMsg('2FA Verified! For your security, please choose a new permanent password.');
+          setMode('first-login-change-password');
+          setNewPassword('');
+          setConfirmPassword('');
+          return;
+        }
+
         const isStaffOrAdmin = Boolean(
           isSuperAdminEmail(verified.email) ||
           verified.role === 'admin' ||
@@ -257,6 +274,40 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Invalid or expired OTP code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================================================================
+  // 3.1 Handle First Login Change Password
+  // =========================================================================
+  const handleChangeFirstPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!newPassword || newPassword.length < 6) {
+      setErrorMsg('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match. Please re-enter your password.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const success = await changeFirstPassword(newPassword);
+      if (success) {
+        setSuccessMsg('Permanent password saved successfully! Loading your dashboard...');
+        setTimeout(() => router.push('/super-admin'), 400);
+      } else {
+        setErrorMsg('Failed to update permanent password. Please try again.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error updating password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -670,6 +721,67 @@ export default function LoginPage() {
                   <ArrowLeft size={14} /> Back to Sign In
                 </button>
               </div>
+            </form>
+          </div>
+        )}
+
+        {/* ===================================================================
+            MODE 4: FIRST LOGIN MANDATORY PASSWORD CHANGE
+            =================================================================== */}
+        {mode === 'first-login-change-password' && (
+          <div className={styles.otpCard}>
+            <div className={styles.otpShieldWrap} style={{ background: '#fef3c7', borderColor: '#f59e0b' }}>
+              <Lock size={30} color="#d97706" />
+            </div>
+
+            <h2 className={styles.otpTitle}>Create Permanent Password</h2>
+            <p className={styles.otpSubtitle}>
+              Welcome to the team! Because this is your first time logging in with your temporary credentials, please choose a secure new permanent password for your staff account.
+            </p>
+
+            <form onSubmit={handleChangeFirstPassword} className={styles.form} style={{ marginTop: '20px' }}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>New Permanent Password</label>
+                <div className={styles.inputWrapper}>
+                  <Lock size={18} className={styles.inputIcon} />
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className={`${styles.input} ${styles.inputPassword}`}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className={styles.eyeToggleBtn}
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Confirm New Password</label>
+                <div className={styles.inputWrapper}>
+                  <Lock size={18} className={styles.inputIcon} />
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter your new password"
+                    className={`${styles.input} ${styles.inputPassword}`}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" disabled={loading} className={styles.submitBtn}>
+                {loading ? 'Saving Permanent Password...' : 'Save Password & Enter Console'} <ArrowRight size={16} />
+              </button>
             </form>
           </div>
         )}

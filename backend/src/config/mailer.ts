@@ -342,3 +342,152 @@ You received this email because an account was created on Binary Vidya for ${use
     return { success: false, error: error?.message || 'Unknown error' };
   }
 };
+
+export interface TeamCredentialsData {
+  name: string;
+  email: string;
+  temporaryPassword: string;
+  department: string;
+  permissions?: Record<string, boolean>;
+  loginUrl?: string;
+}
+
+export const sendTeamCredentialsEmail = async (
+  data: TeamCredentialsData
+): Promise<{ success: boolean; messageId?: string; error?: string }> => {
+  try {
+    const transport = getTransporter();
+    const fromAddress = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
+    const displayName = data.name?.trim() || 'Team Member';
+    const portalUrl =
+      data.loginUrl ||
+      (process.env.FRONTEND_URL
+        ? `${process.env.FRONTEND_URL}/login`
+        : 'http://localhost:3000/login');
+    const attachments = getLogoAttachment();
+
+    const plainText = `Hello ${displayName},
+
+You have been added to the Binary Vidya team as a member of the ${data.department} department.
+
+Here are your temporary administrative login credentials:
+- Login Portal: ${portalUrl}
+- Email / Username: ${data.email}
+- Temporary Password: ${data.temporaryPassword}
+
+SECURITY ADVISORY:
+For security purposes, you will be required to change this temporary password immediately upon your first login. You will also receive a 4-digit verification code (2FA OTP) at this email address during sign in.
+
+If you have any questions, please contact your Super Administrator.
+
+Warm regards,
+Binary Vidya Administration Team`;
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Binary Vidya Team Access Credentials</title>
+</head>
+<body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);">
+    <tr>
+      <td align="center" style="padding: 28px 24px 20px; border-bottom: 1px solid #f1f5f9; background: #ffffff;">
+        <img src="cid:binaryvidyalogo" alt="Binary Vidya" width="190" style="display: block; max-width: 100%; height: auto;" />
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 32px 32px 24px;">
+        <div style="display: inline-block; padding: 4px 12px; background-color: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 16px;">
+          Staff Account Credentials
+        </div>
+        <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
+          Welcome to the Team, ${displayName}!
+        </h1>
+        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
+          You have been granted administrative access to the Binary Vidya platform in the <strong>${data.department}</strong> department.
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 24px;">
+          <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+            Your Login Credentials
+          </div>
+          <table border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+              <td style="padding: 6px 0; font-size: 14px; color: #64748b; width: 140px;">Login Portal:</td>
+              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">
+                <a href="${portalUrl}" style="color: #2563eb; text-decoration: underline;">${portalUrl}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Email Address:</td>
+              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">${data.email}</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Temporary Password:</td>
+              <td style="padding: 6px 0; font-size: 15px; color: #1e3a8a; font-weight: 800; font-family: monospace; letter-spacing: 1px;">
+                <span style="background: #e0e7ff; padding: 3px 8px; border-radius: 6px;">${data.temporaryPassword}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Department:</td>
+              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">${data.department}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
+          <p style="margin: 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
+            <strong>Mandatory Password Change:</strong> When you log in for the first time, you will verify a 4-digit code sent to this email and will be required to choose a new, secure password before accessing your dashboard.
+          </p>
+        </div>
+
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+          <tr>
+            <td align="center">
+              <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none;">
+                Sign In to Admin Console &rarr;
+              </a>
+            </td>
+          </tr>
+        </table>
+
+        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0;">
+          If you did not expect this invitation, please notify your administrator or reply to this message immediately.
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+        &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved. Confidential Staff Communications.
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const mailOptions = {
+      from: `"Binary Vidya Administration" <${fromAddress}>`,
+      to: data.email,
+      replyTo: fromAddress,
+      subject: `Your Binary Vidya Staff Account Credentials (${data.department})`,
+      text: plainText,
+      html: htmlContent,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        Importance: 'high',
+        'Auto-Submitted': 'auto-generated',
+      },
+      attachments,
+    };
+
+    const info = await transport.sendMail(mailOptions);
+    console.log(`[Team Credentials Email Sent] To: ${data.email} | MessageId: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    console.error(`[Team Credentials Email Error] To: ${data.email}:`, error?.message || error);
+    return { success: false, error: error?.message || 'Unknown error' };
+  }
+};

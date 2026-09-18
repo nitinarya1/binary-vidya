@@ -216,12 +216,27 @@ export async function POST(req: Request) {
       teamStatus: teamStatus === 'suspended' ? 'suspended' : 'active',
       isVerified: true,
       authProvider: 'local',
+      mustChangePassword: true,
+    });
+
+    const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
+    sendTeamCredentialsEmail({
+      name: newMember.name,
+      email: newMember.email,
+      temporaryPassword: password,
+      department: memberDepartment,
+      permissions: memberPermissions,
+      loginUrl: process.env.NEXT_PUBLIC_APP_URL
+        ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
+        : 'http://localhost:3000/login',
+    }).catch((mailErr) => {
+      console.error('[Background Send Team Credentials Email Error]:', mailErr);
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: `Team member "${newMember.name}" successfully added to the ${memberDepartment} department!`,
+        message: `Team member "${newMember.name}" successfully added to the ${memberDepartment} department! Login credentials have been emailed to ${newMember.email}.`,
         member: {
           id: newMember._id.toString(),
           name: newMember.name,
@@ -231,6 +246,7 @@ export async function POST(req: Request) {
           permissions: newMember.permissions,
           teamStatus: newMember.teamStatus,
           role: newMember.role,
+          mustChangePassword: true,
           createdAt: newMember.createdAt,
         },
       },

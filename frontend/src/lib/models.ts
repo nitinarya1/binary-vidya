@@ -23,6 +23,7 @@ export interface IUser extends Document {
     manageTeam?: boolean;
   };
   teamStatus?: 'active' | 'suspended';
+  mustChangePassword?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -100,6 +101,10 @@ const userSchema = new Schema<IUser>(
       type: String,
       default: 'active',
     },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
@@ -115,6 +120,7 @@ if (mongoose.models.User) {
     department: { type: String, default: '' },
     permissions: { type: Schema.Types.Mixed, default: {} },
     teamStatus: { type: String, default: 'active' },
+    mustChangePassword: { type: Boolean, default: false },
   });
 }
 
