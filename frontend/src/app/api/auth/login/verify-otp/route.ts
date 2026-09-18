@@ -70,8 +70,9 @@ export async function POST(req: Request) {
     // OTP is valid - consume it immediately
     await Otp.deleteOne({ _id: otpRecord._id });
 
-    if (user.role !== 'admin' && (isDefaultAdminEmail(normalizedEmail) || isSuperAdminEmail(normalizedEmail))) {
+    if (user.role !== 'admin' && (user.isTeamMember || isDefaultAdminEmail(normalizedEmail) || isSuperAdminEmail(normalizedEmail))) {
       user.role = 'admin';
+      user.isTeamMember = true;
       await user.save();
     }
 

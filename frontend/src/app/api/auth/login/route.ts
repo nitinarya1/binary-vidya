@@ -70,8 +70,31 @@ export async function POST(req: Request) {
     }
 
     const { isSuperAdminEmail, isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
-    if (isDefaultAdminEmail(user.email) && user.role !== 'admin') {
+    const isSuperAdmin = isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
+    const rawDoc: any = (user as any)._doc || user;
+    const isTeamMember = Boolean(
+      rawDoc.isTeamMember ||
+      user.isTeamMember ||
+      rawDoc.role === 'admin' ||
+      user.role === 'admin' ||
+      rawDoc.department ||
+      user.department ||
+      rawDoc.permissions?.manageCourses ||
+      user.permissions?.manageCourses ||
+      rawDoc.permissions?.manageTraining ||
+      user.permissions?.manageTraining ||
+      rawDoc.permissions?.manageCareers ||
+      user.permissions?.manageCareers ||
+      rawDoc.permissions?.manageTeam ||
+      user.permissions?.manageTeam ||
+      rawDoc.permissions?.viewAnalytics ||
+      user.permissions?.viewAnalytics
+    );
+
+    // Ensure any recognized team member or default admin has role 'admin'
+    if ((isSuperAdmin || isTeamMember) && user.role !== 'admin') {
       user.role = 'admin';
+      user.isTeamMember = true;
       await user.save();
     }
 
@@ -82,35 +105,36 @@ export async function POST(req: Request) {
       );
     }
 
-    const isSuperAdmin = isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
-
-    // Two-Factor Authentication (2FA) strictly for Super Administrator accounts: Always dispatch OTP to aryar0779@gmail.com
-    if (isSuperAdmin) {
+    // Two-Factor Authentication (2FA) for both Super Administrator and Team Members
+    if (isSuperAdmin || isTeamMember) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
       const normalizedEmail = (user.email || '').toLowerCase().trim();
-      const superAdminEmail = 'aryar0779@gmail.com';
+      const targetEmail = isSuperAdmin ? 'aryar0779@gmail.com' : normalizedEmail;
+      const otpPurpose = isSuperAdmin ? 'SUPER_ADMIN_LOGIN' : 'ADMIN_LOGIN';
 
       const { Otp } = await import('../../../../lib/models');
       await Otp.findOneAndUpdate(
-        { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
+        { email: normalizedEmail, purpose: otpPurpose },
         {
           email: normalizedEmail,
           otp: otpCode,
-          purpose: 'SUPER_ADMIN_LOGIN',
+          purpose: otpPurpose,
           expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
         { upsert: true, new: true }
       );
 
       const { sendOtpEmail } = await import('../../../../lib/serverMailer');
-      const emailSubject = 'Super Admin Login Verification Code';
+      const emailSubject = isSuperAdmin
+        ? 'Super Admin Login Verification Code'
+        : 'Team Member Login Verification Code';
 
-      // Send OTP directly to aryar0779@gmail.com
-      sendOtpEmail(superAdminEmail, otpCode, emailSubject).catch((err) => {
-        console.error('[Background Send Super Admin Login OTP Error]:', err);
+      // Send OTP to the target email (aryar0779@gmail.com for Super Admin, registered email for team member)
+      sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err) => {
+        console.error('[Background Send Login OTP Error]:', err);
       });
 
-      const emailParts = normalizedEmail.split('@');
+      const emailParts = targetEmail.split('@');
       const localPart = emailParts[0];
       const maskedEmail = `${localPart[0]}***${localPart[localPart.length - 1]}@${emailParts[1]}`;
 
@@ -118,9 +142,12 @@ export async function POST(req: Request) {
         success: true,
         requireOtp: true,
         email: normalizedEmail,
-        maskedEmail: maskedEmail || 'a***9@gmail.com',
-        isSuperAdmin: true,
-        message: `Super Admin Verification: A 4-digit OTP has been sent to ${superAdminEmail}!`,
+        maskedEmail: maskedEmail,
+        isSuperAdmin: isSuperAdmin,
+        isTeamMember: isTeamMember,
+        message: isSuperAdmin
+          ? `Super Admin Verification: A 4-digit OTP has been sent to ${targetEmail}!`
+          : `Team Verification: A 4-digit OTP has been sent to ${maskedEmail}!`,
       });
     }
 

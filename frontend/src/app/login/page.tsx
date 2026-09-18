@@ -64,7 +64,17 @@ export default function LoginPage() {
   // Auto-redirect if already logged in
   useEffect(() => {
     if (!isLoading && user) {
-      if (isSuperAdminEmail(user.email)) {
+      const isStaffOrAdmin = Boolean(
+        isSuperAdminEmail(user.email) ||
+        user.role === 'admin' ||
+        user.isTeamMember ||
+        user.permissions?.manageCourses ||
+        user.permissions?.manageTraining ||
+        user.permissions?.manageCareers ||
+        user.permissions?.manageTeam ||
+        user.permissions?.viewAnalytics
+      );
+      if (isStaffOrAdmin) {
         router.push('/super-admin');
       } else {
         router.push('/');
@@ -107,8 +117,18 @@ export default function LoginPage() {
       }
 
       if (result.user) {
-        if (isSuperAdminEmail(result.user.email)) {
-          setSuccessMsg('Welcome, Super Admin! Opening Super Admin Console...');
+        const isStaffOrAdmin = Boolean(
+          isSuperAdminEmail(result.user.email) ||
+          result.user.role === 'admin' ||
+          result.user.isTeamMember ||
+          result.user.permissions?.manageCourses ||
+          result.user.permissions?.manageTraining ||
+          result.user.permissions?.manageCareers ||
+          result.user.permissions?.manageTeam ||
+          result.user.permissions?.viewAnalytics
+        );
+        if (isStaffOrAdmin) {
+          setSuccessMsg('Welcome to Administration Console! Opening Dashboard...');
           setTimeout(() => router.push('/super-admin'), 250);
         } else {
           setSuccessMsg('Welcome back! Logging you in...');
@@ -216,12 +236,22 @@ export default function LoginPage() {
       setLoading(true);
       const verified = await verifySuperAdminOtp(email, fullOtp);
       if (verified) {
-        if (isSuperAdminEmail(verified.email)) {
-          setSuccessMsg('Super Admin 2FA Verified! Opening Super Admin Console...');
+        const isStaffOrAdmin = Boolean(
+          isSuperAdminEmail(verified.email) ||
+          verified.role === 'admin' ||
+          verified.isTeamMember ||
+          verified.permissions?.manageCourses ||
+          verified.permissions?.manageTraining ||
+          verified.permissions?.manageCareers ||
+          verified.permissions?.manageTeam ||
+          verified.permissions?.viewAnalytics
+        );
+        if (isStaffOrAdmin) {
+          setSuccessMsg('2FA Verified! Opening Administration Console...');
           setTimeout(() => router.push('/super-admin'), 250);
         } else {
-          setSuccessMsg('Admin 2FA Verified! Opening Admin Console...');
-          setTimeout(() => router.push('/admin'), 250);
+          setSuccessMsg('2FA Verified! Logging you in...');
+          setTimeout(() => router.push('/'), 250);
         }
       }
     } catch (err: any) {
@@ -409,7 +439,19 @@ export default function LoginPage() {
             {/* Google Login */}
             <GoogleLoginBtn
               onSuccess={(authUser) => {
-                if (isSuperAdminEmail(authUser?.email)) {
+                const isStaffOrAdmin = Boolean(
+                  isSuperAdminEmail(authUser?.email) ||
+                  authUser?.role === 'admin' ||
+                  authUser?.isTeamMember ||
+                  Boolean(authUser?.department) ||
+                  Boolean(authUser?.permissions?.manageCourses) ||
+                  Boolean(authUser?.permissions?.manageTraining) ||
+                  Boolean(authUser?.permissions?.manageCareers) ||
+                  Boolean(authUser?.permissions?.manageTeam) ||
+                  Boolean(authUser?.permissions?.viewAnalytics) ||
+                  Boolean(authUser?.permissions?.manageCertificates)
+                );
+                if (isStaffOrAdmin) {
                   router.push('/super-admin');
                 } else {
                   router.push('/');

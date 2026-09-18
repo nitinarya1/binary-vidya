@@ -169,7 +169,19 @@ export default function SuperAdminDashboard() {
   // Role-Based Granular Permissions
   const isSuper = Boolean(user && isSuperAdminEmail(user.email) && user.teamStatus !== 'suspended');
   const isSuspended = user?.teamStatus === 'suspended';
-  const isStaffAdmin = Boolean(user && (user.role === 'admin' || user.isTeamMember));
+  const isStaffAdmin = Boolean(
+    user &&
+    (
+      user.role === 'admin' ||
+      user.isTeamMember ||
+      Boolean(user.department) ||
+      Boolean(user.permissions?.manageCourses) ||
+      Boolean(user.permissions?.manageTraining) ||
+      Boolean(user.permissions?.manageCareers) ||
+      Boolean(user.permissions?.manageTeam) ||
+      Boolean(user.permissions?.viewAnalytics)
+    )
+  );
 
   const isHRTeam = Boolean(
     user &&

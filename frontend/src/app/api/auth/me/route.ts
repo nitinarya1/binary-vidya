@@ -39,9 +39,20 @@ export async function GET(req: Request) {
     }
 
     const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
-    if (user.email && isDefaultAdminEmail(user.email) && user.role !== 'admin') {
+    const isTeamMember = Boolean(
+      user.isTeamMember ||
+      user.role === 'admin' ||
+      user.department ||
+      user.permissions?.manageCourses ||
+      user.permissions?.manageTraining ||
+      user.permissions?.manageCareers ||
+      user.permissions?.manageTeam ||
+      user.permissions?.viewAnalytics
+    );
+
+    if ((isDefaultAdminEmail(user.email) || isTeamMember) && user.role !== 'admin') {
       user.role = 'admin';
-      await User.findByIdAndUpdate(user._id, { role: 'admin' });
+      await User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true });
     }
 
     return NextResponse.json({
