@@ -65,16 +65,20 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
+    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+
     const formatted = teamMembers.map((m: any) => {
       const isSuper = isSuperAdminEmail(m.email);
+      const isRoot = isRootSuperAdminEmail(m.email);
       return {
         id: m._id.toString(),
         name: m.name,
         email: m.email || '',
         phone: m.phone || '',
-        department: isSuper ? 'Executive (Super Admin)' : (m.department || 'Operations'),
+        department: isSuper ? (isRoot ? 'Executive (Root Super Admin)' : 'Executive (Super Admin)') : (m.department || 'Operations'),
         role: m.role || 'admin',
         isSuperAdmin: isSuper,
+        isRootSuperAdmin: isRoot,
         isTeamMember: Boolean(m.isTeamMember || isSuper),
         teamStatus: m.teamStatus || 'active',
         permissions: isSuper
@@ -233,20 +237,22 @@ export async function PUT(req: Request) {
     }
 
     // Safety guard: Protect primary super admin accounts from modification
-    const isSuper = isSuperAdminEmail(member.email);
-    if (isSuper && teamStatus === 'suspended') {
+    // Safety guard: Protect root super admin account (aryar0779@gmail.com) from suspension
+    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    const isRoot = isRootSuperAdminEmail(member.email);
+    if (isRoot && teamStatus === 'suspended') {
       return NextResponse.json(
-        { success: false, message: 'Primary Super Administrator accounts cannot be suspended.' },
+        { success: false, message: 'Root Super Administrator account (aryar0779@gmail.com) cannot be suspended.' },
         { status: 400 }
       );
     }
 
     if (name) member.name = name.trim();
     if (phone !== undefined) member.phone = phone.trim() || undefined;
-    if (department && !isSuper) member.department = department;
-    if (teamStatus && !isSuper) member.teamStatus = teamStatus;
+    if (department && !isRoot) member.department = department;
+    if (teamStatus && !isRoot) member.teamStatus = teamStatus;
 
-    if (permissions && !isSuper) {
+    if (permissions && !isRoot) {
       member.permissions = {
         manageCourses: Boolean(permissions.manageCourses),
         manageTraining: Boolean(permissions.manageTraining),
@@ -289,7 +295,7 @@ export async function PUT(req: Request) {
   }
 }
 
-// DELETE: Remove team member (Super Admin Only)
+// DELETE: Remove team member or other super admin (Super Admin Only)
 export async function DELETE(req: Request) {
   try {
     const authResult = await authenticateSuperAdmin(req);
@@ -309,22 +315,37 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ success: false, message: 'Team member record not found' }, { status: 404 });
     }
 
-    // STRICT IMMUTABILITY GUARD: Super Admin accounts can NEVER be deleted
-    if (isSuperAdminEmail(member.email)) {
+    const { requester } = authResult;
+
+    // Self-deletion guard: A super admin cannot delete themselves
+    if (requester._id.toString() === member._id.toString()) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Security Alert: Primary Super Administrator accounts cannot be deleted.',
+          message: 'Action Blocked: You cannot delete your own active administrator account.',
         },
         { status: 400 }
       );
     }
 
+    // STRICT IMMUTABILITY GUARD: The root Super Admin (aryar0779@gmail.com) can NEVER be deleted by anyone!
+    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    if (isRootSuperAdminEmail(member.email)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Security Alert: The root Super Administrator account (aryar0779@gmail.com) is permanently protected and cannot be deleted.',
+        },
+        { status: 400 }
+      );
+    }
+
+    // All other super admins and staff members CAN be deleted
     await User.findByIdAndDelete(id);
 
     return NextResponse.json({
       success: true,
-      message: `Team member "${member.name}" (${member.email}) removed successfully.`,
+      message: `Account "${member.name}" (${member.email}) removed successfully.`,
     });
   } catch (error: any) {
     console.error('[Admin Team DELETE Error]:', error);

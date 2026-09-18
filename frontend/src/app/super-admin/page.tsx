@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { isSuperAdminEmail } from '../../lib/auth-helpers';
+import { isSuperAdminEmail, isRootSuperAdminEmail } from '../../lib/auth-helpers';
 import styles from './super-admin.module.css';
 import {
   ShieldCheck,
@@ -152,6 +152,7 @@ export interface TeamMemberItem {
   department: string;
   role: string;
   isSuperAdmin: boolean;
+  isRootSuperAdmin?: boolean;
   isTeamMember: boolean;
   teamStatus: 'active' | 'suspended';
   permissions: TeamMemberPermissions;
@@ -485,8 +486,8 @@ export default function SuperAdminDashboard() {
 
   const handleToggleTeamStatus = async (member: TeamMemberItem) => {
     if (!token) return;
-    if (member.isSuperAdmin) {
-      setNotice({ type: 'error', text: 'Primary Super Administrator accounts cannot be suspended.' });
+    if (isRootSuperAdminEmail(member.email)) {
+      setNotice({ type: 'error', text: 'The root Super Administrator account (aryar0779@gmail.com) cannot be suspended.' });
       return;
     }
     const nextStatus = member.teamStatus === 'active' ? 'suspended' : 'active';
@@ -510,13 +511,17 @@ export default function SuperAdminDashboard() {
 
   const handleDeleteTeamMember = async (id: string, name: string, email: string) => {
     if (!token) return;
-    if (isSuperAdminEmail(email)) {
-      alert('Security Alert: Primary Super Administrator accounts cannot be deleted.');
+    if (isRootSuperAdminEmail(email)) {
+      alert('Security Alert: The root Super Administrator account (aryar0779@gmail.com) is permanently protected and cannot be deleted.');
+      return;
+    }
+    if (user?.email && user.email.toLowerCase().trim() === email.toLowerCase().trim()) {
+      alert('Action Blocked: You cannot delete your own active administrator account.');
       return;
     }
     if (
       !confirm(
-        `Are you sure you want to permanently remove "${name}" (${email}) from the staff team?\n\nThey will immediately lose access to all administrative features.`
+        `Are you sure you want to permanently remove "${name}" (${email})?\n\nThey will immediately lose access to all administrative features.`
       )
     ) {
       return;
@@ -1722,7 +1727,7 @@ export default function SuperAdminDashboard() {
                                 <Edit2 size={13} /> Edit
                               </button>
 
-                              {!member.isSuperAdmin && (
+                              {!member.isRootSuperAdmin && member.email.toLowerCase() !== (user?.email || '').toLowerCase() && (
                                 <>
                                   <button
                                     onClick={() => handleToggleTeamStatus(member)}
@@ -1732,7 +1737,7 @@ export default function SuperAdminDashboard() {
                                       borderColor: member.teamStatus === 'active' ? '#fed7aa' : '#a7f3d0',
                                       color: member.teamStatus === 'active' ? '#c2410c' : '#047857',
                                     }}
-                                    title={member.teamStatus === 'active' ? 'Suspend Staff Account' : 'Activate Staff Account'}
+                                    title={member.teamStatus === 'active' ? 'Suspend Account' : 'Activate Account'}
                                   >
                                     {member.teamStatus === 'active' ? 'Suspend' : 'Activate'}
                                   </button>
@@ -1740,7 +1745,7 @@ export default function SuperAdminDashboard() {
                                   <button
                                     onClick={() => handleDeleteTeamMember(member.id, member.name, member.email)}
                                     className={styles.deleteRowBtn}
-                                    title="Permanently Remove Staff Member"
+                                    title={member.isSuperAdmin ? 'Delete Super Administrator Account' : 'Permanently Remove Staff Member'}
                                   >
                                     <Trash2 size={13} />
                                   </button>
