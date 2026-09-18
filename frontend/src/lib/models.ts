@@ -235,12 +235,30 @@ export const Course: Model<ICourse> =
 // TRAINING & INTERNSHIP MODEL
 export interface ITrainingInternship extends Document {
   title: string;
+  subtitle?: string;
   slug: string;
   domain: string;
+  track?: string;
   type: 'internship' | 'training' | 'bootcamp';
   duration: string;
-  mode: 'remote' | 'hybrid' | 'onsite';
+  mode: string;
   stipendOrFee: string;
+  trainingPrice?: number;
+  originalPrice?: number;
+  internshipPrice?: number;
+  schedule?: {
+    badge?: string;
+    days?: string;
+    timings?: string;
+    flexibility?: string;
+  };
+  durations?: {
+    total?: string;
+    trainingWeeks?: string;
+    internshipWeeks?: string;
+  };
+  sections?: any[];
+  credentials?: any[];
   eligibility: string;
   perks: string[];
   deadline?: string;
@@ -253,23 +271,39 @@ export interface ITrainingInternship extends Document {
 const trainingInternshipSchema = new Schema<ITrainingInternship>(
   {
     title: { type: String, required: true, trim: true },
+    subtitle: { type: String, default: '' },
     slug: { type: String, unique: true, lowercase: true, trim: true },
     domain: { type: String, required: true, trim: true },
+    track: { type: String, default: 'Frontend Developer' },
     type: {
       type: String,
-      enum: ['internship', 'training', 'bootcamp'],
       default: 'internship',
     },
-    duration: { type: String, required: true, default: '3 Months' },
+    duration: { type: String, required: true, default: '2 Months Internship + Training' },
     mode: {
       type: String,
-      enum: ['remote', 'hybrid', 'onsite'],
-      default: 'remote',
+      default: 'Live Online • Weekend Classes',
     },
-    stipendOrFee: { type: String, default: 'Stipend: ₹10,000 - ₹15,000/mo' },
-    eligibility: { type: String, default: 'B.Tech/BE, BCA/MCA or equivalent' },
+    stipendOrFee: { type: String, default: '₹2,400 Tuition • Free 2-Month Internship' },
+    trainingPrice: { type: Number, default: 2400 },
+    originalPrice: { type: Number, default: 7999 },
+    internshipPrice: { type: Number, default: 0 },
+    schedule: {
+      badge: { type: String, default: 'Weekend Live Batches' },
+      days: { type: String, default: 'Every Saturday & Sunday' },
+      timings: { type: String, default: 'Live Interactive Sessions + 24/7 Session Recordings' },
+      flexibility: { type: String, default: 'Specially crafted for College Students & Working Professionals' },
+    },
+    durations: {
+      total: { type: String, default: '2 Months Internship + Training' },
+      trainingWeeks: { type: String, default: '4 Weeks Intensive Live Training' },
+      internshipWeeks: { type: String, default: '2 Months Hands-on Industrial Internship' },
+    },
+    sections: [{ type: Schema.Types.Mixed }],
+    credentials: [{ type: Schema.Types.Mixed }],
+    eligibility: { type: String, default: 'College Students, Freshers & Working Professionals' },
     perks: [{ type: String }],
-    deadline: { type: String, default: 'Rolling Basis' },
+    deadline: { type: String, default: 'Rolling Admissions' },
     status: {
       type: String,
       enum: ['open', 'ongoing', 'closed'],
@@ -277,8 +311,12 @@ const trainingInternshipSchema = new Schema<ITrainingInternship>(
     },
     applicantsCount: { type: Number, default: 0 },
   },
-  { timestamps: true }
+  { timestamps: true, strict: false }
 );
+
+if (mongoose.models && mongoose.models.TrainingInternship) {
+  delete mongoose.models.TrainingInternship;
+}
 
 export const TrainingInternship: Model<ITrainingInternship> =
   mongoose.models.TrainingInternship ||

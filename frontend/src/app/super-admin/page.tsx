@@ -82,12 +82,30 @@ interface CourseItem {
 interface TrainingItem {
   id: string;
   title: string;
+  subtitle?: string;
   slug: string;
+  track?: string;
   domain: string;
   type: 'internship' | 'training' | 'bootcamp';
   duration: string;
-  mode: 'remote' | 'hybrid' | 'onsite';
+  mode: string;
   stipendOrFee: string;
+  trainingPrice?: number;
+  originalPrice?: number;
+  internshipPrice?: number;
+  schedule?: {
+    badge?: string;
+    days?: string;
+    timings?: string;
+    flexibility?: string;
+  };
+  durations?: {
+    total?: string;
+    trainingWeeks?: string;
+    internshipWeeks?: string;
+  };
+  sections?: any[];
+  credentials?: any[];
   eligibility: string;
   perks: string[];
   deadline: string;
@@ -433,6 +451,19 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.navActions}>
+            <button
+              onClick={() => {
+                setActiveTab('training');
+                setEditingTraining(null);
+                setTrainingModalOpen(true);
+              }}
+              className={styles.addTrainingHeaderBtn}
+              title="Add New Training & Internship Program"
+            >
+              <Plus size={15} />
+              <span>Add Training &amp; Internship</span>
+            </button>
+
             <Link href="/" className={styles.switchAdminBtn} target="_blank" title="View Public Portal">
               <ExternalLink size={15} />
               <span>Live Site</span>
@@ -666,12 +697,25 @@ export default function SuperAdminDashboard() {
                   <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <GraduationCap size={18} color="#059669" /> Internships & Training Drives
                   </h3>
-                  <button
-                    onClick={() => setActiveTab('training')}
-                    style={{ background: 'none', border: 'none', color: '#059669', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                  >
-                    View All ({trainingPrograms.length}) &rarr;
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setActiveTab('training');
+                        setEditingTraining(null);
+                        setTrainingModalOpen(true);
+                      }}
+                      className={styles.quickAddMiniBtn}
+                      title="Add New Program"
+                    >
+                      <Plus size={13} /> Add Program
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('training')}
+                      style={{ background: 'none', border: 'none', color: '#059669', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      View All ({trainingPrograms.length}) &rarr;
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -944,8 +988,9 @@ export default function SuperAdminDashboard() {
                     setTrainingModalOpen(true);
                   }}
                   className={styles.primaryActionBtn}
+                  style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
                 >
-                  <Plus size={16} /> New Program
+                  <Plus size={16} /> Add Training &amp; Internship
                 </button>
               </div>
             </div>
@@ -955,11 +1000,11 @@ export default function SuperAdminDashboard() {
               <table className={styles.dataTable}>
                 <thead>
                   <tr>
-                    <th>Program Title & Domain</th>
+                    <th>Program Title &amp; Track</th>
                     <th>Type</th>
-                    <th>Mode</th>
+                    <th>Mode &amp; Schedule</th>
                     <th>Duration</th>
-                    <th>Stipend / Perks</th>
+                    <th>Tuition &amp; Internship Fee</th>
                     <th>Eligibility</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -982,11 +1027,13 @@ export default function SuperAdminDashboard() {
                         <td style={{ maxWidth: '300px' }}>
                           <div className={styles.titleCol}>
                             <span>{t.title}</span>
-                            <span style={{ fontSize: '12px', color: '#059669', fontWeight: 600 }}>
-                              Domain: {t.domain}
-                            </span>
-                            <span style={{ fontSize: '11px', color: '#64748b' }}>
-                              Deadline: {t.deadline} • {t.applicantsCount} Applicants
+                            {t.subtitle && (
+                              <span style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.3 }}>
+                                {t.subtitle}
+                              </span>
+                            )}
+                            <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
+                              Track: {t.track || t.domain}
                             </span>
                           </div>
                         </td>
@@ -994,20 +1041,37 @@ export default function SuperAdminDashboard() {
                           <span className={styles.typeBadge}>{t.type}</span>
                         </td>
                         <td>
-                          <span style={{ textTransform: 'uppercase', fontSize: '11px', fontWeight: 700, background: '#f1f5f9', padding: '3px 8px', borderRadius: '6px' }}>
-                            {t.mode}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <span style={{ textTransform: 'uppercase', fontSize: '10px', fontWeight: 800, background: '#ecfdf5', color: '#065f46', padding: '2px 6px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+                              {t.schedule?.badge || 'Weekend Batches'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                              {t.mode}
+                            </span>
+                          </div>
                         </td>
                         <td>
-                          <span style={{ fontSize: '12px', color: '#64748b' }}>{t.duration}</span>
+                          <span style={{ fontSize: '12px', color: '#334155', fontWeight: 600 }}>{t.duration}</span>
                         </td>
                         <td>
-                          <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>
-                            {t.stipendOrFee}
-                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '13px' }}>
+                              ₹{t.trainingPrice ? t.trainingPrice.toLocaleString('en-IN') : '2,400'}
+                              {t.originalPrice ? (
+                                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '11px', marginLeft: '6px' }}>
+                                  ₹{t.originalPrice.toLocaleString('en-IN')}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
+                              2-Mo Internship: FREE (₹0)
+                            </span>
+                          </div>
                         </td>
-                        <td style={{ maxWidth: '200px' }}>
-                          <span style={{ fontSize: '12px', color: '#475569' }}>{t.eligibility}</span>
+                        <td style={{ maxWidth: '180px' }}>
+                          <span style={{ fontSize: '11px', color: '#475569', lineHeight: 1.3, display: 'block' }}>
+                            {t.eligibility}
+                          </span>
                         </td>
                         <td>
                           <span
@@ -1030,10 +1094,21 @@ export default function SuperAdminDashboard() {
                                 setTrainingModalOpen(true);
                               }}
                               className={styles.editRowBtn}
-                              title="Edit Program"
+                              title="Edit Program Details"
                             >
                               <Edit2 size={13} /> Edit
                             </button>
+
+                            <Link
+                              href="/training-and-internship"
+                              target="_blank"
+                              className={styles.editRowBtn}
+                              style={{ color: '#2563eb', textDecoration: 'none' }}
+                              title="View Student Live Page"
+                            >
+                              <ExternalLink size={13} /> View
+                            </Link>
+
                             <button
                               onClick={() => handleDeleteTraining(t.id, t.title)}
                               className={styles.deleteRowBtn}
@@ -1941,7 +2016,7 @@ function CourseFormModal({
 }
 
 // -------------------------------------------------------------
-// TRAINING / INTERNSHIP FORM MODAL COMPONENT
+// TRAINING / INTERNSHIP FORM MODAL COMPONENT (FULL CRUD)
 // -------------------------------------------------------------
 function TrainingFormModal({
   program,
@@ -1952,29 +2027,164 @@ function TrainingFormModal({
   onClose: () => void;
   onSave: (data: Partial<TrainingItem>) => void;
 }) {
+  const [modalTab, setModalTab] = useState<'basic' | 'pricing' | 'curriculum' | 'credentials'>('basic');
+
+  // Basic Info
   const [title, setTitle] = useState(program?.title || '');
-  const [domain, setDomain] = useState(program?.domain || 'Full Stack Web Dev');
+  const [subtitle, setSubtitle] = useState(program?.subtitle || '');
+  const [track, setTrack] = useState(program?.track || 'Frontend Developer');
+  const [domain, setDomain] = useState(program?.domain || 'Frontend Web Engineering & Next.js 14');
   const [type, setType] = useState<TrainingItem['type']>(program?.type || 'internship');
-  const [duration, setDuration] = useState(program?.duration || '3 Months');
-  const [mode, setMode] = useState<TrainingItem['mode']>(program?.mode || 'remote');
-  const [stipendOrFee, setStipendOrFee] = useState(program?.stipendOrFee || 'Stipend: ₹12,000/mo');
-  const [eligibility, setEligibility] = useState(program?.eligibility || 'B.Tech/BE/BCA (2025-2027)');
-  const [deadline, setDeadline] = useState(program?.deadline || 'Rolling Basis');
+  const [mode, setMode] = useState(program?.mode || 'Live Online • Weekend Classes');
   const [status, setStatus] = useState<TrainingItem['status']>(program?.status || 'open');
+
+  // Pricing & Schedule
+  const [trainingPrice, setTrainingPrice] = useState(program?.trainingPrice !== undefined ? program.trainingPrice : 2400);
+  const [originalPrice, setOriginalPrice] = useState(program?.originalPrice !== undefined ? program.originalPrice : 7999);
+  const [internshipPrice, setInternshipPrice] = useState(program?.internshipPrice !== undefined ? program.internshipPrice : 0);
+  const [stipendOrFee, setStipendOrFee] = useState(program?.stipendOrFee || '₹2,400 Tuition • Free 2-Month Internship');
+  const [scheduleBadge, setScheduleBadge] = useState(program?.schedule?.badge || 'Weekend Live Batches');
+  const [scheduleDays, setScheduleDays] = useState(program?.schedule?.days || 'Every Saturday & Sunday');
+  const [scheduleTimings, setScheduleTimings] = useState(
+    program?.schedule?.timings || 'Live Interactive Sessions + 24/7 Session Recordings'
+  );
+  const [duration, setDuration] = useState(program?.duration || '2 Months Internship + Training');
+  const [trainingWeeks, setTrainingWeeks] = useState(program?.durations?.trainingWeeks || '4 Weeks Intensive Live Training');
+  const [internshipWeeks, setInternshipWeeks] = useState(program?.durations?.internshipWeeks || '2 Months Hands-on Industrial Internship');
+  const [deadline, setDeadline] = useState(program?.deadline || 'Rolling Admissions');
+
+  // Curriculum & Projects
+  const [sec1Title, setSec1Title] = useState(
+    program?.sections?.[0]?.title || 'Section 1: Intensive Frontend Engineering Training'
+  );
+  const [sec1Tagline, setSec1Tagline] = useState(
+    program?.sections?.[0]?.tagline || 'From Foundational Web Standards to Modern React 18+ & Next.js 14 Production Architectures'
+  );
+  const [minorProjectTitle, setMinorProjectTitle] = useState(
+    program?.sections?.[1]?.title || 'SaaS Pulse • Modern Analytics & Productivity Dashboard'
+  );
+  const [minorProjectDesc, setMinorProjectDesc] = useState(
+    program?.sections?.[1]?.description ||
+      'Production-grade dashboard with reusable component architecture, theme switching, interactive charts, and responsive layouts.'
+  );
+  const [majorProjectTitle, setMajorProjectTitle] = useState(
+    program?.sections?.[2]?.title || 'Binary Studio • Enterprise E-Learning & Collaborative Platform'
+  );
+  const [majorProjectDesc, setMajorProjectDesc] = useState(
+    program?.sections?.[2]?.description ||
+      'Commercial-grade web application featuring JWT auth, catalog browsing, video streaming with progress tracking, and Razorpay checkout integration.'
+  );
+
+  // Eligibility, Credentials & Perks
+  const [eligibility, setEligibility] = useState(program?.eligibility || 'College Students, Freshers & Working Professionals');
   const [perks, setPerks] = useState(
     program?.perks?.join('\n') ||
-      'Official Internship Certificate\nLetter of Recommendation (LOR)\nPre-Placement Offer (PPO)'
+      'Official Internship Certificate with unique verification ID\nLetter of Recommendation (LOR) signed by Lead Architect\n100% Free 2-Month Industrial Internship (₹0)\nWeekend Live Interactive Classes + 24/7 Recordings\nMinor Project (SaaS Pulse) & Major Project (Binary Studio)\nResume & LinkedIn profile optimization workshop'
   );
+
+  // Auto-Fill Frontend Developer Standard Template
+  const handleLoadFrontendTemplate = () => {
+    setTitle('Frontend Developer Training & 2-Month Internship');
+    setSubtitle(
+      'Master Modern Web Development, Build Production Projects, and Complete a 2-Month Industrial Internship with 4 Verified Credentials'
+    );
+    setTrack('Frontend Developer');
+    setDomain('Frontend Web Engineering & Next.js 14');
+    setType('internship');
+    setMode('Live Online • Weekend Classes');
+    setStatus('open');
+    setTrainingPrice(2400);
+    setOriginalPrice(7999);
+    setInternshipPrice(0);
+    setStipendOrFee('₹2,400 Tuition • Free 2-Month Internship');
+    setScheduleBadge('Weekend Live Batches');
+    setScheduleDays('Every Saturday & Sunday');
+    setScheduleTimings('Live Interactive Sessions + 24/7 Session Recordings');
+    setDuration('2 Months Internship + Training');
+    setTrainingWeeks('4 Weeks Intensive Live Training');
+    setInternshipWeeks('2 Months Hands-on Industrial Internship');
+    setDeadline('Rolling Admissions');
+    setSec1Title('Section 1: Intensive Frontend Engineering Training');
+    setSec1Tagline('From Foundational Web Standards to Modern React 18+ & Next.js 14 Production Architectures');
+    setMinorProjectTitle('SaaS Pulse • Modern Analytics & Productivity Dashboard');
+    setMinorProjectDesc(
+      'Production-grade dashboard with reusable component architecture, theme switching, interactive charts, and responsive layouts.'
+    );
+    setMajorProjectTitle('Binary Studio • Enterprise E-Learning & Collaborative Platform');
+    setMajorProjectDesc(
+      'Commercial-grade web application featuring JWT auth, catalog browsing, video streaming with progress tracking, and Razorpay checkout integration.'
+    );
+    setEligibility('College Students, Freshers & Working Professionals');
+    setPerks(
+      'Official Internship Certificate with unique verification ID\nLetter of Recommendation (LOR) signed by Lead Architect\n100% Free 2-Month Industrial Internship (₹0)\nWeekend Live Interactive Classes + 24/7 Recordings\nMinor Project (SaaS Pulse) & Major Project (Binary Studio)\nResume & LinkedIn profile optimization workshop'
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const formattedSections = [
+      {
+        id: 'section-1-training',
+        number: 1,
+        title: sec1Title,
+        tagline: sec1Tagline,
+        description: 'Comprehensive, mentor-led weekend live classes with hands-on code walkthroughs and assignments.',
+        modules: program?.sections?.[0]?.modules || [
+          { moduleNumber: '1.1', title: 'Semantic HTML5, Modern CSS3 & Responsive Architecture' },
+          { moduleNumber: '1.2', title: 'Modern JavaScript (ES6+) & Asynchronous Mastery' },
+          { moduleNumber: '1.3', title: 'TypeScript for Scalable Frontend Systems' },
+          { moduleNumber: '1.4', title: 'React 18+ Deep Dive & State Architecture' },
+          { moduleNumber: '1.5', title: 'Next.js 14 App Router & Full-Stack Capabilities' },
+          { moduleNumber: '1.6', title: 'Developer Tooling, Git & Deployment Pipelines' },
+        ],
+      },
+      {
+        id: 'section-2-minor-project',
+        number: 2,
+        title: minorProjectTitle,
+        description: minorProjectDesc,
+      },
+      {
+        id: 'section-3-major-project',
+        number: 3,
+        title: majorProjectTitle,
+        description: majorProjectDesc,
+      },
+    ];
+
+    const formattedCredentials = [
+      { id: 'cred-1', title: 'Letter of Recommendation (LOR)', issuedBy: 'Binary Vidya Technical Board' },
+      { id: 'cred-2', title: 'Internship Completion Certificate', issuedBy: 'Binary Vidya Technical Academy' },
+      { id: 'cred-3', title: 'Training Certificate', issuedBy: 'Binary Vidya Faculty' },
+      { id: 'cred-4', title: 'Outstanding & Excellence Certificate', issuedBy: 'Honors Committee' },
+    ];
+
     onSave({
       title,
+      subtitle,
+      track,
       domain,
       type,
       duration,
       mode,
-      stipendOrFee,
+      stipendOrFee: stipendOrFee || `₹${trainingPrice} Tuition • Free Internship`,
+      trainingPrice: Number(trainingPrice),
+      originalPrice: Number(originalPrice),
+      internshipPrice: Number(internshipPrice),
+      schedule: {
+        badge: scheduleBadge,
+        days: scheduleDays,
+        timings: scheduleTimings,
+        flexibility: eligibility,
+      },
+      durations: {
+        total: duration,
+        trainingWeeks,
+        internshipWeeks,
+      },
+      sections: formattedSections,
+      credentials: formattedCredentials,
       eligibility,
       deadline,
       status,
@@ -1984,133 +2194,411 @@ function TrainingFormModal({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalCard} style={{ maxWidth: '840px', maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
+        {/* Modal Header */}
         <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            {program ? 'Edit Training / Internship' : 'Create Training / Internship Program'}
-          </h3>
-          <button onClick={onClose} className={styles.closeModalBtn}>
-            <X size={20} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '8px',
+                background: '#ecfdf5',
+                color: '#059669',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <GraduationCap size={20} />
+            </div>
+            <div>
+              <h3 className={styles.modalTitle} style={{ margin: 0 }}>
+                {program ? 'Edit Training & Internship Program' : 'Add New Training & Internship Program'}
+              </h3>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>
+                Manage track, weekend schedules, curriculum sections, and completion credentials.
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {!program && (
+              <button
+                type="button"
+                onClick={handleLoadFrontendTemplate}
+                className={styles.templateLoadBtn}
+                title="Populate with Frontend Developer standard curriculum"
+              >
+                <Zap size={14} color="#2563eb" /> Auto-Fill Frontend Template
+              </button>
+            )}
+            <button onClick={onClose} className={styles.closeModalBtn}>
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Modal Subnavigation */}
+        <div className={styles.modalSubNav}>
+          <button
+            type="button"
+            onClick={() => setModalTab('basic')}
+            className={`${styles.modalSubNavBtn} ${modalTab === 'basic' ? styles.modalSubNavBtnActive : ''}`}
+          >
+            1. Track &amp; Overview
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalTab('pricing')}
+            className={`${styles.modalSubNavBtn} ${modalTab === 'pricing' ? styles.modalSubNavBtnActive : ''}`}
+          >
+            2. Tuition &amp; Schedule
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalTab('curriculum')}
+            className={`${styles.modalSubNavBtn} ${modalTab === 'curriculum' ? styles.modalSubNavBtnActive : ''}`}
+          >
+            3. 3 Curriculum Sections &amp; Projects
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalTab('credentials')}
+            className={`${styles.modalSubNavBtn} ${modalTab === 'credentials' ? styles.modalSubNavBtnActive : ''}`}
+          >
+            4. Credentials &amp; Perks
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <div className={styles.modalBody}>
-            <div className={styles.formGrid}>
-              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Program Title *</label>
-                <input
-                  type="text"
-                  required
-                  className={styles.formInput}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Summer SDE Internship Drive 2026"
-                />
-              </div>
+          <div className={styles.modalBody} style={{ padding: '24px' }}>
+            {/* TAB 1: BASIC INFO & TRACK */}
+            {modalTab === 'basic' && (
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <label className={styles.formLabel}>Program Title *</label>
+                  <input
+                    type="text"
+                    required
+                    className={styles.formInput}
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Frontend Developer Training & 2-Month Internship"
+                  />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Domain / Field *</label>
-                <input
-                  type="text"
-                  required
-                  className={styles.formInput}
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="e.g. MERN Stack & Next.js"
-                />
-              </div>
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <label className={styles.formLabel}>Subtitle / Program Overview</label>
+                  <textarea
+                    rows={2}
+                    className={styles.formTextarea}
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="e.g. Master Modern Web Development, Build Production Projects, and Complete a 2-Month Industrial Internship..."
+                  />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Program Type</label>
-                <select
-                  className={styles.formSelect}
-                  value={type}
-                  onChange={(e) => setType(e.target.value as any)}
-                >
-                  <option value="internship">Internship</option>
-                  <option value="training">Industrial Training</option>
-                  <option value="bootcamp">Bootcamp</option>
-                </select>
-              </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Role / Track *</label>
+                  <input
+                    type="text"
+                    required
+                    className={styles.formInput}
+                    value={track}
+                    onChange={(e) => setTrack(e.target.value)}
+                    placeholder="e.g. Frontend Developer"
+                  />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Work Mode</label>
-                <select
-                  className={styles.formSelect}
-                  value={mode}
-                  onChange={(e) => setMode(e.target.value as any)}
-                >
-                  <option value="remote">Remote</option>
-                  <option value="hybrid">Hybrid</option>
-                  <option value="onsite">On-Site</option>
-                </select>
-              </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Domain / Core Technologies *</label>
+                  <input
+                    type="text"
+                    required
+                    className={styles.formInput}
+                    value={domain}
+                    onChange={(e) => setDomain(e.target.value)}
+                    placeholder="e.g. Frontend Web Engineering & Next.js 14"
+                  />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Duration</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  placeholder="e.g. 3 Months / 6 Months"
-                />
-              </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Program Type</label>
+                  <select
+                    className={styles.formSelect}
+                    value={type}
+                    onChange={(e) => setType(e.target.value as any)}
+                  >
+                    <option value="internship">Internship + Training</option>
+                    <option value="training">Industrial Training Only</option>
+                    <option value="bootcamp">Bootcamp</option>
+                  </select>
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Stipend / Program Fee</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={stipendOrFee}
-                  onChange={(e) => setStipendOrFee(e.target.value)}
-                  placeholder="e.g. Stipend: ₹15,000/mo or Free"
-                />
-              </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Work &amp; Class Mode</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value)}
+                    placeholder="e.g. Live Online • Weekend Classes"
+                  />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Application Status</label>
-                <select
-                  className={styles.formSelect}
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                >
-                  <option value="open">Open (Accepting Applications)</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="closed">Closed</option>
-                </select>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Enrollment Status</label>
+                  <select
+                    className={styles.formSelect}
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value as any)}
+                  >
+                    <option value="open">Open (Accepting Enrollments)</option>
+                    <option value="ongoing">Ongoing (In Progress)</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
               </div>
+            )}
 
-              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Eligibility Criteria</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={eligibility}
-                  onChange={(e) => setEligibility(e.target.value)}
-                  placeholder="e.g. B.Tech / BE / BCA / MCA (2025-2027)"
-                />
-              </div>
+            {/* TAB 2: PRICING & SCHEDULE */}
+            {modalTab === 'pricing' && (
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Training Tuition Fee (INR) *</label>
+                  <input
+                    type="number"
+                    required
+                    className={styles.formInput}
+                    value={trainingPrice}
+                    onChange={(e) => setTrainingPrice(Number(e.target.value))}
+                    placeholder="e.g. 2400"
+                  />
+                </div>
 
-              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Perks (one per line)</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={perks}
-                  onChange={(e) => setPerks(e.target.value)}
-                  placeholder="Official Internship Certificate&#10;Letter of Recommendation&#10;PPO Opportunity"
-                />
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Original Tuition Price (Strikethrough)</label>
+                  <input
+                    type="number"
+                    className={styles.formInput}
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(Number(e.target.value))}
+                    placeholder="e.g. 7999"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>2-Month Internship Fee (INR)</label>
+                  <input
+                    type="number"
+                    className={styles.formInput}
+                    value={internshipPrice}
+                    onChange={(e) => setInternshipPrice(Number(e.target.value))}
+                    placeholder="0 for 100% Free Bundled"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Stipend / Fee Label Display</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={stipendOrFee}
+                    onChange={(e) => setStipendOrFee(e.target.value)}
+                    placeholder="e.g. ₹2,400 Tuition • Free 2-Month Internship"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Schedule Badge</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={scheduleBadge}
+                    onChange={(e) => setScheduleBadge(e.target.value)}
+                    placeholder="e.g. Weekend Live Batches"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Class Days</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={scheduleDays}
+                    onChange={(e) => setScheduleDays(e.target.value)}
+                    placeholder="e.g. Every Saturday & Sunday"
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <label className={styles.formLabel}>Session Timings &amp; Recordings Info</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={scheduleTimings}
+                    onChange={(e) => setScheduleTimings(e.target.value)}
+                    placeholder="e.g. Live Interactive Sessions + 24/7 Session Recordings"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Total Duration</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="e.g. 2 Months Internship + Training"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Application Deadline</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    placeholder="e.g. Rolling Admissions"
+                  />
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB 3: CURRICULUM SECTIONS & PROJECTS */}
+            {modalTab === 'curriculum' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Section 1 */}
+                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <BookOpen size={18} color="#2563eb" /> Section 1: Intensive Engineering Training
+                  </div>
+                  <div className={styles.formGrid}>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Section 1 Title</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        value={sec1Title}
+                        onChange={(e) => setSec1Title(e.target.value)}
+                      />
+                    </div>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Section 1 Tagline</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        value={sec1Tagline}
+                        onChange={(e) => setSec1Tagline(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Minor Project */}
+                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Layers size={18} color="#059669" /> Section 2: Minor Project
+                  </div>
+                  <div className={styles.formGrid}>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Minor Project Title</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        value={minorProjectTitle}
+                        onChange={(e) => setMinorProjectTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Minor Project Scope &amp; Architecture</label>
+                      <textarea
+                        rows={2}
+                        className={styles.formTextarea}
+                        value={minorProjectDesc}
+                        onChange={(e) => setMinorProjectDesc(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Major Project */}
+                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
+                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Award size={18} color="#7c3aed" /> Section 3: Major Project
+                  </div>
+                  <div className={styles.formGrid}>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Major Project Title</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        value={majorProjectTitle}
+                        onChange={(e) => setMajorProjectTitle(e.target.value)}
+                      />
+                    </div>
+                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                      <label className={styles.formLabel}>Major Project Scope &amp; Deliverables</label>
+                      <textarea
+                        rows={2}
+                        className={styles.formTextarea}
+                        value={majorProjectDesc}
+                        onChange={(e) => setMajorProjectDesc(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: CREDENTIALS & PERKS */}
+            {modalTab === 'credentials' && (
+              <div className={styles.formGrid}>
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <label className={styles.formLabel}>Eligibility Criteria</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={eligibility}
+                    onChange={(e) => setEligibility(e.target.value)}
+                    placeholder="e.g. College Students, Freshers & Working Professionals"
+                  />
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                    <div style={{ fontWeight: 800, fontSize: '13px', color: '#065f46', marginBottom: '4px' }}>
+                      4 Official Completion Credentials Automatically Bundled:
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#047857', lineHeight: 1.5 }}>
+                      1. Letter of Recommendation (LOR) • 2. Industrial Internship Certificate • 3. Framework Mastery Certificate • 4. Outstanding Honors Certificate
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                  <label className={styles.formLabel}>Program Highlights &amp; Perks (one per line)</label>
+                  <textarea
+                    rows={6}
+                    className={styles.formTextarea}
+                    value={perks}
+                    onChange={(e) => setPerks(e.target.value)}
+                    placeholder="Official Internship Certificate&#10;Letter of Recommendation&#10;PPO Opportunity"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* Modal Footer */}
           <div className={styles.modalFooter}>
             <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Cancel
             </button>
-            <button type="submit" className={styles.submitBtn}>
-              <Check size={16} /> Save Program
+            <button type="submit" className={styles.submitBtn} style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}>
+              <Check size={16} /> Save Program &amp; Publish
             </button>
           </div>
         </form>

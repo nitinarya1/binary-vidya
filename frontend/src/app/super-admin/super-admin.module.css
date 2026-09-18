@@ -800,3 +800,103 @@
   color: #0f172a;
   margin: 12px 0 6px 0;
 }
+
+/* Header Add Training & Internship Button */
+.addTrainingHeaderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  transition: all 0.2s ease;
+}
+
+.addTrainingHeaderBtn:hover {
+  background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+}
+
+.quickAddMiniBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quickAddMiniBtn:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.modalSubNav {
+  display: flex;
+  gap: 8px;
+  padding: 0 24px 14px 24px;
+  border-bottom: 1.5px solid #f1f5f9;
+  background: #ffffff;
+  overflow-x: auto;
+}
+
+.modalSubNavBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.modalSubNavBtn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
+.modalSubNavBtnActive {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.templateLoadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.templateLoadBtn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+

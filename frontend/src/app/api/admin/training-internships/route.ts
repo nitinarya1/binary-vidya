@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
 import { User, TrainingInternship } from '../../../../lib/models';
+import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../../../../backend/src/controllers/training.controller';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,13 +39,41 @@ async function authenticateAdmin(req: Request) {
 // Initial curated starter training & internship programs
 const INITIAL_PROGRAMS = [
   {
+    title: FRONTEND_INTERNSHIP_PROGRAM.title,
+    subtitle: FRONTEND_INTERNSHIP_PROGRAM.subtitle,
+    slug: FRONTEND_INTERNSHIP_PROGRAM.slug,
+    domain: 'Frontend Development & React/Next.js',
+    track: FRONTEND_INTERNSHIP_PROGRAM.track,
+    type: 'internship',
+    duration: FRONTEND_INTERNSHIP_PROGRAM.duration.total,
+    mode: FRONTEND_INTERNSHIP_PROGRAM.mode,
+    stipendOrFee: `₹${FRONTEND_INTERNSHIP_PROGRAM.pricing.trainingPrice} Tuition • Free 2-Month Internship`,
+    trainingPrice: FRONTEND_INTERNSHIP_PROGRAM.pricing.trainingPrice,
+    originalPrice: FRONTEND_INTERNSHIP_PROGRAM.pricing.originalPrice,
+    internshipPrice: FRONTEND_INTERNSHIP_PROGRAM.pricing.internshipPrice,
+    schedule: FRONTEND_INTERNSHIP_PROGRAM.schedule,
+    durations: FRONTEND_INTERNSHIP_PROGRAM.duration,
+    sections: FRONTEND_INTERNSHIP_PROGRAM.sections,
+    credentials: FRONTEND_INTERNSHIP_PROGRAM.credentials,
+    eligibility: FRONTEND_INTERNSHIP_PROGRAM.schedule.flexibility,
+    perks: FRONTEND_INTERNSHIP_PROGRAM.highlights,
+    deadline: 'Rolling Admissions',
+    status: 'open',
+    applicantsCount: 128,
+  },
+  {
     title: 'Full Stack Web Engineering Summer Internship 2026',
+    subtitle: 'Build cloud-native web architectures with MERN & Next.js',
     slug: 'full-stack-web-engineering-summer-internship-2026',
     domain: 'MERN Stack & Next.js',
+    track: 'Full Stack Developer',
     type: 'internship',
     duration: '3 Months',
-    mode: 'remote',
+    mode: 'Remote • Live Mentorship',
     stipendOrFee: 'Stipend: ₹12,000 - ₹18,000 / month',
+    trainingPrice: 2999,
+    originalPrice: 8999,
+    internshipPrice: 0,
     eligibility: 'B.Tech / BE / BCA / MCA (2025 - 2027 Batches)',
     perks: [
       'Official Internship Certificate',
@@ -59,12 +88,17 @@ const INITIAL_PROGRAMS = [
   },
   {
     title: 'Industrial AI & Machine Learning Research Fellowship',
+    subtitle: 'Deep Learning, PyTorch, Transformers, and LLM Engineering',
     slug: 'industrial-ai-machine-learning-research-fellowship',
     domain: 'Applied AI & Deep Learning',
+    track: 'AI / Machine Learning Engineer',
     type: 'internship',
     duration: '6 Months',
-    mode: 'hybrid',
+    mode: 'Hybrid (Remote + Labs)',
     stipendOrFee: 'Stipend: ₹15,000 - ₹25,000 / month',
+    trainingPrice: 4999,
+    originalPrice: 12999,
+    internshipPrice: 0,
     eligibility: 'Passionate coders with Python, PyTorch or Mathematics background',
     perks: [
       'Research Co-Authorship Opportunities',
@@ -75,43 +109,6 @@ const INITIAL_PROGRAMS = [
     deadline: 'May 15, 2026',
     status: 'open',
     applicantsCount: 62,
-  },
-  {
-    title: 'DevOps & Cloud Native Industrial Training Program',
-    slug: 'devops-cloud-native-industrial-training-program',
-    domain: 'DevOps & Site Reliability',
-    type: 'training',
-    duration: '8 Weeks',
-    mode: 'remote',
-    stipendOrFee: 'Training with Live AWS Cloud Lab Included',
-    eligibility: 'Open to all Computer Science & Engineering Students',
-    perks: [
-      'Industrial Project Certificate',
-      'Docker & Kubernetes Portfolio Architecture',
-      'Interview Preparation & Resume Review',
-      '100% Placement Assistance',
-    ],
-    deadline: 'Rolling Admissions',
-    status: 'open',
-    applicantsCount: 110,
-  },
-  {
-    title: 'Cybersecurity & Ethical Hacking Hands-on Bootcamp',
-    slug: 'cybersecurity-ethical-hacking-bootcamp',
-    domain: 'Information Security & VAPT',
-    type: 'bootcamp',
-    duration: '6 Weeks',
-    mode: 'remote',
-    stipendOrFee: 'Includes Certified Ethical Hacker (CEH) Exam prep',
-    eligibility: 'Foundational networking knowledge recommended',
-    perks: [
-      'Hands-on Capture The Flag (CTF) challenges',
-      'Penetration Testing Toolkit Training',
-      'Verified Cybersecurity Specialist Badge',
-    ],
-    deadline: 'May 1, 2026',
-    status: 'open',
-    applicantsCount: 45,
   },
 ];
 
@@ -128,6 +125,12 @@ export async function GET(req: Request) {
     const count = await TrainingInternship.countDocuments();
     if (count === 0) {
       await TrainingInternship.insertMany(INITIAL_PROGRAMS);
+    } else {
+      // Ensure frontend developer program exists in DB
+      const feProg = await TrainingInternship.findOne({ slug: FRONTEND_INTERNSHIP_PROGRAM.slug });
+      if (!feProg) {
+        await TrainingInternship.create(INITIAL_PROGRAMS[0]);
+      }
     }
 
     const { searchParams } = new URL(req.url);
@@ -142,6 +145,7 @@ export async function GET(req: Request) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { domain: { $regex: search, $options: 'i' } },
+        { track: { $regex: search, $options: 'i' } },
         { eligibility: { $regex: search, $options: 'i' } },
       ];
     }
@@ -158,16 +162,34 @@ export async function GET(req: Request) {
       programs: programs.map((p: any) => ({
         id: p._id.toString(),
         title: p.title,
+        subtitle: p.subtitle || '',
         slug: p.slug,
-        domain: p.domain,
-        type: p.type,
-        duration: p.duration,
-        mode: p.mode,
-        stipendOrFee: p.stipendOrFee,
-        eligibility: p.eligibility,
+        domain: p.domain || p.track || 'Web Development',
+        track: p.track || p.domain || 'Frontend Developer',
+        type: p.type || 'internship',
+        duration: p.duration || '2 Months Internship + Training',
+        mode: p.mode || 'Live Online • Weekend Classes',
+        stipendOrFee: p.stipendOrFee || `₹${p.trainingPrice || 2400} Tuition • Free Internship`,
+        trainingPrice: p.trainingPrice !== undefined ? p.trainingPrice : 2400,
+        originalPrice: p.originalPrice !== undefined ? p.originalPrice : 7999,
+        internshipPrice: p.internshipPrice !== undefined ? p.internshipPrice : 0,
+        schedule: p.schedule || {
+          badge: 'Weekend Live Batches',
+          days: 'Every Saturday & Sunday',
+          timings: 'Live Interactive Sessions + 24/7 Session Recordings',
+          flexibility: 'Specially crafted for College Students & Working Professionals',
+        },
+        durations: p.durations || {
+          total: p.duration || '2 Months Internship + Training',
+          trainingWeeks: '4 Weeks Intensive Live Training',
+          internshipWeeks: '2 Months Hands-on Industrial Internship',
+        },
+        sections: p.sections || [],
+        credentials: p.credentials || [],
+        eligibility: p.eligibility || 'College Students & Working Professionals',
         perks: p.perks || [],
-        deadline: p.deadline || 'Open',
-        status: p.status,
+        deadline: p.deadline || 'Rolling Admissions',
+        status: p.status || 'open',
         applicantsCount: p.applicantsCount || 0,
         createdAt: p.createdAt,
       })),
@@ -194,10 +216,30 @@ export async function POST(req: Request) {
 
     await connectDB();
     const body = await req.json();
-    const { title, domain, type, duration, mode, stipendOrFee, eligibility, perks, deadline, status } = body;
+    const {
+      title,
+      subtitle,
+      domain,
+      track,
+      type,
+      duration,
+      mode,
+      stipendOrFee,
+      trainingPrice,
+      originalPrice,
+      internshipPrice,
+      schedule,
+      durations,
+      sections,
+      credentials,
+      eligibility,
+      perks,
+      deadline,
+      status,
+    } = body;
 
     if (!title || !domain) {
-      return NextResponse.json({ success: false, message: 'Title and domain are required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Title and domain/track are required' }, { status: 400 });
     }
 
     const slug = (body.slug || title)
@@ -205,24 +247,48 @@ export async function POST(req: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + `-${Date.now().toString().slice(-4)}`;
 
+    const formattedPerks = Array.isArray(perks)
+      ? perks
+      : typeof perks === 'string'
+      ? perks.split('\n').map((p: string) => p.trim()).filter(Boolean)
+      : [];
+
     const newProgram = await TrainingInternship.create({
       title: title.trim(),
+      subtitle: subtitle ? subtitle.trim() : '',
       slug,
       domain: domain.trim(),
+      track: track ? track.trim() : domain.trim(),
       type: type || 'internship',
-      duration: duration || '3 Months',
-      mode: mode || 'remote',
-      stipendOrFee: stipendOrFee || 'Stipend provided',
-      eligibility: eligibility || 'Graduating students',
-      perks: Array.isArray(perks) ? perks : typeof perks === 'string' ? perks.split(',').map((p: string) => p.trim()).filter(Boolean) : [],
-      deadline: deadline || 'Rolling Basis',
+      duration: duration || '2 Months Internship + Training',
+      mode: mode || 'Live Online • Weekend Classes',
+      stipendOrFee: stipendOrFee || `₹${trainingPrice || 2400} Tuition • Free Internship`,
+      trainingPrice: Number(trainingPrice) || 2400,
+      originalPrice: Number(originalPrice) || 7999,
+      internshipPrice: Number(internshipPrice) || 0,
+      schedule: schedule || {
+        badge: 'Weekend Live Batches',
+        days: 'Every Saturday & Sunday',
+        timings: 'Live Interactive Sessions + 24/7 Session Recordings',
+        flexibility: 'Specially crafted for College Students & Working Professionals',
+      },
+      durations: durations || {
+        total: duration || '2 Months Internship + Training',
+        trainingWeeks: '4 Weeks Intensive Live Training',
+        internshipWeeks: '2 Months Hands-on Industrial Internship',
+      },
+      sections: sections || [],
+      credentials: credentials || [],
+      eligibility: eligibility || 'College Students, Freshers & Working Professionals',
+      perks: formattedPerks,
+      deadline: deadline || 'Rolling Admissions',
       status: status || 'open',
       applicantsCount: 0,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Program created successfully!',
+      message: 'Training & Internship program created successfully!',
       program: newProgram,
     });
   } catch (error: any) {
@@ -248,8 +314,12 @@ export async function PUT(req: Request) {
     }
 
     if (updates.perks && typeof updates.perks === 'string') {
-      updates.perks = updates.perks.split(',').map((p: string) => p.trim()).filter(Boolean);
+      updates.perks = updates.perks.split('\n').map((p: string) => p.trim()).filter(Boolean);
     }
+
+    if (updates.trainingPrice !== undefined) updates.trainingPrice = Number(updates.trainingPrice);
+    if (updates.originalPrice !== undefined) updates.originalPrice = Number(updates.originalPrice);
+    if (updates.internshipPrice !== undefined) updates.internshipPrice = Number(updates.internshipPrice);
 
     const updated = await TrainingInternship.findByIdAndUpdate(id, { $set: updates }, { new: true });
     if (!updated) {
@@ -258,7 +328,7 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Program updated successfully',
+      message: 'Training & Internship program updated successfully',
       program: updated,
     });
   } catch (error: any) {
@@ -290,7 +360,7 @@ export async function DELETE(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: 'Program deleted successfully',
+      message: 'Training & Internship program deleted successfully',
     });
   } catch (error: any) {
     console.error('[Admin Training DELETE Error]:', error);
