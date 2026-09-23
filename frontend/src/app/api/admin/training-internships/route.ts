@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
 import { User, TrainingInternship } from '../../../../lib/models';
-import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../../../../backend/src/controllers/training.controller';
+import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../../lib/trainingProgramData';
 
 export const dynamic = 'force-dynamic';
 

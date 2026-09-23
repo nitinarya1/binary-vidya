@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '../../../lib/db';
 import { TrainingInternship } from '../../../lib/models';
-import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../../../backend/src/controllers/training.controller';
+import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../lib/trainingProgramData';
 
 export const dynamic = 'force-dynamic';
 
