@@ -58,68 +58,62 @@ ${fromAddress}`;
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>${otp} is your Binary Vidya verification code</title>
       </head>
-      <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
+      <body style="margin: 0; padding: 28px 12px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #0f172a;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);">
           
-          <!-- Clean Header (No Logo Image, Zero Delay) -->
+          <!-- Clean Header -->
           <tr>
-            <td align="center" style="background-color: #ffffff; padding: 28px 24px 20px; text-align: center; border-bottom: 2px solid #eff6ff;">
-              <div style="font-size: 22px; font-weight: 900; color: #1e40af; letter-spacing: -0.5px; text-transform: uppercase;">
+            <td align="center" style="background-color: #ffffff; padding: 26px 24px 18px; text-align: center; border-bottom: 1px solid #f1f5f9;">
+              <div style="font-size: 20px; font-weight: 800; color: #1e3a8a; letter-spacing: -0.4px; text-transform: uppercase;">
                 Binary Vidya
               </div>
-              <div style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1.2px; margin-top: 3px; text-transform: uppercase;">
-                Security &bull; Verification Service
+              <div style="font-size: 11px; font-weight: 600; color: #64748b; letter-spacing: 0.8px; margin-top: 3px; text-transform: uppercase;">
+                Verification Service
               </div>
             </td>
           </tr>
 
-          <!-- Royal Blue Accent Sub-Header -->
+          <!-- Sub-Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
-              <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
-                🔒 Official Security Verification
+            <td style="background-color: #1e3a8a; padding: 10px 24px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 700; color: #ffffff; letter-spacing: 1px; text-transform: uppercase;">
+                Official Security Verification
               </div>
             </td>
           </tr>
 
           <!-- Main Body -->
           <tr>
-            <td style="padding: 34px 30px 28px; text-align: center;">
-              <div style="display: inline-block; padding: 4px 14px; background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 700; margin-bottom: 16px;">
-                🔒 One-Time Passcode
+            <td style="padding: 32px 28px 24px; text-align: center;">
+              <div style="display: inline-block; padding: 4px 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; border-radius: 99px; font-size: 11px; font-weight: 700; margin-bottom: 14px;">
+                One-Time Passcode
               </div>
               
-              <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0;">
+              <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 10px 0;">
                 Authorization Code
               </h1>
               
-              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
+              <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 20px 0;">
                 Use the verification code below to authorize your sign-in for <strong>${purpose}</strong>:
               </p>
 
-              <!-- Copyable OTP Box with White & Blue Theme (Zero Links) -->
-              <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 22px 0;">
+              <!-- Copyable OTP Box -->
+              <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 20px 0;">
                 <tr>
-                  <td align="center" style="background-color: #f8fbff; border: 2px dashed #2563eb; border-radius: 14px; padding: 24px 20px;">
+                  <td align="center" style="background-color: #f8fafc; border: 2px dashed #2563eb; border-radius: 10px; padding: 20px 16px;">
                     
-                    <!-- OTP Digits with user-select -->
-                    <div style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 40px; font-weight: 900; letter-spacing: 10px; color: #1e40af; text-align: center; user-select: all; -webkit-user-select: all; padding-left: 10px;">
+                    <div style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 38px; font-weight: 800; letter-spacing: 8px; color: #1e40af; text-align: center; user-select: all; -webkit-user-select: all; padding-left: 8px;">
                       ${otp}
                     </div>
 
-                    <!-- Copy Hint Button/Badge -->
-                    <div style="margin-top: 14px; display: inline-block; background-color: #ffffff; border: 1px solid #93c5fd; padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #2563eb; box-shadow: 0 2px 4px rgba(37,99,235,0.06);">
-                      📋 Double-click code to copy
-                    </div>
-
-                    <div style="font-size: 12px; color: #64748b; margin-top: 10px;">
-                      ⏱️ Valid for <strong>10 minutes</strong>
+                    <div style="font-size: 11px; color: #64748b; margin-top: 10px;">
+                      Valid for 10 minutes
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <p style="font-size: 13px; line-height: 1.6; color: #334155; margin: 0 0 14px 0; font-weight: 500;">
+              <p style="font-size: 13px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">
                 Enter this 6-digit code on the sign-in screen to proceed.
               </p>
 
@@ -129,10 +123,10 @@ ${fromAddress}`;
             </td>
           </tr>
 
-          <!-- Clean Blue/White Footer -->
+          <!-- Clean Footer -->
           <tr>
-            <td style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
-              Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, India<br />
+            <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
+              Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, Karnataka, India - 560001<br />
               &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
             </td>
           </tr>
@@ -145,16 +139,12 @@ ${fromAddress}`;
     const subject = `${otp} is your Binary Vidya verification code`;
 
     const info = await transport.sendMail({
-      from: `"Binary Vidya Security" <${fromAddress}>`,
+      from: `"Binary Vidya" <${fromAddress}>`,
       to,
       replyTo: fromAddress,
       subject,
       text: textContent,
       html: htmlContent,
-      headers: {
-        'Auto-Submitted': 'auto-generated',
-        'X-Auto-Response-Suppress': 'OOF, AutoReply',
-      },
     });
 
     console.log(`[Nodemailer] Inbox-optimized OTP email sent to ${to}. MessageId: ${info.messageId}`);
@@ -355,13 +345,13 @@ You received this email because an account was created on Binary Vidya for ${use
             <img 
               src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
               alt="Binary Vidya" 
-              width="70" 
-              style="display: block; width: 70px; max-width: 70px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none; text-decoration: none;" 
+              width="65" 
+              style="display: block; width: 65px; max-width: 65px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none; text-decoration: none;" 
             />
           </a>
         </div>
         You received this email because an account was registered for <strong>${user.email}</strong> on <a href="${portalUrl}" style="color: #2563eb; text-decoration: underline;">Binary Vidya</a>.<br />
-        Sent from Binary Vidya &bull; Bengaluru, Karnataka, India<br />
+        Sent from Binary Vidya &bull; Bengaluru, Karnataka, India - 560001<br />
         &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
       </td>
     </tr>
@@ -377,10 +367,6 @@ You received this email because an account was created on Binary Vidya for ${use
       subject: `Welcome to Binary Vidya, ${displayName}`,
       text: plainText,
       html: htmlContent,
-      headers: {
-        'Auto-Submitted': 'auto-generated',
-        'X-Auto-Response-Suppress': 'OOF, AutoReply',
-      },
     };
 
     const info = await transport.sendMail(mailOptions);
@@ -397,6 +383,7 @@ export interface TeamCredentialsData {
   email: string;
   temporaryPassword: string;
   department: string;
+  team?: string;
   permissions?: Record<string, boolean>;
   loginUrl?: string;
 }
@@ -408,53 +395,81 @@ export const sendTeamCredentialsEmail = async (
     const transport = getTransporter();
     const fromAddress = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
     const displayName = data.name?.trim() || 'Team Member';
-    const deptLower = (data.department || '').toLowerCase();
-    const isSales = ['csm', 'bda', 'lead generation', 'sales'].some((role) => deptLower.includes(role));
+
+    // Extract exact team selected by admin (BDA, Lead Generation, or CSM)
+    const rawTeam = (data.team || data.department || '').trim();
+    const lower = rawTeam.toLowerCase();
+    const isBDA = rawTeam.toUpperCase() === 'BDA' || lower.includes('bda');
+    const isLeadGen = lower.includes('lead');
+    const isCSM = rawTeam.toUpperCase() === 'CSM' || lower.includes('csm');
+    const isSales = isBDA || isLeadGen || isCSM || lower.includes('sales');
+
+    let teamName = rawTeam;
+    let teamRoleTitle = rawTeam;
+    let teamBadge = `${rawTeam} Team`;
+    let roleExplanation = '';
+
+    if (isBDA) {
+      teamName = 'BDA';
+      teamRoleTitle = 'Business Development Associate (BDA)';
+      teamBadge = 'BDA Sales Team';
+      roleExplanation = 'You have been selected and added to the Binary Vidya Business Development Associate (BDA) team. You are authorized to access the Sales Console to manage learner inquiries, counseling calls, admissions, and course enrollments.';
+    } else if (isLeadGen) {
+      teamName = 'Lead Generation';
+      teamRoleTitle = 'Lead Generation Specialist';
+      teamBadge = 'Lead Generation Team';
+      roleExplanation = 'You have been selected and added to the Binary Vidya Lead Generation team. You are authorized to access the Sales Console to prospect, conduct outbound outreach, and source prospective learners.';
+    } else if (isCSM) {
+      teamName = 'CSM';
+      teamRoleTitle = 'Customer Success Manager (CSM) - Senior Sales';
+      teamBadge = 'CSM Team (Senior Sales)';
+      roleExplanation = 'You have been selected and added to the Binary Vidya Customer Success Manager (CSM) senior sales team. You are authorized to manage senior counseling, high-ticket closures, and learner relationship management.';
+    } else if (isSales) {
+      teamName = rawTeam || 'Sales';
+      teamRoleTitle = `${teamName} Sales Specialist`;
+      teamBadge = `${teamName} Team`;
+      roleExplanation = `You have been selected and added to the Binary Vidya ${teamName} sales team. You are authorized to access the Sales Console to manage learner admissions and enrollments.`;
+    } else {
+      teamName = rawTeam || 'Staff';
+      teamRoleTitle = `${teamName} Department`;
+      teamBadge = `${teamName} Team`;
+      roleExplanation = `You have been granted administrative staff access to the Binary Vidya platform in the ${teamName} department.`;
+    }
 
     const portalBase = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
     const defaultUrl = isSales ? `${portalBase}/sales/login` : `${portalBase}/login`;
     const portalUrl = data.loginUrl || defaultUrl;
 
+    // Spam-proof subject line: No emojis, no special symbols, includes company and exact selected team
     const subject = isSales
-      ? `Welcome to the Team, ${displayName} • Binary Vidya Sales Access`
-      : `Your Binary Vidya Administrative Staff Credentials (${data.department})`;
+      ? `Welcome to Binary Vidya - ${teamName} Team Access Details`
+      : `Binary Vidya Staff Account - ${teamName} Login Credentials`;
 
-    const welcomeHeading = isSales
-      ? `Welcome to the Team, ${displayName}!`
-      : `Welcome to the Staff Team, ${displayName}!`;
-
-    const description = isSales
-      ? `You have been registered as an authorized member of the Binary Vidya Sales &amp; Counseling team (<strong>${data.department}</strong>). You can now access your assigned learner leads, manage admissions, and record call dispositions.`
-      : `You have been granted administrative access to the Binary Vidya platform in the <strong>${data.department}</strong> department. You can now access the administrative portal to manage platform curriculums, courses, certificates, and student operations.`;
-
-    const ctaButtonText = isSales
-      ? 'Log In to Sales Console &rarr;'
-      : 'Sign In to Staff Console &rarr;';
-
-    const tipNotice = isSales
-      ? '<strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password, or enter your registered email address on the login screen for instant 6-digit OTP verification.'
-      : '<strong>🔒 Security Advisory:</strong> For platform security, you will be required to verify a 4-digit code (2FA OTP) and choose a new, secure password upon your first sign in.';
+    const welcomeHeading = `Welcome to the ${teamName} Team, ${displayName}`;
 
     const plainText = `Hello ${displayName},
 
-Welcome to the Binary Vidya ${isSales ? 'Sales & Counseling' : 'Administrative'} Team!
+Welcome to the ${teamName} Team at Binary Vidya!
 
-You have been added as an authorized team member in the ${data.department} department.
+${roleExplanation}
 
-Here are your login credentials:
+Here are your team login credentials:
+- Assigned Team: ${teamRoleTitle}
 - Login Portal: ${portalUrl}
 - Login Email: ${data.email}
 - Temporary Password: ${data.temporaryPassword}
-- Assigned Role: ${data.department}
 
-Direct Access Link: ${portalUrl}
+Direct Login Link:
+${portalUrl}
 
-${isSales ? 'Tip: You can sign in using this password, or enter your email address for instant 6-digit OTP verification.' : 'Security: You will be required to set a new password upon first login.'}
+Sign-in options:
+You can log in using your temporary password, or enter your registered email address on the login screen to receive an instant 6-digit one-time verification code.
 
 If you have any questions or require assistance, please contact your Super Administrator at aryar0779@gmail.com.
 
 Warm regards,
-Binary Vidya Administration
+Binary Vidya Team
+Bengaluru, Karnataka, India - 560001
 ${portalBase}`;
 
     const htmlContent = `
@@ -465,12 +480,12 @@ ${portalBase}`;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${subject}</title>
 </head>
-<body style="margin: 0; padding: 32px 14px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+<body style="margin: 0; padding: 28px 12px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #0f172a;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);">
     
-    <!-- Header: Minimalist & Professional -->
+    <!-- Clean Minimalist Header -->
     <tr>
-      <td style="padding: 24px 30px 20px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
+      <td style="padding: 24px 28px 20px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
         <table border="0" cellpadding="0" cellspacing="0" width="100%">
           <tr>
             <td>
@@ -480,7 +495,7 @@ ${portalBase}`;
             </td>
             <td align="right">
               <span style="display: inline-block; background-color: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; border: 1px solid #bfdbfe;">
-                ${isSales ? 'Sales &amp; Counseling' : 'Platform Staff'}
+                ${teamBadge}
               </span>
             </td>
           </tr>
@@ -490,17 +505,17 @@ ${portalBase}`;
 
     <!-- Main Content Area -->
     <tr>
-      <td style="padding: 32px 30px 24px;">
-        <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.35;">
+      <td style="padding: 30px 28px 24px;">
+        <h1 style="font-size: 21px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.35;">
           ${welcomeHeading}
         </h1>
 
-        <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
-          ${description}
+        <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 22px 0;">
+          ${roleExplanation}
         </p>
 
-        <!-- Credentials Box: Clean Card -->
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px;">
+        <!-- Credentials Box -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 22px;">
           <tr>
             <td style="padding: 20px 22px;">
               <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;">
@@ -509,8 +524,14 @@ ${portalBase}`;
               
               <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 13px;">
                 <tr>
-                  <td style="padding: 7px 0; color: #64748b; width: 130px;">Login Portal:</td>
-                  <td style="padding: 7px 0; font-weight: 600;">
+                  <td style="padding: 7px 0; color: #64748b; width: 130px;">Assigned Team:</td>
+                  <td style="padding: 7px 0; font-weight: 700; color: #059669;">
+                    ${teamRoleTitle}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Login Portal:</td>
+                  <td style="padding: 7px 0; font-weight: 600; border-top: 1px solid #f1f5f9;">
                     <a href="${portalUrl}" target="_blank" style="color: #2563eb; text-decoration: underline;">
                       ${portalUrl}
                     </a>
@@ -525,15 +546,9 @@ ${portalBase}`;
                 <tr>
                   <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Password:</td>
                   <td style="padding: 7px 0; border-top: 1px solid #f1f5f9;">
-                    <span style="font-family: 'SF Mono', Consolas, monospace; font-size: 14px; font-weight: 700; color: #1e40af; background: #e0e7ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe;">
+                    <span style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 14px; font-weight: 700; color: #1e40af; background: #e0e7ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe;">
                       ${data.temporaryPassword}
                     </span>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Assigned Role:</td>
-                  <td style="padding: 7px 0; font-weight: 700; color: #059669; border-top: 1px solid #f1f5f9;">
-                    ${data.department}
                   </td>
                 </tr>
               </table>
@@ -542,25 +557,25 @@ ${portalBase}`;
         </table>
 
         <!-- Direct Login Button CTA -->
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 22px;">
           <tr>
             <td align="center">
               <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 6px rgba(37,99,235,0.2);">
-                ${ctaButtonText}
+                Log In to Sales Console &rarr;
               </a>
             </td>
           </tr>
         </table>
 
-        <!-- Security / Quick Tip Note -->
-        <div style="background-color: #f8fafc; border-left: 3px solid #2563eb; padding: 12px 14px; border-radius: 4px; margin-bottom: 20px;">
+        <!-- Sign-in Options Note -->
+        <div style="background-color: #f8fafc; border-left: 3px solid #2563eb; padding: 12px 14px; border-radius: 4px; margin-bottom: 18px;">
           <p style="margin: 0; font-size: 12px; color: #475569; line-height: 1.5;">
-            ${tipNotice}
+            <strong>Sign-in options:</strong> You can log in using this temporary password, or enter your registered email address on the login screen to receive an instant 6-digit one-time verification code.
           </p>
         </div>
 
         <p style="font-size: 12px; line-height: 1.5; color: #64748b; margin: 0;">
-          If you have questions or need access assistance, please contact your Super Administrator at <a href="mailto:aryar0779@gmail.com" style="color: #2563eb; text-decoration: underline;">aryar0779@gmail.com</a>.
+          If you have questions or need assistance, please contact your Super Administrator at <a href="mailto:aryar0779@gmail.com" style="color: #2563eb; text-decoration: underline;">aryar0779@gmail.com</a>.
         </p>
       </td>
     </tr>
@@ -578,8 +593,9 @@ ${portalBase}`;
             />
           </a>
         </div>
-        Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, Karnataka, India<br />
-        &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved. Confidential Staff Communications.
+        Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, Karnataka, India - 560001<br />
+        You received this email because an authorized team account was registered for <strong>${data.email}</strong> on Binary Vidya.<br />
+        &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
       </td>
     </tr>
   </table>
@@ -587,20 +603,16 @@ ${portalBase}`;
 </html>`;
 
     const mailOptions = {
-      from: `"Binary Vidya Administration" <${fromAddress}>`,
+      from: `"Binary Vidya" <${fromAddress}>`,
       to: data.email,
       replyTo: fromAddress,
       subject,
       text: plainText,
       html: htmlContent,
-      headers: {
-        'Auto-Submitted': 'auto-generated',
-        'X-Auto-Response-Suppress': 'OOF, AutoReply',
-      },
     };
 
     const info = await transport.sendMail(mailOptions);
-    console.log(`[Team Credentials Email Sent] To: ${data.email} | MessageId: ${info.messageId}`);
+    console.log(`[Team Credentials Email Sent] To: ${data.email} | Team: ${teamName} | MessageId: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error: any) {
     console.error(`[Team Credentials Email Error] To: ${data.email}:`, error?.message || error);

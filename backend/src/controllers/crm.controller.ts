@@ -823,6 +823,7 @@ export const addAgent = async (req: Request, res: Response) => {
           email: existing.email,
           temporaryPassword: password,
           department: chosenTeam,
+          team: chosenTeam,
           loginUrl: `${portalUrl}/sales/login`,
         });
         console.log(`[Team Welcome Email Sent] To: ${existing.email} (${chosenTeam})`);
@@ -855,6 +856,7 @@ export const addAgent = async (req: Request, res: Response) => {
         email: agent.email,
         temporaryPassword: password,
         department: chosenTeam,
+        team: chosenTeam,
         loginUrl: `${portalUrl}/sales/login`,
       });
       console.log(`[Team Welcome Email Sent] To: ${agent.email} (${chosenTeam})`);

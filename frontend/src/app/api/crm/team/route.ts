@@ -106,6 +106,7 @@ export async function POST(req: Request) {
         email: savedAgent.email,
         temporaryPassword: password,
         department: chosenTeam,
+        team: chosenTeam,
         loginUrl: salesLoginUrl,
       });
       console.log(`[Sales Team Welcome Email Dispatched] To: ${savedAgent.email} (${chosenTeam}) | Success:`, emailResult.success);
