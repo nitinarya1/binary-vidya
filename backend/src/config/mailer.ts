@@ -414,53 +414,48 @@ export const sendTeamCredentialsEmail = async (
     const portalBase = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
     const defaultUrl = isSales ? `${portalBase}/sales/login` : `${portalBase}/login`;
     const portalUrl = data.loginUrl || defaultUrl;
-    const attachments = getLogoAttachment();
 
     const subject = isSales
-      ? `Welcome to Binary Vidya Sales & CRM Team (${data.department})`
+      ? `Welcome to the Team, ${displayName} • Binary Vidya Sales Access`
       : `Your Binary Vidya Administrative Staff Credentials (${data.department})`;
 
-    const subBannerText = isSales
-      ? 'Sales & Counselling Operations • Staff Credentials'
-      : 'Main Platform • Staff Administrative Access';
-
-    const roleBadge = isSales
-      ? `🎉 Sales & CRM Team • ${data.department}`
-      : `🛡️ Platform Administration • ${data.department}`;
-
     const welcomeHeading = isSales
-      ? `Welcome to the Sales Team, ${displayName}!`
+      ? `Welcome to the Team, ${displayName}!`
       : `Welcome to the Staff Team, ${displayName}!`;
 
     const description = isSales
-      ? `You have been granted access to the Binary Vidya Sales & CRM Console as a member of the <strong>${data.department}</strong> team. You can now access your assigned student leads, track call dispositions, and manage admissions.`
+      ? `You have been registered as an authorized member of the Binary Vidya Sales &amp; Counseling team (<strong>${data.department}</strong>). You can now access your assigned learner leads, manage admissions, and record call dispositions.`
       : `You have been granted administrative access to the Binary Vidya platform in the <strong>${data.department}</strong> department. You can now access the administrative portal to manage platform curriculums, courses, certificates, and student operations.`;
 
     const ctaButtonText = isSales
-      ? 'Access Sales & CRM Console &rarr;'
+      ? 'Log In to Sales Console &rarr;'
       : 'Sign In to Staff Console &rarr;';
 
     const tipNotice = isSales
-      ? '<strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password or by entering your registered email for instant 6-digit OTP verification.'
+      ? '<strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password, or enter your registered email address on the login screen for instant 6-digit OTP verification.'
       : '<strong>🔒 Security Advisory:</strong> For platform security, you will be required to verify a 4-digit code (2FA OTP) and choose a new, secure password upon your first sign in.';
 
     const plainText = `Hello ${displayName},
 
-You have been added to the Binary Vidya team as a member of the ${data.department} department.
+Welcome to the Binary Vidya ${isSales ? 'Sales & Counseling' : 'Administrative'} Team!
 
-Here are your administrative login credentials:
+You have been added as an authorized team member in the ${data.department} department.
+
+Here are your login credentials:
 - Login Portal: ${portalUrl}
-- Email / Username: ${data.email}
+- Login Email: ${data.email}
 - Temporary Password: ${data.temporaryPassword}
 - Assigned Role: ${data.department}
 
-SECURITY ADVISORY:
-For security purposes, you will be required to change this temporary password upon your first login. You can also log in via 2FA OTP verification code sent to this email address.
+Direct Access Link: ${portalUrl}
 
-If you have any questions, please contact your Super Administrator.
+${isSales ? 'Tip: You can sign in using this password, or enter your email address for instant 6-digit OTP verification.' : 'Security: You will be required to set a new password upon first login.'}
+
+If you have any questions or require assistance, please contact your Super Administrator at aryar0779@gmail.com.
 
 Warm regards,
-Binary Vidya Administration Team`;
+Binary Vidya Administration
+${portalBase}`;
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -470,111 +465,116 @@ Binary Vidya Administration Team`;
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${subject}</title>
 </head>
-<body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
+<body style="margin: 0; padding: 32px 14px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);">
     
-    <!-- Clean White Brand Header (Zero Top Image) -->
+    <!-- Header: Minimalist & Professional -->
     <tr>
-      <td align="center" style="background-color: #ffffff; padding: 26px 24px 20px; text-align: center; border-bottom: 2px solid #eff6ff;">
-        <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
-          <div style="font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -0.3px; text-transform: uppercase;">
-            Binary Vidya
-          </div>
-        </a>
+      <td style="padding: 24px 30px 20px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
+        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+          <tr>
+            <td>
+              <div style="font-size: 20px; font-weight: 800; color: #1e3a8a; letter-spacing: -0.4px; text-transform: uppercase;">
+                Binary Vidya
+              </div>
+            </td>
+            <td align="right">
+              <span style="display: inline-block; background-color: #eff6ff; color: #2563eb; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: 0.5px; border: 1px solid #bfdbfe;">
+                ${isSales ? 'Sales &amp; Counseling' : 'Platform Staff'}
+              </span>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
 
-    <!-- Royal Blue Accent Sub-Header -->
+    <!-- Main Content Area -->
     <tr>
-      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 10px 24px; text-align: center;">
-        <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
-          ${subBannerText}
-        </div>
-      </td>
-    </tr>
-
-    <!-- Main Content -->
-    <tr>
-      <td style="padding: 34px 32px 28px;">
-        <div style="display: inline-block; padding: 5px 14px; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.5px;">
-          ${roleBadge}
-        </div>
-
-        <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
+      <td style="padding: 32px 30px 24px;">
+        <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0; line-height: 1.35;">
           ${welcomeHeading}
         </h1>
 
-        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 24px 0;">
+        <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
           ${description}
         </p>
 
-        <!-- Credentials Card -->
-        <div style="background-color: #f8fbff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 22px; margin-bottom: 24px;">
-          <div style="font-size: 12px; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
-            🔐 Your Login Credentials
-          </div>
-          <table border="0" cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-              <td style="padding: 8px 0; font-size: 14px; color: #64748b; width: 140px; border-bottom: 1px solid #e2e8f0;">Login Portal:</td>
-              <td style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">
-                <a href="${portalUrl}" style="color: #2563eb; text-decoration: underline;">${portalUrl}</a>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Email / Username:</td>
-              <td style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">
-                ${data.email}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Temporary Password:</td>
-              <td style="padding: 8px 0; font-size: 15px; color: #1e40af; font-weight: 800; font-family: monospace; border-bottom: 1px solid #e2e8f0;">
-                <span style="background: #e0e7ff; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; border: 1px solid #c7d2fe;">${data.temporaryPassword}</span>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0 0 0; font-size: 14px; color: #64748b;">Assigned Department:</td>
-              <td style="padding: 8px 0 0 0; font-size: 14px; color: #059669; font-weight: 800;">
-                ${data.department}
-              </td>
-            </tr>
-          </table>
-        </div>
+        <!-- Credentials Box: Clean Card -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 24px;">
+          <tr>
+            <td style="padding: 20px 22px;">
+              <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px;">
+                Your Login Credentials
+              </div>
+              
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size: 13px;">
+                <tr>
+                  <td style="padding: 7px 0; color: #64748b; width: 130px;">Login Portal:</td>
+                  <td style="padding: 7px 0; font-weight: 600;">
+                    <a href="${portalUrl}" target="_blank" style="color: #2563eb; text-decoration: underline;">
+                      ${portalUrl}
+                    </a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Login Email:</td>
+                  <td style="padding: 7px 0; font-weight: 700; color: #0f172a; border-top: 1px solid #f1f5f9;">
+                    ${data.email}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Password:</td>
+                  <td style="padding: 7px 0; border-top: 1px solid #f1f5f9;">
+                    <span style="font-family: 'SF Mono', Consolas, monospace; font-size: 14px; font-weight: 700; color: #1e40af; background: #e0e7ff; padding: 3px 8px; border-radius: 5px; border: 1px solid #c7d2fe;">
+                      ${data.temporaryPassword}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 7px 0; color: #64748b; border-top: 1px solid #f1f5f9;">Assigned Role:</td>
+                  <td style="padding: 7px 0; font-weight: 700; color: #059669; border-top: 1px solid #f1f5f9;">
+                    ${data.department}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
 
-        <!-- 1-Click Login CTA Button -->
+        <!-- Direct Login Button CTA -->
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
           <tr>
             <td align="center">
-              <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,0.25);">
+              <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 6px rgba(37,99,235,0.2);">
                 ${ctaButtonText}
               </a>
             </td>
           </tr>
         </table>
 
-        <!-- Security Notice -->
-        <div style="background-color: #fefce8; border: 1px solid #fef08a; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px;">
-          <p style="margin: 0; font-size: 13px; color: #854d0e; line-height: 1.5;">
+        <!-- Security / Quick Tip Note -->
+        <div style="background-color: #f8fafc; border-left: 3px solid #2563eb; padding: 12px 14px; border-radius: 4px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 12px; color: #475569; line-height: 1.5;">
             ${tipNotice}
           </p>
         </div>
 
-        <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0;">
-          If you have any questions or need access assistance, please reach out to your Super Administrator at <a href="mailto:aryar0779@gmail.com" style="color: #2563eb; text-decoration: underline;">aryar0779@gmail.com</a>.
+        <p style="font-size: 12px; line-height: 1.5; color: #64748b; margin: 0;">
+          If you have questions or need access assistance, please contact your Super Administrator at <a href="mailto:aryar0779@gmail.com" style="color: #2563eb; text-decoration: underline;">aryar0779@gmail.com</a>.
         </p>
       </td>
     </tr>
 
     <!-- Footer with Smallest Logo -->
     <tr>
-      <td align="center" style="background-color: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
-        <div style="margin-bottom: 12px;">
+      <td align="center" style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
+        <div style="margin-bottom: 10px;">
           <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
             <img 
               src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
               alt="Binary Vidya" 
-              width="70" 
-              style="display: block; width: 70px; max-width: 70px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none; text-decoration: none;" 
+              width="65" 
+              style="display: block; width: 65px; max-width: 65px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none;" 
             />
           </a>
         </div>

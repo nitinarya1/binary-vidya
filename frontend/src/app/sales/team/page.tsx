@@ -445,6 +445,24 @@ export default function TeamPage() {
                 </div>
               )}
 
+              <div style={{
+                marginBottom: '16px',
+                padding: '10px 14px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '10px',
+                fontSize: '12px',
+                color: '#15803d',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}>
+                <CheckCircle size={15} color="#16a34a" style={{ flexShrink: 0 }} />
+                <span>
+                  <strong>Automatic Welcome Email:</strong> When saved, a professional welcome email containing their login email, password, and direct sales login link will be sent automatically.
+                </span>
+              </div>
+
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button
                   type="button"

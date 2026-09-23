@@ -14,6 +14,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   isTeamMember?: boolean;
   department?: string;
+  salesTeam?: string;
   permissions?: {
     manageCourses?: boolean;
     manageTraining?: boolean;
