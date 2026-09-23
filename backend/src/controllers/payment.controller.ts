@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import { Course } from '../models/Course';
 import { Order } from '../models/Order';
 import { Enrollment } from '../models/Enrollment';
+import { Coupon } from '../models/Coupon';
 
 const getRazorpayKeys = () => ({
   key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_Td7SsGbdScfViP',
@@ -17,11 +18,11 @@ export const getRazorpayClient = () => {
 
 /**
  * POST /api/payment/create-order
- * Generates an official Razorpay Order for a course checkout
+ * Generates an official Razorpay Order for a course checkout with optional coupon discount
  */
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const { courseId, userEmail, userName, userId } = req.body;
+    const { courseId, userEmail, userName, userId, couponCode } = req.body;
 
     if (!courseId) {
       return res.status(400).json({ success: false, message: 'Course ID is required.' });
@@ -44,7 +45,13 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Support Training & Internship program checkout (₹2,400)
-    if (!course && (courseId === 'frontend-developer-training-internship' || courseId.includes('frontend') || courseId.includes('internship') || courseId.includes('training'))) {
+    const isTraining =
+      courseId === 'frontend-developer-training-internship' ||
+      courseId.includes('frontend') ||
+      courseId.includes('internship') ||
+      courseId.includes('training');
+
+    if (!course && isTraining) {
       course = {
         _id: 'frontend-developer-training-internship',
         title: 'Frontend Developer Training & 2-Month Internship',
@@ -59,8 +66,125 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Course or Training Program not found in system.' });
     }
 
-    const price = Number(course.price) || 0;
-    const amountInPaise = Math.max(1, Math.round(price * 100)); // Razorpay accepts amounts in paise (1 INR = 100 paise)
+    const originalPrice = Number(course.price) || 0;
+    let discountAmount = 0;
+    let appliedCoupon: any = null;
+
+    // Validate and apply coupon if provided
+    if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+      const cleanCode = couponCode.trim().toUpperCase();
+      const itemType = isTraining ? 'training' : 'courses';
+
+      const foundCoupon = await Coupon.findOne({ code: cleanCode, isActive: true }).lean();
+      if (foundCoupon) {
+        const isApplicable = foundCoupon.applicableTo === 'all' || foundCoupon.applicableTo === itemType;
+        const meetsMin = !foundCoupon.minOrderAmount || originalPrice >= foundCoupon.minOrderAmount;
+        const notExpired = !foundCoupon.validUntil || new Date() <= new Date(foundCoupon.validUntil);
+
+        if (isApplicable && meetsMin && notExpired) {
+          if (foundCoupon.discountType === 'percentage') {
+            discountAmount = Math.round((originalPrice * foundCoupon.discountValue) / 100);
+            if (foundCoupon.maxDiscountAmount && foundCoupon.maxDiscountAmount > 0) {
+              discountAmount = Math.min(discountAmount, foundCoupon.maxDiscountAmount);
+            }
+          } else if (foundCoupon.discountType === 'fixed') {
+            discountAmount = Math.min(originalPrice, foundCoupon.discountValue);
+          }
+
+          appliedCoupon = {
+            code: foundCoupon.code,
+            discountType: foundCoupon.discountType,
+            discountValue: foundCoupon.discountValue,
+            description: foundCoupon.description,
+          };
+
+          // Increment coupon usage
+          await Coupon.updateOne({ _id: foundCoupon._id }, { $inc: { usageCount: 1 } });
+        }
+      }
+    }
+
+    const finalPrice = Math.max(0, originalPrice - discountAmount);
+
+    // If 100% discount coupon applied (finalPrice === 0), complete free enrollment without opening Razorpay
+    if (finalPrice === 0) {
+      const freeOrderId = `free_ord_${Date.now().toString().slice(-8)}_${Math.random().toString(36).slice(-4)}`;
+      const freePaymentId = `free_pay_${appliedCoupon?.code || '100'}_${Date.now().toString().slice(-6)}`;
+
+      const orderDoc = await Order.create({
+        userId: userId || '',
+        userEmail: userEmail.toLowerCase().trim(),
+        userName: userName || 'Student',
+        courseId: course._id.toString(),
+        courseTitle: course.title,
+        amount: 0,
+        originalAmount: originalPrice,
+        discountAmount: originalPrice,
+        couponCode: appliedCoupon ? appliedCoupon.code : '',
+        currency: 'INR',
+        razorpayOrderId: freeOrderId,
+        razorpayPaymentId: freePaymentId,
+        paymentMethod: 'coupon_free_discount',
+        status: 'paid',
+      });
+
+      const isInternship =
+        course.title.toLowerCase().includes('internship') ||
+        course.title.toLowerCase().includes('training') ||
+        course._id.toString().toLowerCase().includes('internship') ||
+        course._id.toString().toLowerCase().includes('training');
+
+      const enrollmentType = isInternship ? 'internship' : 'course';
+      const batchName = isInternship ? 'Frontend Cohort 2026 - Weekend Batch' : 'Cohort 2026 - Active';
+
+      if (typeof course._id === 'string' && course._id.match(/^[0-9a-fA-F]{24}$/)) {
+        await Course.findByIdAndUpdate(course._id, { $inc: { enrolledCount: 1 } });
+      }
+
+      await Enrollment.findOneAndUpdate(
+        { userEmail: userEmail.toLowerCase().trim(), courseId: course._id.toString() },
+        {
+          $set: {
+            userId: userId || '',
+            userName: userName || 'Student',
+            courseTitle: course.title,
+            type: enrollmentType,
+            batchName: batchName,
+            enrolledAt: new Date(),
+            orderId: freeOrderId,
+            paymentId: freePaymentId,
+            amountPaid: 0,
+            status: 'active',
+          },
+        },
+        { upsert: true, new: true }
+      );
+
+      return res.json({
+        success: true,
+        isFree: true,
+        orderId: freeOrderId,
+        paymentId: freePaymentId,
+        amount: 0,
+        finalAmount: 0,
+        originalAmount: originalPrice,
+        discountAmount: originalPrice,
+        appliedCoupon,
+        currency: 'INR',
+        dbOrderId: orderDoc._id.toString(),
+        message: '100% discount coupon applied! Free enrollment activated successfully.',
+        course: {
+          id: course._id.toString(),
+          slug: course.slug,
+          title: course.title,
+          price: course.price,
+          thumbnail: course.thumbnail || '',
+          category: course.category,
+        },
+      });
+    }
+
+    const amountInPaise = Math.round(finalPrice * 100);
     const receiptId = `rcpt_${Date.now().toString().slice(-8)}_${Math.random().toString(36).slice(-4)}`;
 
     let rzpOrder: any = null;
@@ -75,9 +199,12 @@ export const createOrder = async (req: Request, res: Response) => {
           courseId: course._id.toString(),
           courseTitle: course.title,
           userEmail,
+          couponCode: appliedCoupon ? appliedCoupon.code : '',
+          originalPrice: originalPrice.toString(),
+          discountAmount: discountAmount.toString(),
         },
       });
-      console.log(`[Razorpay Order Created] Order ID: ${rzpOrder.id} for amount: ₹${price}`);
+      console.log(`[Razorpay Order Created] Order ID: ${rzpOrder.id} for amount: ₹${finalPrice} (Original: ₹${originalPrice}, Coupon: ${appliedCoupon?.code || 'None'})`);
     } catch (rzpErr: any) {
       console.warn('[Razorpay API Warning]:', rzpErr.message);
     }
@@ -99,7 +226,10 @@ export const createOrder = async (req: Request, res: Response) => {
       userName: userName || 'Student',
       courseId: course._id.toString(),
       courseTitle: course.title,
-      amount: price,
+      amount: finalPrice,
+      originalAmount: originalPrice,
+      discountAmount,
+      couponCode: appliedCoupon ? appliedCoupon.code : '',
       currency: 'INR',
       razorpayOrderId: rzpOrder.id,
       status: 'created',
@@ -109,6 +239,10 @@ export const createOrder = async (req: Request, res: Response) => {
       success: true,
       orderId: rzpOrder.id,
       amount: rzpOrder.amount, // in paise
+      finalAmount: finalPrice,
+      originalAmount: originalPrice,
+      discountAmount,
+      appliedCoupon,
       currency: rzpOrder.currency,
       keyId: key_id,
       dbOrderId: orderDoc._id.toString(),

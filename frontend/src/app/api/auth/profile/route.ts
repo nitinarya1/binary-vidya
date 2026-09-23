@@ -122,6 +122,7 @@ async function handleUpdate(req: NextRequest) {
 
     const { name, dateOfBirth, gender, avatar, phone } = body;
     const updateFields: any = {};
+    const unsetFields: any = {};
 
     if (name && typeof name === 'string' && name.trim()) {
       updateFields.name = name.trim();
@@ -148,13 +149,23 @@ async function handleUpdate(req: NextRequest) {
         }
         updateFields.phone = trimmedPhone;
       } else if (!trimmedPhone) {
-        updateFields.phone = '';
+        // IMPORTANT: In MongoDB sparse indexes, an empty string `""` is treated as a duplicate key!
+        // We must $unset the phone property when empty so it does NOT conflict with the unique index.
+        unsetFields.phone = 1;
       }
+    }
+
+    const updateQuery: any = {};
+    if (Object.keys(updateFields).length > 0) {
+      updateQuery.$set = updateFields;
+    }
+    if (Object.keys(unsetFields).length > 0) {
+      updateQuery.$unset = unsetFields;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       user._id,
-      { $set: updateFields },
+      updateQuery,
       { new: true, strict: false }
     ).lean();
 

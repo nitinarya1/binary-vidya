@@ -269,36 +269,52 @@ export default function UserProfilePage() {
       {/* Navbar */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+          <Link href="/" className={styles.brandLink} title="Binary Vidya">
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
           <div className={styles.navLinks}>
-            <Link href="/courses" className={styles.navLink}>
+            <Link href="/#courses" className={styles.navBtn}>
               Courses
             </Link>
-            <Link href="/my-learning" className={styles.navLink}>
+            <Link href="/training-and-internship" className={styles.navBtn}>
+              Training &amp; Internships
+            </Link>
+            <Link href="/my-learning" className={styles.navBtn}>
               My Learning
             </Link>
-            <Link href="/profile" className={`${styles.navLink} ${styles.navLinkActive}`}>
-              Profile
-            </Link>
-
-            {user && (
-              <div className={styles.userPill}>
-                <div className={styles.userAvatar}>
+            {user ? (
+              <Link
+                href="/profile"
+                className={`${styles.navBtn} ${styles.profileNavBtn} ${styles.navLinkActive}`}
+                title="Profile Settings"
+              >
+                <div className={styles.profileNavAvatar}>
                   {user.avatar ? (
-                    <img src={user.avatar} alt={user.name || 'User'} />
+                    <img
+                      src={user.avatar}
+                      alt={user.name || 'User'}
+                      className={styles.profileNavAvatarImg}
+                    />
                   ) : (
                     user.name ? user.name.charAt(0).toUpperCase() : 'U'
                   )}
                 </div>
-                <div className={styles.userName}>{user.name}</div>
-              </div>
+                <span>{user.name || 'Profile'}</span>
+              </Link>
+            ) : (
+              <Link href="/profile" className={`${styles.navBtn} ${styles.navLinkActive}`}>
+                Profile
+              </Link>
             )}
           </div>
         </div>
@@ -377,7 +393,11 @@ export default function UserProfilePage() {
                   user.role === 'admin' ? styles.roleTagAdmin : styles.roleTagStudent
                 }`}
               >
-                <ShieldCheck size={13} />
+                <img
+                  src="/images/binary-vidya-icon.png"
+                  alt="BV"
+                  style={{ width: '16px', height: '16px', objectFit: 'contain' }}
+                />
                 {user.role === 'admin' ? 'Super Admin' : 'Verified Student'}
               </div>
 

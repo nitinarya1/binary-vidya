@@ -15,18 +15,16 @@
   position: sticky;
   top: 0;
   z-index: 90;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid #bfdbfe;
-  box-shadow: 0 4px 20px -4px rgba(37, 99, 235, 0.08);
-  transition: all 0.25s ease;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.05);
+  transition: all 0.2s ease;
 }
 
 .navWrapper {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -42,7 +40,7 @@
 }
 
 .brandLogoImg {
-  height: 48px;
+  height: 42px;
   width: auto;
   object-fit: contain;
   transition: transform 0.2s ease;
@@ -52,240 +50,127 @@
   transform: scale(1.02);
 }
 
-/* Navigation Links */
+.brandNavIcon {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.brandNavWordmark {
+  height: 22px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.brandLink:hover .brandNavIcon {
+  transform: scale(1.04);
+}
+
+/* Navigation Links & Action Buttons: All Look Identical */
 .navLinks {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.navLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-  text-decoration: none;
-  padding: 8px 14px;
-  border-radius: 10px;
-  transition: all 0.2s ease;
-}
-
-.navLink:hover {
-  color: #2563eb;
-  background: #eff6ff;
-}
-
-/* Specific Highlighted Navbar Buttons requested by User */
-.navTrainingHighlight {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #1d4ed8;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  padding: 7px 14px;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
-}
-
-.navTrainingHighlight:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-}
-
-.navBadgeWeekend {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.navVerifyBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #0284c7;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  padding: 7px 13px;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.navVerifyBtn:hover {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.navCareersBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-  padding: 7px 12px;
-  border-radius: 10px;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.navCareersBtn:hover {
-  background: #eff6ff;
-  color: #2563eb;
-}
-
-.navHiringPill {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-  font-size: 9px;
-  font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 999px;
-  text-transform: uppercase;
-}
-
-/* User Actions */
 .navActions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.myLearningBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.myLearningBtn:hover {
-  background: #dbeafe;
-}
-
-.adminBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  background: #f8fafc;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.adminBtn:hover {
-  background: #f1f5f9;
-}
-
-.userPill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px;
-  background: #ffffff;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 30px;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.08);
-}
-
-.userAvatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #fff;
-  display: flex;
+.navBtn,
+.navLink,
+.navTrainingHighlight,
+.navVerifyBtn,
+.navCareersBtn,
+.myLearningBtn,
+.adminBtn,
+.userPill,
+.signInBtn,
+.signUpBtn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.userName {
-  font-size: 13px;
-  font-weight: 700;
-  color: #0f172a;
-  max-width: 110px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.signInBtn {
-  padding: 8px 18px;
-  border-radius: 10px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #2563eb;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
+  padding: 7px 14px;
+  border-radius: 8px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  box-shadow: none;
 }
 
-.signInBtn:hover {
+.navBtn:hover,
+.navLink:hover,
+.navTrainingHighlight:hover,
+.navVerifyBtn:hover,
+.navCareersBtn:hover,
+.myLearningBtn:hover,
+.adminBtn:hover,
+.userPill:hover,
+.signInBtn:hover,
+.signUpBtn:hover {
   background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  transform: none;
+  box-shadow: none;
 }
 
-.signUpBtn {
-  padding: 9px 20px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
+.profileNavBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px !important;
+}
+
+.profileNavAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #2563eb;
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 1px solid #bfdbfe;
 }
 
-.signUpBtn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.38);
+.profileNavAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 /* Mobile Hamburger & Drawer */
 .mobileMenuToggle {
   display: none;
-  background: #eff6ff;
+  background: #ffffff;
   border: 1px solid #bfdbfe;
   border-radius: 8px;
-  padding: 8px;
-  color: #1e3a8a;
+  padding: 6px;
+  color: #2563eb;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mobileMenuToggle:hover {
+  background: #eff6ff;
 }
 
 .mobileDrawer {

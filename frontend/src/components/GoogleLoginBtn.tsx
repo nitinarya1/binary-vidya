@@ -70,7 +70,7 @@ export const GoogleLoginBtn: React.FC<GoogleLoginBtnProps> = ({ onSuccess, onErr
           {/* Official Google Identity Services button with One-Tap */}
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
-            onError={() => onError?.('Official Google sign in failed.')}
+            onError={() => onError?.('Google sign in failed.')}
             theme="outline"
             size="large"
             text="continue_with"

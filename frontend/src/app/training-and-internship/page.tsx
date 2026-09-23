@@ -36,6 +36,8 @@ import {
   Compass,
   FileCheck2,
   ExternalLink,
+  Tag,
+  Gift,
 } from 'lucide-react';
 
 // Safely loads official Razorpay Checkout SDK
@@ -228,25 +230,29 @@ export default function TrainingAndInternshipPage() {
       {/* TOP NAVIGATION */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+          <Link href="/" className={styles.brandLink} title="Binary Vidya">
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
           <div className={styles.navRight}>
             <span className={styles.navBadge}>
-              <Calendar size={14} color="#2563eb" /> Weekend Live Batches
+              Weekend Batches
             </span>
 
             <button
               onClick={handleEnrollClick}
-              className={styles.enrollBtn}
-              style={{ padding: '10px 18px', fontSize: '13px' }}
+              className={styles.navBtn}
             >
-              Enroll Now • ₹2,400
+              Enroll Now
             </button>
           </div>
         </div>

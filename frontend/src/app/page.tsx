@@ -193,41 +193,40 @@ export default function HomePage() {
           ===================================================================== */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          {/* Brand Logo with Official Company Logo */}
-          <Link href="/" className={styles.brandLink}>
+          {/* Brand Logo with Official Company 3D Icon & Wordmark Lockup */}
+          <Link href="/" className={styles.brandLink} title="Binary Vidya Academy">
             <img
-              src="/images/binary-vidya-logo.png"
-              alt="Binary Vidya - Technical Academy"
-              className={styles.brandLogoImg}
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
             />
           </Link>
 
           {/* Desktop Navigation Links */}
           <div className={styles.navLinks}>
             {/* 1. Course Button */}
-            <a href="#courses" className={styles.navLink}>
-              <BookOpen size={16} />
-              <span>Courses</span>
+            <a href="#courses" className={styles.navBtn}>
+              Courses
             </a>
 
-            {/* 2. Training & Internships Button (Prominent Weekend Badge) */}
-            <Link href="/training-and-internship" className={styles.navTrainingHighlight}>
-              <Sparkles size={15} color="#2563eb" />
-              <span>Training &amp; Internships</span>
-              <span className={styles.navBadgeWeekend}>Weekend Batch</span>
+            {/* 2. Training & Internships Button */}
+            <Link href="/training-and-internship" className={styles.navBtn}>
+              Training &amp; Internships
             </Link>
 
             {/* 3. Verify Certificate Button */}
-            <Link href="/verify-certificate" className={styles.navVerifyBtn}>
-              <ShieldCheck size={16} color="#0284c7" />
-              <span>Verify Certificate</span>
+            <Link href="/verify-certificate" className={styles.navBtn}>
+              Verify Certificate
             </Link>
 
             {/* 4. Careers Button */}
-            <Link href="/careers" className={styles.navCareersBtn}>
-              <Briefcase size={15} />
-              <span>Careers</span>
-              <span className={styles.navHiringPill}>Hiring</span>
+            <Link href="/careers" className={styles.navBtn}>
+              Careers
             </Link>
           </div>
 
@@ -237,40 +236,42 @@ export default function HomePage() {
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Link href="/my-learning" className={styles.myLearningBtn}>
-                  <BookOpen size={15} /> My Learning
+                <Link href="/my-learning" className={styles.navBtn}>
+                  My Learning
                 </Link>
 
                 {isAdmin && (
-                  <Link href="/super-admin" className={styles.adminBtn}>
+                  <Link href="/super-admin" className={styles.navBtn}>
                     Admin
                   </Link>
                 )}
 
-                <Link href="/profile" className={styles.userPill} title="Profile Settings">
-                  <div className={styles.userAvatar}>
+                <Link
+                  href="/profile"
+                  className={`${styles.navBtn} ${styles.profileNavBtn}`}
+                  title="Profile Settings"
+                >
+                  <div className={styles.profileNavAvatar}>
                     {user.avatar ? (
                       <img
                         src={user.avatar}
                         alt={user.name || 'User'}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                        className={styles.profileNavAvatarImg}
                       />
-                    ) : user.name ? (
-                      user.name.charAt(0).toUpperCase()
                     ) : (
-                      'U'
+                      user.name ? user.name.charAt(0).toUpperCase() : 'U'
                     )}
                   </div>
-                  <span className={styles.userName}>{user.name}</span>
+                  <span>{user.name || 'Profile'}</span>
                 </Link>
               </div>
             ) : (
               <>
-                <Link href="/login" className={styles.signInBtn}>
+                <Link href="/login" className={styles.navBtn}>
                   Sign In
                 </Link>
-                <Link href="/login" className={styles.signUpBtn}>
-                  Get Started <ArrowRight size={15} />
+                <Link href="/login" className={styles.navBtn}>
+                  Get Started
                 </Link>
               </>
             )}
@@ -292,11 +293,18 @@ export default function HomePage() {
         <div className={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
           <div className={styles.mobileDrawerCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.mobileDrawerHeader}>
-              <img
-                src="/images/binary-vidya-logo.png"
-                alt="Binary Vidya"
-                style={{ height: '38px', width: 'auto' }}
-              />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img
+                  src="/images/binary-vidya-icon.png"
+                  alt="Binary Vidya"
+                  style={{ height: '32px', width: 'auto', objectFit: 'contain' }}
+                />
+                <img
+                  src="/images/binary-vidya-wordmark.png"
+                  alt="Binary Vidya"
+                  style={{ height: '20px', width: 'auto', objectFit: 'contain' }}
+                />
+              </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
@@ -308,51 +316,68 @@ export default function HomePage() {
             <div className={styles.mobileDrawerLinks}>
               <a
                 href="#courses"
-                className={styles.mobileDrawerLink}
+                className={styles.navBtn}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <BookOpen size={18} color="#2563eb" /> Courses
+                Courses
               </a>
 
               <Link
                 href="/training-and-internship"
-                className={`${styles.mobileDrawerLink} ${styles.mobileDrawerLinkHighlight}`}
+                className={styles.navBtn}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Sparkles size={18} color="#2563eb" /> Training &amp; Internships
+                Training &amp; Internships
               </Link>
 
               <Link
                 href="/verify-certificate"
-                className={styles.mobileDrawerLink}
+                className={styles.navBtn}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <ShieldCheck size={18} color="#0284c7" /> Verify Certificate
+                Verify Certificate
               </Link>
 
               <Link
                 href="/careers"
-                className={styles.mobileDrawerLink}
+                className={styles.navBtn}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Briefcase size={18} color="#059669" /> Careers (We're Hiring)
+                Careers
               </Link>
 
               {user && (
                 <>
                   <Link
                     href="/my-learning"
-                    className={styles.mobileDrawerLink}
+                    className={styles.navBtn}
+                    style={{ width: '100%', justifyContent: 'flex-start' }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <BookOpen size={18} color="#2563eb" /> My Learning Dashboard
+                    My Learning
                   </Link>
                   <Link
                     href="/profile"
-                    className={styles.mobileDrawerLink}
+                    className={`${styles.navBtn} ${styles.profileNavBtn}`}
+                    style={{ width: '100%', justifyContent: 'flex-start' }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Users size={18} /> My Profile
+                    <div className={styles.profileNavAvatar}>
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name || 'User'}
+                          className={styles.profileNavAvatarImg}
+                        />
+                      ) : (
+                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                      )}
+                    </div>
+                    <span>{user.name || 'Profile'}</span>
                   </Link>
                 </>
               )}
@@ -465,7 +490,14 @@ export default function HomePage() {
           <div className={styles.heroRight}>
             <div className={styles.spotlightCard}>
               <div className={styles.spotlightHeader}>
-                <span className={styles.spotlightBadge}>Flagship Cohort</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img
+                    src="/images/binary-vidya-icon.png"
+                    alt="Binary Vidya"
+                    style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
+                  />
+                  <span className={styles.spotlightBadge}>Flagship Cohort</span>
+                </div>
                 <span className={styles.spotlightWeekendBadge}>Saturday &amp; Sunday Live</span>
               </div>
 
@@ -696,7 +728,11 @@ export default function HomePage() {
                     />
                   ) : (
                     <div className={styles.courseThumbPlaceholder}>
-                      <Code2 size={40} />
+                      <img
+                        src="/images/binary-vidya-icon.png"
+                        alt="Binary Vidya"
+                        style={{ height: '44px', width: 'auto', objectFit: 'contain', marginBottom: '4px' }}
+                      />
                       <span style={{ fontSize: '12px', fontWeight: 700 }}>Binary Vidya Academy</span>
                     </div>
                   )}

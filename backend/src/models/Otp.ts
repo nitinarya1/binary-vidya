@@ -4,7 +4,7 @@ export interface IOtp extends Document {
   email?: string;
   phone?: string;
   otp: string;
-  purpose: 'FORGOT_PASSWORD' | 'EMAIL_VERIFICATION' | 'SUPER_ADMIN_LOGIN' | 'ADMIN_LOGIN';
+  purpose: 'FORGOT_PASSWORD' | 'EMAIL_VERIFICATION' | 'SUPER_ADMIN_LOGIN' | 'ADMIN_LOGIN' | 'CRM_AGENT_LOGIN';
   expiresAt: Date;
   createdAt: Date;
 }
@@ -30,7 +30,7 @@ const otpSchema = new Schema<IOtp>(
     },
     purpose: {
       type: String,
-      enum: ['FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'SUPER_ADMIN_LOGIN', 'ADMIN_LOGIN'],
+      enum: ['FORGOT_PASSWORD', 'EMAIL_VERIFICATION', 'SUPER_ADMIN_LOGIN', 'ADMIN_LOGIN', 'CRM_AGENT_LOGIN'],
       default: 'FORGOT_PASSWORD',
     },
     expiresAt: {

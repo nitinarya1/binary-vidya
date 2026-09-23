@@ -27,6 +27,8 @@ import {
   Check,
   Share2,
   X,
+  Tag,
+  Gift,
 } from 'lucide-react';
 import { VideoPlayer } from '../../../components/VideoPlayer';
 

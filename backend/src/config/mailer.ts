@@ -13,14 +13,20 @@ export const getTransporter = () => {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
+      pool: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: getEmailPass(),
       },
-    });
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 45000,
+    } as any);
+    if (sharedTransporter && typeof sharedTransporter.on === 'function') {
+      sharedTransporter.on('error', (err: any) => {
+        console.error('[Backend Nodemailer Error Handled]:', err?.message || err);
+      });
+    }
   }
   return sharedTransporter;
 };

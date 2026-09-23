@@ -53,11 +53,16 @@ export default function VerifyCertificatePage() {
       {/* Top Navigation */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          <Link href="/" className={styles.brandLink}>
+          <Link href="/" className={styles.brandLink} title="Binary Vidya">
             <img
-              src="/images/binary-vidya-logo.png"
+              src="/images/binary-vidya-icon.png"
               alt="Binary Vidya"
-              className={styles.brandLogoImg}
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
             />
           </Link>
 
@@ -69,7 +74,7 @@ export default function VerifyCertificatePage() {
               Courses
             </Link>
             <Link href="/training-and-internship" className={styles.navLinkHighlight}>
-              <Sparkles size={14} /> Training &amp; Internships
+              Training &amp; Internships
             </Link>
             <Link href="/careers" className={styles.navLink}>
               Careers
@@ -90,6 +95,13 @@ export default function VerifyCertificatePage() {
       {/* Main Verification Card */}
       <main className={styles.main}>
         <div className={styles.heroSection}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '18px' }}>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya Official Seal"
+              style={{ height: '64px', width: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(37, 99, 235, 0.2))' }}
+            />
+          </div>
           <div className={styles.badge}>
             <ShieldCheck size={16} /> Official Credential Verification System
           </div>

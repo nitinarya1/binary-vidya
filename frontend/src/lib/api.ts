@@ -36,22 +36,47 @@ export const apiRequest = async <T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const primaryBase = getBaseApiUrl();
+  const fallbackBase = primaryBase.startsWith('http')
+    ? '/api'
+    : (process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000/api');
+
+  let res: Response | null = null;
+  let lastError: any = null;
+
   try {
-    const baseUrl = getBaseApiUrl();
-    const res = await fetch(`${baseUrl}${endpoint}`, {
+    res = await fetch(`${primaryBase}${endpoint}`, {
       ...options,
       headers,
     });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data.message || `Request failed with status ${res.status}`);
+  } catch (err: any) {
+    console.warn(`[API] Primary request to ${primaryBase}${endpoint} failed: ${err.message}. Retrying fallback...`);
+    lastError = err;
+    if (fallbackBase && fallbackBase !== primaryBase) {
+      try {
+        res = await fetch(`${fallbackBase}${endpoint}`, {
+          ...options,
+          headers,
+        });
+      } catch (fallbackErr: any) {
+        lastError = fallbackErr;
+      }
     }
-
-    return data;
-  } catch (error: any) {
-    console.error(`API Error on [${endpoint}]:`, error);
-    throw error;
   }
+
+  if (!res) {
+    throw new Error(
+      lastError?.message === 'Failed to fetch' || lastError?.message === 'fetch failed'
+        ? 'Unable to connect to server. Please check your internet connection or try again.'
+        : lastError?.message || 'Server connection error. Please try again.'
+    );
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.message || `Request failed with status ${res.status}`);
+  }
+
+  return data;
 };

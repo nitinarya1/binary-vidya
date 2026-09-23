@@ -13,14 +13,20 @@ function getTransporter() {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100,
+      pool: false,
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
       },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 45000,
     });
+    if (transporter && typeof transporter.on === 'function') {
+      transporter.on('error', (err: any) => {
+        console.error('[Nodemailer Transporter Error Handled]:', err?.message || err);
+      });
+    }
     (global as any).bvTransporter = transporter;
   }
   return transporter;

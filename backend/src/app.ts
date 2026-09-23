@@ -1,5 +1,6 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.routes';
 import courseRoutes from './routes/course.routes';
 import paymentRoutes from './routes/payment.routes';
@@ -7,6 +8,9 @@ import enrollmentRoutes from './routes/enrollment.routes';
 import certificateRoutes from './routes/certificate.routes';
 import uploadRoutes from './routes/upload.routes';
 import trainingRoutes from './routes/training.routes';
+import couponRoutes from './routes/coupon.routes';
+import crmRoutes from './routes/crm.routes';
+import { capturePublicLead } from './controllers/crm.controller';
 
 export const createApp = (): Application => {
   const app = express();
@@ -18,6 +22,7 @@ export const createApp = (): Application => {
       credentials: true,
     })
   );
+  app.use(cookieParser());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -38,6 +43,13 @@ export const createApp = (): Application => {
   app.use('/api/certificates', certificateRoutes);
   app.use('/api/upload', uploadRoutes);
   app.use('/api/training-internship', trainingRoutes);
+  app.use('/api/coupons', couponRoutes);
+
+  // CRM (internal sales team)
+  app.use('/api/crm', crmRoutes);
+
+  // Public lead capture (unauthenticated)
+  app.post('/api/public/leads', capturePublicLead);
 
   // 404 Handler
   app.use((req: Request, res: Response) => {

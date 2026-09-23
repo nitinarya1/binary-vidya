@@ -1,5 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export type AgentRole = 'SUPER_ADMIN' | 'BDA' | 'CSM' | 'LEAD_GEN';
+
+export const AGENT_ROLES = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  BDA: 'BDA',
+  CSM: 'CSM',
+  LEAD_GEN: 'LEAD_GEN',
+} as const;
+
 export interface IUser extends Document {
   name: string;
   email?: string;
@@ -14,6 +23,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   isTeamMember?: boolean;
   department?: string;
+  salesTeam?: string;
   permissions?: {
     manageCourses?: boolean;
     manageTraining?: boolean;

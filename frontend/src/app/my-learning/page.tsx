@@ -314,38 +314,48 @@ export default function MyLearningDashboardPage() {
       {/* Navbar */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+          <Link href="/" className={styles.brandLink} title="Binary Vidya">
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <Link href="/courses" style={{ fontSize: '13px', color: '#64748b', fontWeight: 600, textDecoration: 'none' }}>
-              Explore Catalog
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link href="/#courses" className={styles.navBtn}>
+              Courses
             </Link>
-            <Link href="/my-learning" style={{ fontSize: '13px', color: '#2563eb', fontWeight: 800, textDecoration: 'none' }}>
+            <Link href="/training-and-internship" className={styles.navBtn}>
+              Training &amp; Internships
+            </Link>
+            <Link href="/my-learning" className={styles.navBtn}>
               My Learning
             </Link>
-            <Link href="/profile" style={{ fontSize: '13px', color: '#64748b', fontWeight: 600, textDecoration: 'none' }}>
-              Profile
-            </Link>
-
             {user && (
-              <div className={styles.userPill}>
-                <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
-                  <div className={styles.userAvatar}>
-                    {user.avatar ? (
-                      <img src={user.avatar} alt={user.name || 'User'} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                    ) : (
-                      user.name ? user.name.charAt(0).toUpperCase() : 'U'
-                    )}
-                  </div>
-                  <div className={styles.userName}>{user.name}</div>
-                </Link>
-              </div>
+              <Link
+                href="/profile"
+                className={`${styles.navBtn} ${styles.profileNavBtn}`}
+                title="Profile Settings"
+              >
+                <div className={styles.profileNavAvatar}>
+                  {user.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name || 'User'}
+                      className={styles.profileNavAvatarImg}
+                    />
+                  ) : (
+                    user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                  )}
+                </div>
+                <span>{user.name || 'Profile'}</span>
+              </Link>
             )}
           </div>
         </div>
@@ -359,8 +369,12 @@ export default function MyLearningDashboardPage() {
       ) : !user ? (
         /* Not Logged In State */
         <div className={styles.emptyState}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <UserIcon size={32} />
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              style={{ height: '60px', width: 'auto', objectFit: 'contain' }}
+            />
           </div>
           <h2 className={styles.emptyTitle}>Sign In to View Your Enrolled Courses</h2>
           <p className={styles.emptySubtitle}>
@@ -456,7 +470,13 @@ export default function MyLearningDashboardPage() {
             ) : filteredCourses.length === 0 ? (
               /* Empty State (User has 0 enrollments) */
               <div className={styles.emptyState}>
-                <BookOpen size={48} color="#94a3b8" style={{ marginBottom: '12px' }} />
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+                  <img
+                    src="/images/binary-vidya-icon.png"
+                    alt="Binary Vidya"
+                    style={{ height: '54px', width: 'auto', objectFit: 'contain' }}
+                  />
+                </div>
                 <h3 className={styles.emptyTitle}>No Enrolled Programs Found</h3>
                 <p className={styles.emptySubtitle}>
                   You are not currently enrolled in any courses or batches under this category. Discover our flagship technical roadmaps to get started.

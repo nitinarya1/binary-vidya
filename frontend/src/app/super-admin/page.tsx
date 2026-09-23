@@ -44,8 +44,13 @@ import {
   UserX,
   CheckSquare,
   Square,
+  Tag,
+  Percent,
+  IndianRupee,
+  Copy,
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
+import { CouponAdminModal, CouponItem } from '../../components/CouponAdminModal';
 
 // Data Interfaces
 export interface VideoLessonItem {
@@ -160,7 +165,7 @@ export interface TeamMemberItem {
   createdAt: string;
 }
 
-type TabType = 'overview' | 'courses' | 'training' | 'careers' | 'team';
+type TabType = 'overview' | 'courses' | 'training' | 'careers' | 'team' | 'coupons';
 
 export default function SuperAdminDashboard() {
   const router = useRouter();
@@ -198,8 +203,9 @@ export default function SuperAdminDashboard() {
   const canViewAnalytics = !isSuspended && (isSuper || Boolean(user?.permissions?.viewAnalytics));
   const canManageCertificates = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCertificates));
   const canManageTeam = !isSuspended && (isSuper || isHRTeam); // aryar0779@gmail.com / Super Admins and HR Team
+  const canManageCoupons = !isSuspended && (isSuper || Boolean(user?.permissions?.manageCourses));
 
-  const hasAnyAccess = isSuper || canManageCourses || canManageTraining || canManageCareers || canViewAnalytics || canManageCertificates || canManageTeam;
+  const hasAnyAccess = isSuper || canManageCourses || canManageTraining || canManageCareers || canViewAnalytics || canManageCertificates || canManageTeam || canManageCoupons;
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -212,6 +218,7 @@ export default function SuperAdminDashboard() {
       if (tab === 'training') return canManageTraining;
       if (tab === 'careers') return canManageCareers;
       if (tab === 'team') return canManageTeam;
+      if (tab === 'coupons') return canManageCoupons;
       return false;
     };
 
@@ -221,20 +228,28 @@ export default function SuperAdminDashboard() {
       else if (canManageTraining) setActiveTab('training');
       else if (canManageCareers) setActiveTab('careers');
       else if (canManageTeam) setActiveTab('team');
+      else if (canManageCoupons) setActiveTab('coupons');
     }
-  }, [activeTab, canViewAnalytics, canManageCourses, canManageTraining, canManageCareers, canManageTeam]);
+  }, [activeTab, canViewAnalytics, canManageCourses, canManageTraining, canManageCareers, canManageTeam, canManageCoupons]);
 
   // Data States
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [trainingPrograms, setTrainingPrograms] = useState<TrainingItem[]>([]);
   const [careers, setCareers] = useState<CareerItem[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberItem[]>([]);
+  const [coupons, setCoupons] = useState<CouponItem[]>([]);
 
   // Loading States
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+
+  // Coupon Specific Filters
+  const [couponDiscountFilter, setCouponDiscountFilter] = useState<'all' | 'percentage' | 'fixed'>('all');
+  const [couponApplicableFilter, setCouponApplicableFilter] = useState<'all' | 'courses' | 'training'>('all');
+  const [couponStatusFilter, setCouponStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [copiedCouponId, setCopiedCouponId] = useState<string | null>(null);
 
   // Feedback Notification
   const [notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -251,6 +266,9 @@ export default function SuperAdminDashboard() {
 
   const [teamModalOpen, setTeamModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMemberItem | null>(null);
+
+  const [couponModalOpen, setCouponModalOpen] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<CouponItem | null>(null);
 
   // Forced First Login Password Change State
   const [firstPassValue, setFirstPassValue] = useState('');
@@ -337,6 +355,14 @@ export default function SuperAdminDashboard() {
             .catch(() => ({ success: false }))
         );
       }
+      if (canManageCoupons || isSuper) {
+        keys.push('coupons');
+        promises.push(
+          fetch('/api/admin/coupons', { headers })
+            .then((r) => r.json())
+            .catch(() => ({ success: false }))
+        );
+      }
 
       const results = await Promise.all(promises);
       results.forEach((res, i) => {
@@ -346,6 +372,7 @@ export default function SuperAdminDashboard() {
           if (key === 'training') setTrainingPrograms(res.programs || []);
           if (key === 'careers') setCareers(res.careers || []);
           if (key === 'team') setTeamMembers(res.teamMembers || []);
+          if (key === 'coupons') setCoupons(res.coupons || []);
         }
       });
     } catch (err: any) {
@@ -359,7 +386,7 @@ export default function SuperAdminDashboard() {
     if (token && (isSuper || isStaffAdmin)) {
       fetchData();
     }
-  }, [token, isSuper, isStaffAdmin, canManageCourses, canManageTraining, canManageCareers, canManageTeam, canViewAnalytics]);
+  }, [token, isSuper, isStaffAdmin, canManageCourses, canManageTraining, canManageCareers, canManageTeam, canManageCoupons, canViewAnalytics]);
 
   // Metric Computations
   const metrics = useMemo(() => {
@@ -444,6 +471,25 @@ export default function SuperAdminDashboard() {
       return matchSearch && matchDept && matchStat;
     });
   }, [teamMembers, searchQuery, filterCategory, filterStatus]);
+
+  // Filtered Coupons
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter((c) => {
+      const matchSearch =
+        !searchQuery ||
+        c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.description && c.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchType =
+        couponDiscountFilter === 'all' || c.discountType === couponDiscountFilter;
+      const matchApplicable =
+        couponApplicableFilter === 'all' || c.applicableTo === couponApplicableFilter;
+      const matchStatus =
+        couponStatusFilter === 'all' ||
+        (couponStatusFilter === 'active' && c.isActive) ||
+        (couponStatusFilter === 'inactive' && !c.isActive);
+      return matchSearch && matchType && matchApplicable && matchStatus;
+    });
+  }, [coupons, searchQuery, couponDiscountFilter, couponApplicableFilter, couponStatusFilter]);
 
   // Course Actions
   const handleSaveCourse = async (courseData: Partial<CourseItem>) => {
@@ -582,7 +628,11 @@ export default function SuperAdminDashboard() {
 
   // Team Member Actions (Super Admin strictly guarded)
   const handleSaveTeamMember = async (memberData: any) => {
-    if (!token) return;
+    if (!token) {
+      const msg = 'Authentication session expired. Please log in again.';
+      setNotice({ type: 'error', text: msg });
+      throw new Error(msg);
+    }
     try {
       const isEditing = Boolean(editingMember);
       const method = isEditing ? 'PUT' : 'POST';
@@ -593,17 +643,31 @@ export default function SuperAdminDashboard() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (data.success) {
-        setNotice({ type: 'success', text: data.message || 'Team member saved successfully!' });
-        setTeamModalOpen(false);
-        setEditingMember(null);
-        fetchData();
-      } else {
-        setNotice({ type: 'error', text: data.message || 'Failed to save team member' });
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (_jsonErr) {
+        throw new Error(`Server returned HTTP ${res.status}: ${res.statusText || 'Unable to parse server response'}`);
       }
+
+      if (!res.ok || !data.success) {
+        const errorMsg = data.message || `Failed to save team member (HTTP ${res.status})`;
+        setNotice({ type: 'error', text: errorMsg });
+        throw new Error(errorMsg);
+      }
+
+      setNotice({ type: 'success', text: data.message || 'Team member saved successfully!' });
+      setTeamModalOpen(false);
+      setEditingMember(null);
+      fetchData();
     } catch (err: any) {
-      setNotice({ type: 'error', text: err.message || 'Network error saving team member' });
+      const msg =
+        err.message === 'Failed to fetch' || err.message === 'fetch failed'
+          ? 'Cannot connect to server. Please check your network or ensure the server is running.'
+          : err.message || 'Network error saving team member';
+      setNotice({ type: 'error', text: msg });
+      throw new Error(msg);
     }
   };
 
@@ -665,6 +729,74 @@ export default function SuperAdminDashboard() {
       const data = await res.json();
       if (data.success) {
         setNotice({ type: 'success', text: `Team member "${name}" removed successfully.` });
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message });
+    }
+  };
+
+  // Coupon Actions
+  const handleSaveCoupon = async (couponData: Partial<CouponItem>) => {
+    if (!token) return;
+    try {
+      const method = editingCoupon ? 'PUT' : 'POST';
+      const body = editingCoupon ? { id: editingCoupon.id, ...couponData } : couponData;
+
+      const res = await fetch('/api/admin/coupons', {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({ type: 'success', text: data.message || 'Coupon saved successfully!' });
+        setCouponModalOpen(false);
+        setEditingCoupon(null);
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message || 'Failed to save coupon' });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleToggleCouponStatus = async (coupon: CouponItem) => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/admin/coupons', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: coupon.id, isActive: !coupon.isActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({
+          type: 'success',
+          text: `Coupon "${coupon.code}" is now ${!coupon.isActive ? 'Active' : 'Inactive'}!`,
+        });
+        fetchData();
+      } else {
+        setNotice({ type: 'error', text: data.message });
+      }
+    } catch (err: any) {
+      setNotice({ type: 'error', text: err.message });
+    }
+  };
+
+  const handleDeleteCoupon = async (id: string, code: string) => {
+    if (!token || !confirm(`Are you sure you want to delete promo coupon "${code}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/coupons?id=${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotice({ type: 'success', text: `Coupon "${code}" deleted successfully!` });
         fetchData();
       } else {
         setNotice({ type: 'error', text: data.message });
@@ -953,6 +1085,22 @@ export default function SuperAdminDashboard() {
               </button>
             )}
 
+            {canManageCoupons && (
+              <button
+                onClick={() => {
+                  setActiveTab('coupons');
+                  setEditingCoupon(null);
+                  setCouponModalOpen(true);
+                }}
+                className={styles.quickAddTeamBtn}
+                style={{ background: 'rgba(16, 185, 129, 0.18)', borderColor: '#10b981', color: '#10b981' }}
+                title="Create Promo Discount Coupon"
+              >
+                <Tag size={14} />
+                <span>+ Coupon</span>
+              </button>
+            )}
+
             <Link href="/" className={styles.liveSiteBtn} target="_blank" title="View Public Portal">
               <ExternalLink size={14} />
               <span>Live Site</span>
@@ -986,7 +1134,7 @@ export default function SuperAdminDashboard() {
             </h1>
             <p className={styles.headerSubtitle}>
               {isSuper
-                ? 'Centralized command center for managing high-impact technical courses, verified training & internship drives, staff team permissions, and career pipelines.'
+                ? 'Centralized command center for managing high-impact technical courses, verified training & internship drives, staff team permissions, promo coupons, and career pipelines.'
                 : `Administrative workspace for managing assigned ${user?.department || 'operational'} workflows and modules.`}
             </p>
           </div>
@@ -1039,6 +1187,20 @@ export default function SuperAdminDashboard() {
                 style={{ background: 'rgba(99, 102, 241, 0.3)', borderColor: '#818cf8', color: '#ffffff' }}
               >
                 <UserPlus size={16} /> Add Team Member
+              </button>
+            )}
+
+            {canManageCoupons && (
+              <button
+                onClick={() => {
+                  setActiveTab('coupons');
+                  setEditingCoupon(null);
+                  setCouponModalOpen(true);
+                }}
+                className={styles.secondaryActionBtn}
+                style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: '#10b981', color: '#34d399' }}
+              >
+                <Tag size={16} /> Create Coupon
               </button>
             )}
           </div>
@@ -1102,6 +1264,21 @@ export default function SuperAdminDashboard() {
               </div>
               <div className={styles.metricIconWrapper} style={{ background: '#eef2ff', color: '#4f46e5' }}>
                 <Users size={24} />
+              </div>
+            </div>
+          )}
+
+          {(canManageCoupons || isSuper) && (
+            <div className={styles.metricCard}>
+              <div className={styles.metricInfo}>
+                <span className={styles.metricLabel}>Active Coupons</span>
+                <span className={styles.metricValue}>{coupons.filter((c) => c.isActive).length}</span>
+                <span className={styles.metricSubtext}>
+                  {coupons.length} Total Offers • {coupons.reduce((acc, c) => acc + (c.usageCount || 0), 0)} Times Redeemed
+                </span>
+              </div>
+              <div className={styles.metricIconWrapper} style={{ background: '#ecfdf5', color: '#059669' }}>
+                <Tag size={24} />
               </div>
             </div>
           )}
@@ -1202,6 +1379,22 @@ export default function SuperAdminDashboard() {
               <Users size={16} />
               <span>Team & Access</span>
               <span className={styles.tabCountPill}>{teamMembers.length}</span>
+            </button>
+          )}
+
+          {canManageCoupons && (
+            <button
+              onClick={() => {
+                setActiveTab('coupons');
+                setSearchQuery('');
+                setFilterCategory('all');
+                setFilterStatus('all');
+              }}
+              className={`${styles.tabBtn} ${activeTab === 'coupons' ? styles.tabBtnActive : ''}`}
+            >
+              <Tag size={16} />
+              <span>Coupons &amp; Discounts</span>
+              <span className={styles.tabCountPill}>{coupons.length}</span>
             </button>
           )}
         </nav>
@@ -2106,6 +2299,308 @@ export default function SuperAdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* TAB 6: PROMOTIONAL COUPONS & DISCOUNTS */}
+        {activeTab === 'coupons' && canManageCoupons && (
+          <div>
+            {/* Header / Filter Toolbar */}
+            <div className={styles.tableHeaderBar}>
+              <div className={styles.searchBox}>
+                <Search size={16} className={styles.searchIcon} />
+                <input
+                  type="text"
+                  placeholder="Search promo code or description..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={styles.searchInput}
+                />
+              </div>
+
+              <div className={styles.filterGroup}>
+                <select
+                  value={couponDiscountFilter}
+                  onChange={(e: any) => setCouponDiscountFilter(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="all">All Discount Types</option>
+                  <option value="percentage">Percentage (%) Off</option>
+                  <option value="fixed">Fixed Money (₹) Off</option>
+                </select>
+
+                <select
+                  value={couponApplicableFilter}
+                  onChange={(e: any) => setCouponApplicableFilter(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="all">All Programs Scope</option>
+                  <option value="courses">Courses Only</option>
+                  <option value="training">Training &amp; Internship Only</option>
+                </select>
+
+                <select
+                  value={couponStatusFilter}
+                  onChange={(e: any) => setCouponStatusFilter(e.target.value)}
+                  className={styles.filterSelect}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active Only</option>
+                  <option value="inactive">Inactive Only</option>
+                </select>
+
+                <button
+                  onClick={() => {
+                    setEditingCoupon(null);
+                    setCouponModalOpen(true);
+                  }}
+                  className={styles.primaryActionBtn}
+                  style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)', whiteSpace: 'nowrap' }}
+                >
+                  <Plus size={16} /> + Create Coupon
+                </button>
+              </div>
+            </div>
+
+            {/* Coupons Table */}
+            <div className={styles.tableContainer}>
+              <table className={styles.dataTable}>
+                <thead>
+                  <tr>
+                    <th>Coupon Code</th>
+                    <th>Discount Mode &amp; Value</th>
+                    <th>Applicability</th>
+                    <th>Conditions</th>
+                    <th>Usage Count</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredCoupons.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className={styles.emptyTableState}>
+                        <Tag size={40} className={styles.emptyTableIcon} />
+                        <div className={styles.emptyTableTitle}>No Promo Coupons Found</div>
+                        <div className={styles.emptyTableSubtitle}>
+                          {searchQuery || couponDiscountFilter !== 'all' || couponApplicableFilter !== 'all' || couponStatusFilter !== 'all'
+                            ? 'No coupons matched your active filter criteria.'
+                            : 'Create your first promotional discount coupon to boost student enrollment.'}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEditingCoupon(null);
+                            setCouponModalOpen(true);
+                          }}
+                          className={styles.emptyActionBtn}
+                          style={{ background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)' }}
+                        >
+                          <Plus size={16} /> Create New Coupon
+                        </button>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredCoupons.map((coupon) => {
+                      const isCopied = copiedCouponId === coupon.id;
+                      return (
+                        <tr key={coupon.id || coupon.code}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span
+                                style={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '14px',
+                                  fontWeight: 800,
+                                  color: '#0284c7',
+                                  backgroundColor: '#f0f9ff',
+                                  border: '1px dashed #38bdf8',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px',
+                                  letterSpacing: '0.5px',
+                                }}
+                              >
+                                {coupon.code}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (coupon.code) {
+                                    navigator.clipboard.writeText(coupon.code);
+                                    setCopiedCouponId(coupon.id || coupon.code);
+                                    setTimeout(() => setCopiedCouponId(null), 2000);
+                                  }
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: isCopied ? '#10b981' : '#94a3b8',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  padding: '4px',
+                                }}
+                                title="Copy coupon code"
+                              >
+                                {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                              </button>
+                            </div>
+                            {coupon.description && (
+                              <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                                {coupon.description}
+                              </span>
+                            )}
+                          </td>
+
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '4px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: 800,
+                                  backgroundColor: coupon.discountType === 'percentage' ? '#e0f2fe' : '#ecfdf5',
+                                  color: coupon.discountType === 'percentage' ? '#0369a1' : '#047857',
+                                  border: `1px solid ${coupon.discountType === 'percentage' ? '#bae6fd' : '#a7f3d0'}`,
+                                }}
+                              >
+                                {coupon.discountType === 'percentage' ? (
+                                  <>
+                                    <Percent size={12} /> {coupon.discountValue}% OFF
+                                  </>
+                                ) : (
+                                  <>
+                                    <IndianRupee size={12} /> Flat ₹{coupon.discountValue.toLocaleString('en-IN')} OFF
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </td>
+
+                          <td>
+                            <span
+                              style={{
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                textTransform: 'capitalize',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                backgroundColor:
+                                  coupon.applicableTo === 'courses'
+                                    ? '#eff6ff'
+                                    : coupon.applicableTo === 'training'
+                                    ? '#fdf2f8'
+                                    : '#f1f5f9',
+                                color:
+                                  coupon.applicableTo === 'courses'
+                                    ? '#2563eb'
+                                    : coupon.applicableTo === 'training'
+                                    ? '#db2777'
+                                    : '#475569',
+                              }}
+                            >
+                              {coupon.applicableTo === 'all'
+                                ? 'All Programs'
+                                : coupon.applicableTo === 'courses'
+                                ? 'Courses Only'
+                                : 'Training Only'}
+                            </span>
+                          </td>
+
+                          <td>
+                            <div style={{ fontSize: '11.5px', color: '#475569' }}>
+                              <div>Min: {coupon.minOrderAmount ? `₹${coupon.minOrderAmount.toLocaleString('en-IN')}` : 'None'}</div>
+                              {coupon.discountType === 'percentage' && coupon.maxDiscountAmount ? (
+                                <div>Cap: ₹{coupon.maxDiscountAmount.toLocaleString('en-IN')}</div>
+                              ) : null}
+                            </div>
+                          </td>
+
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
+                                {coupon.usageCount || 0}
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#64748b' }}>uses</span>
+                            </div>
+                          </td>
+
+                          <td>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleCouponStatus(coupon)}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                cursor: 'pointer',
+                                backgroundColor: coupon.isActive ? '#ecfdf5' : '#f1f5f9',
+                                color: coupon.isActive ? '#047857' : '#64748b',
+                              }}
+                              title={coupon.isActive ? 'Click to deactivate' : 'Click to activate'}
+                            >
+                              <span
+                                style={{
+                                  width: '7px',
+                                  height: '7px',
+                                  borderRadius: '50%',
+                                  backgroundColor: coupon.isActive ? '#10b981' : '#94a3b8',
+                                }}
+                              />
+                              {coupon.isActive ? 'Active' : 'Inactive'}
+                            </button>
+                          </td>
+
+                          <td>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>
+                              {coupon.createdAt
+                                ? new Date(coupon.createdAt).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })
+                                : 'N/A'}
+                            </span>
+                          </td>
+
+                          <td style={{ textAlign: 'right' }}>
+                            <div className={styles.actionBtnGroup} style={{ justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={() => {
+                                  setEditingCoupon(coupon);
+                                  setCouponModalOpen(true);
+                                }}
+                                className={styles.editRowBtn}
+                                title="Edit Coupon Settings"
+                              >
+                                <Edit2 size={13} /> Edit
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteCoupon(coupon.id || '', coupon.code)}
+                                className={styles.deleteRowBtn}
+                                title="Delete Coupon"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* COURSE CREATE/EDIT MODAL */}
@@ -2153,6 +2648,19 @@ export default function SuperAdminDashboard() {
             setEditingMember(null);
           }}
           onSave={handleSaveTeamMember}
+        />
+      )}
+
+      {/* COUPON CREATE/EDIT MODAL */}
+      {couponModalOpen && canManageCoupons && (
+        <CouponAdminModal
+          isOpen={couponModalOpen}
+          onClose={() => {
+            setCouponModalOpen(false);
+            setEditingCoupon(null);
+          }}
+          couponToEdit={editingCoupon}
+          onSave={handleSaveCoupon}
         />
       )}
 

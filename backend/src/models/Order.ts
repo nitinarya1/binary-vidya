@@ -13,6 +13,9 @@ export interface IOrder extends Document {
   razorpaySignature?: string;
   status: 'created' | 'paid' | 'failed';
   paymentMethod?: string;
+  couponCode?: string;
+  originalAmount?: number;
+  discountAmount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +38,9 @@ const orderSchema = new Schema<IOrder>(
       default: 'created',
     },
     paymentMethod: { type: String, default: 'razorpay' },
+    couponCode: { type: String, default: '' },
+    originalAmount: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

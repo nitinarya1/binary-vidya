@@ -183,9 +183,19 @@ export async function POST(req: Request) {
     const existing = await User.findOne({ email: normalizedEmail });
     if (existing) {
       return NextResponse.json(
-        { success: false, message: 'An account with this email address already exists in the system' },
+        { success: false, message: `An account with email "${normalizedEmail}" already exists in the system.` },
         { status: 400 }
       );
+    }
+
+    if (phone && phone.trim()) {
+      const existingPhone = await User.findOne({ phone: phone.trim() });
+      if (existingPhone) {
+        return NextResponse.json(
+          { success: false, message: `An account with phone number "${phone.trim()}" already exists in the system.` },
+          { status: 400 }
+        );
+      }
     }
 
     // Hash password
@@ -219,19 +229,23 @@ export async function POST(req: Request) {
       mustChangePassword: true,
     });
 
-    const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
-    sendTeamCredentialsEmail({
-      name: newMember.name,
-      email: newMember.email,
-      temporaryPassword: password,
-      department: memberDepartment,
-      permissions: memberPermissions,
-      loginUrl: process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
-        : 'http://localhost:3000/login',
-    }).catch((mailErr) => {
-      console.error('[Background Send Team Credentials Email Error]:', mailErr);
-    });
+    try {
+      const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
+      sendTeamCredentialsEmail({
+        name: newMember.name,
+        email: newMember.email,
+        temporaryPassword: password,
+        department: memberDepartment,
+        permissions: memberPermissions,
+        loginUrl: process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
+          : 'http://localhost:3000/login',
+      }).catch((mailErr) => {
+        console.error('[Background Send Team Credentials Email Error]:', mailErr);
+      });
+    } catch (mailImportErr) {
+      console.error('[Error importing serverMailer for credentials email]:', mailImportErr);
+    }
 
     return NextResponse.json(
       {
@@ -254,9 +268,14 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     console.error('[Admin Team POST Error]:', error);
+    let message = error.message || 'Failed to create team member';
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern || {})[0] || 'field';
+      message = `An account with this ${field} already exists in the system.`;
+    }
     return NextResponse.json(
-      { success: false, message: error.message || 'Failed to create team member' },
-      { status: 500 }
+      { success: false, message },
+      { status: error.code === 11000 ? 400 : 500 }
     );
   }
 }

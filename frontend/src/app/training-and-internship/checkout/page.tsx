@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../../../context/AuthContext';
 import { AuthModal } from '../../../components/AuthModal';
@@ -27,6 +27,8 @@ import {
   Smartphone,
   AlertCircle,
   User as UserIcon,
+  Tag,
+  Gift,
 } from 'lucide-react';
 
 const ensureRazorpayLoaded = (): Promise<boolean> => {
@@ -59,7 +61,7 @@ interface PaymentReceiptData {
   date: string;
 }
 
-export default function TrainingCheckoutPage() {
+function TrainingCheckoutContent() {
   const router = useRouter();
   const { user } = useAuth();
 
@@ -68,6 +70,77 @@ export default function TrainingCheckoutPage() {
   const [paymentStep, setPaymentStep] = useState<'idle' | 'initiating' | 'verifying' | 'success' | 'failed'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptData | null>(null);
+
+  // Coupon States
+  const searchParams = useSearchParams();
+  const initialCoupon = searchParams?.get('coupon') || '';
+  const [couponInput, setCouponInput] = useState(initialCoupon);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discountAmount: number;
+    finalAmount: number;
+    description?: string;
+  } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+
+  const basePrice = 2400;
+
+  // Validate and apply coupon
+  const handleApplyCoupon = async (codeToApply: string) => {
+    if (!codeToApply.trim()) return;
+    const cleanCode = codeToApply.trim().toUpperCase();
+
+    try {
+      setCouponLoading(true);
+      setCouponError(null);
+      setCouponSuccess(null);
+
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: cleanCode,
+          amount: basePrice,
+          itemType: 'training',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Invalid coupon code');
+      }
+
+      setAppliedCoupon({
+        code: data.coupon.code,
+        discountAmount: data.discountAmount,
+        finalAmount: data.finalAmount,
+        description: data.coupon.description,
+      });
+      setCouponInput(data.coupon.code);
+      setCouponSuccess(`Coupon "${data.coupon.code}" applied! You save ₹${data.discountAmount.toLocaleString('en-IN')}.`);
+      return true;
+    } catch (err: any) {
+      setCouponError(err.message || 'Failed to apply coupon');
+      throw err;
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput('');
+    setCouponError(null);
+    setCouponSuccess(null);
+  };
+
+  useEffect(() => {
+    if (initialCoupon && !appliedCoupon) {
+      handleApplyCoupon(initialCoupon);
+    }
+  }, [initialCoupon]);
 
   useEffect(() => {
     ensureRazorpayLoaded();
@@ -92,12 +165,38 @@ export default function TrainingCheckoutPage() {
             userEmail: currentUser.email,
             userName: currentUser.name || 'Student',
             userId: currentUser.id || '',
+            couponCode: appliedCoupon ? appliedCoupon.code : undefined,
           }),
         });
 
         const orderData = await res.json();
-        if (!orderData.success || !orderData.orderId) {
+        if (!orderData.success || (!orderData.orderId && !orderData.isFree)) {
           throw new Error(orderData.message || 'Failed to initialize payment order.');
+        }
+
+        // If coupon gave 100% discount (finalAmount === 0 or isFree), complete enrollment immediately without Razorpay
+        if (orderData.isFree || orderData.finalAmount === 0 || orderData.amount === 0) {
+          setPaymentReceipt({
+            paymentId: orderData.paymentId || `free_${Date.now()}`,
+            orderId: orderData.orderId,
+            amount: 0,
+            courseTitle: 'Frontend Developer Training & 2-Month Internship',
+            userEmail: currentUser.email,
+            date: new Date().toLocaleString('en-IN', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            }),
+          });
+          setPaymentStep('success');
+
+          try {
+            confetti({
+              particleCount: 140,
+              spread: 80,
+              origin: { y: 0.6 },
+            });
+          } catch (cErr) {}
+          return;
         }
 
         const razorpayKey =
@@ -107,7 +206,7 @@ export default function TrainingCheckoutPage() {
 
         const options: any = {
           key: razorpayKey,
-          amount: orderData.amount, // 240000 paise = ₹2,400
+          amount: orderData.amount, // in paise
           currency: orderData.currency || 'INR',
           name: 'Binary Vidya',
           description: 'Frontend Developer Training & 2-Month Internship',
@@ -132,7 +231,7 @@ export default function TrainingCheckoutPage() {
                 setPaymentReceipt({
                   paymentId: response.razorpay_payment_id,
                   orderId: response.razorpay_order_id,
-                  amount: 2400,
+                  amount: appliedCoupon ? appliedCoupon.finalAmount : basePrice,
                   courseTitle: 'Frontend Developer Training & 2-Month Internship',
                   userEmail: currentUser.email,
                   date: new Date().toLocaleString('en-IN', {
@@ -190,7 +289,7 @@ export default function TrainingCheckoutPage() {
         setPaymentError(err.message || 'Failed to open Razorpay gateway.');
       }
     },
-    [selectedMethod]
+    [appliedCoupon, selectedMethod, basePrice]
   );
 
   const handleProceedPayment = () => {
@@ -456,6 +555,147 @@ export default function TrainingCheckoutPage() {
                   <span style={{ color: '#059669', fontWeight: 700 }}>FREE</span>
                 </div>
 
+                {/* Dynamic Coupon Discount Row */}
+                {appliedCoupon && (
+                  <div
+                    className={styles.summaryRow}
+                    style={{
+                      backgroundColor: '#ecfdf5',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      border: '1px solid #a7f3d0',
+                      margin: '10px 0',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Sparkles size={15} color="#059669" />
+                      <span style={{ color: '#047857', fontWeight: 800 }}>
+                        Coupon ({appliedCoupon.code}):
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#059669', fontWeight: 800, fontSize: '14px' }}>
+                        -₹{appliedCoupon.discountAmount.toLocaleString('en-IN')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          padding: '2px 4px',
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Interactive Apply Promo Code Box */}
+                <div
+                  style={{
+                    margin: '14px 0',
+                    padding: '12px 14px',
+                    background: '#f8fafc',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#334155',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    <Tag size={14} color="#0284c7" />
+                    <span>Have a Promo Coupon?</span>
+                  </div>
+
+                  {!appliedCoupon ? (
+                    <div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                          type="text"
+                          placeholder="Enter promo coupon code"
+                          value={couponInput}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value.toUpperCase());
+                            setCouponError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyCoupon(couponInput);
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '9px 12px',
+                            borderRadius: '8px',
+                            border: couponError ? '1.5px solid #ef4444' : '1px solid #cbd5e1',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            letterSpacing: '0.04em',
+                            textTransform: 'uppercase',
+                            outline: 'none',
+                            backgroundColor: '#ffffff',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleApplyCoupon(couponInput)}
+                          disabled={!couponInput.trim() || couponLoading}
+                          style={{
+                            padding: '0 16px',
+                            borderRadius: '8px',
+                            background: !couponInput.trim() || couponLoading ? '#cbd5e1' : '#0284c7',
+                            color: '#ffffff',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: !couponInput.trim() || couponLoading ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.2s ease',
+                          }}
+                        >
+                          {couponLoading ? 'Checking...' : 'Apply'}
+                        </button>
+                      </div>
+                      {couponError && (
+                        <div style={{ fontSize: '11px', color: '#dc2626', fontWeight: 600, marginTop: '6px' }}>
+                          &bull; {couponError}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        fontSize: '12px',
+                        color: '#059669',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <CheckCircle2 size={15} color="#059669" />
+                      <span>
+                        Coupon <strong>{appliedCoupon.code}</strong> applied ({appliedCoupon.description || 'Discount active'})
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div className={styles.totalRow}>
                   <div>
                     <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>
@@ -465,7 +705,9 @@ export default function TrainingCheckoutPage() {
                       Inclusive of all taxes
                     </span>
                   </div>
-                  <div className={styles.totalAmount}>₹2,400</div>
+                  <div className={styles.totalAmount}>
+                    ₹{(appliedCoupon ? appliedCoupon.finalAmount : basePrice).toLocaleString('en-IN')}
+                  </div>
                 </div>
 
                 {/* Error Banner */}
@@ -554,29 +796,47 @@ export default function TrainingCheckoutPage() {
                 </div>
 
                 {/* Submit button */}
-                <button
-                  type="button"
-                  onClick={handleProceedPayment}
-                  disabled={paymentStep === 'initiating' || paymentStep === 'verifying'}
-                  className={styles.buyNowBtn}
-                  style={{
-                    background:
-                      selectedMethod === 'upi_qr'
-                        ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
-                        : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  }}
-                >
-                  {paymentStep === 'initiating' ? (
-                    <span>Opening Razorpay Secure Window...</span>
-                  ) : paymentStep === 'verifying' ? (
-                    <span>Verifying Payment...</span>
-                  ) : (
-                    <>
-                      <Zap size={18} />
-                      <span>Pay ₹2,400 via Razorpay</span>
-                    </>
-                  )}
-                </button>
+                {(() => {
+                  const finalPayable = appliedCoupon ? appliedCoupon.finalAmount : basePrice;
+                  const isFree = finalPayable === 0;
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleProceedPayment}
+                      disabled={paymentStep === 'initiating' || paymentStep === 'verifying'}
+                      className={styles.buyNowBtn}
+                      style={{
+                        opacity: paymentStep === 'initiating' || paymentStep === 'verifying' ? 0.85 : 1,
+                        cursor: paymentStep === 'initiating' || paymentStep === 'verifying' ? 'not-allowed' : 'pointer',
+                        background: isFree
+                          ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                          : selectedMethod === 'upi_qr'
+                          ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                          : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                        boxShadow: isFree ? '0 10px 25px -5px rgba(16, 185, 129, 0.4)' : undefined,
+                      }}
+                    >
+                      {paymentStep === 'initiating' ? (
+                        <span>{isFree ? 'Activating Free Enrollment...' : 'Opening Razorpay Secure Window...'}</span>
+                      ) : paymentStep === 'verifying' ? (
+                        <span>Verifying Payment...</span>
+                      ) : isFree ? (
+                        <>
+                          <Sparkles size={18} />
+                          <span>Claim 100% Free Enrollment (₹0) &rarr;</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap size={18} />
+                          <span>
+                            Pay ₹{finalPayable.toLocaleString('en-IN')} via {selectedMethod === 'upi_qr' ? 'UPI / QR' : 'Cards & NetBanking'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })()}
 
                 <div style={{ marginTop: '14px', textAlign: 'center', fontSize: '11px', color: '#94a3b8' }}>
                   🔒 Official Razorpay 256-Bit SSL Encrypted Payment Gateway
@@ -595,5 +855,19 @@ export default function TrainingCheckoutPage() {
         subtitle="Please sign in or create an account to activate your Frontend Developer Training & Internship enrollment."
       />
     </div>
+  );
+}
+
+export default function TrainingCheckoutPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+          Loading checkout...
+        </div>
+      }
+    >
+      <TrainingCheckoutContent />
+    </React.Suspense>
   );
 }
