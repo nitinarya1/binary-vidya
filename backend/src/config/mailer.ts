@@ -152,9 +152,6 @@ ${fromAddress}`;
       text: textContent,
       html: htmlContent,
       headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'High',
         'Auto-Submitted': 'auto-generated',
         'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
@@ -250,23 +247,20 @@ You received this email because an account was created on Binary Vidya for ${use
 </head>
 <body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased; line-height: 1.6;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);">
-    <!-- Clean White Logo Header -->
+    <!-- Clean White Brand Header (Zero Top Image) -->
     <tr>
-      <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
+      <td align="center" style="background-color: #ffffff; padding: 26px 24px 20px; text-align: center; border-bottom: 2px solid #eff6ff;">
         <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
-          <img 
-            src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
-            alt="Binary Vidya" 
-            width="200" 
-            style="display: block; width: 200px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
-          />
+          <div style="font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -0.3px; text-transform: uppercase;">
+            Binary Vidya
+          </div>
         </a>
       </td>
     </tr>
 
     <!-- Royal Blue Accent Sub-Header -->
     <tr>
-      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 10px 24px; text-align: center;">
         <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
           Student Learning &amp; Tech Community Portal
         </div>
@@ -353,10 +347,21 @@ You received this email because an account was created on Binary Vidya for ${use
       </td>
     </tr>
 
-    <!-- CAN-SPAM Compliant Anti-Spam Footer -->
+    <!-- CAN-SPAM Compliant Anti-Spam Footer with Smallest Logo -->
     <tr>
-      <td style="background-color: #f8fafc; padding: 22px 32px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.6;">
-        You received this email because an account was registered for <strong>${user.email}</strong> on <a href="${portalUrl}" style="color: #64748b; text-decoration: underline;">Binary Vidya</a>.<br />
+      <td align="center" style="background-color: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
+        <div style="margin-bottom: 12px;">
+          <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
+            <img 
+              src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+              alt="Binary Vidya" 
+              width="70" 
+              style="display: block; width: 70px; max-width: 70px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none; text-decoration: none;" 
+            />
+          </a>
+        </div>
+        You received this email because an account was registered for <strong>${user.email}</strong> on <a href="${portalUrl}" style="color: #2563eb; text-decoration: underline;">Binary Vidya</a>.<br />
+        Sent from Binary Vidya &bull; Bengaluru, Karnataka, India<br />
         &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
       </td>
     </tr>
@@ -376,7 +381,6 @@ You received this email because an account was created on Binary Vidya for ${use
         'Auto-Submitted': 'auto-generated',
         'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
-      attachments,
     };
 
     const info = await transport.sendMail(mailOptions);
@@ -469,23 +473,20 @@ Binary Vidya Administration Team`;
 <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
     
-    <!-- Clean White Logo Header -->
+    <!-- Clean White Brand Header (Zero Top Image) -->
     <tr>
-      <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
+      <td align="center" style="background-color: #ffffff; padding: 26px 24px 20px; text-align: center; border-bottom: 2px solid #eff6ff;">
         <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
-          <img 
-            src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
-            alt="Binary Vidya" 
-            width="200" 
-            style="display: block; width: 200px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
-          />
+          <div style="font-size: 22px; font-weight: 800; color: #1e40af; letter-spacing: -0.3px; text-transform: uppercase;">
+            Binary Vidya
+          </div>
         </a>
       </td>
     </tr>
 
     <!-- Royal Blue Accent Sub-Header -->
     <tr>
-      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
+      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 10px 24px; text-align: center;">
         <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
           ${subBannerText}
         </div>
@@ -564,10 +565,20 @@ Binary Vidya Administration Team`;
       </td>
     </tr>
 
-    <!-- Footer -->
+    <!-- Footer with Smallest Logo -->
     <tr>
-      <td style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
-        Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, India<br />
+      <td align="center" style="background-color: #f8fafc; padding: 20px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.6;">
+        <div style="margin-bottom: 12px;">
+          <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
+            <img 
+              src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+              alt="Binary Vidya" 
+              width="70" 
+              style="display: block; width: 70px; max-width: 70px; height: auto; margin: 0 auto; opacity: 0.85; border: 0; outline: none; text-decoration: none;" 
+            />
+          </a>
+        </div>
+        Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, Karnataka, India<br />
         &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved. Confidential Staff Communications.
       </td>
     </tr>
@@ -583,12 +594,9 @@ Binary Vidya Administration Team`;
       text: plainText,
       html: htmlContent,
       headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        Importance: 'high',
         'Auto-Submitted': 'auto-generated',
+        'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
-      attachments,
     };
 
     const info = await transport.sendMail(mailOptions);
