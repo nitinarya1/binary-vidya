@@ -6,6 +6,9 @@ import { ClientProviders } from '../components/ClientProviders';
 export const metadata: Metadata = {
   title: 'Binary Vidya | Premier Learning & Authentication',
   description: 'Learn and advance your technical craft with Binary Vidya.',
+  verification: {
+    google: 'google8c2e79bff899c330',
+  },
 };
 
 export default function RootLayout({
