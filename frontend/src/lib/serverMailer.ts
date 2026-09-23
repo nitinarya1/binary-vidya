@@ -388,24 +388,54 @@ export const sendTeamCredentialsEmail = async (
   try {
     const mailClient = getTransporter();
     const displayName = data.name?.trim() || 'Team Member';
-    const portalUrl =
-      data.loginUrl ||
-      (process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '')}/sales/login`
-        : 'https://binaryvidya.vercel.app/sales/login');
+    const deptLower = (data.department || '').toLowerCase();
+    const isSales = ['csm', 'bda', 'lead generation', 'sales'].some((role) => deptLower.includes(role));
+
+    const portalBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
+    const defaultUrl = isSales ? `${portalBase}/sales/login` : `${portalBase}/login`;
+    const portalUrl = data.loginUrl || defaultUrl;
     const attachments = getLogoAttachment();
+
+    const subject = isSales
+      ? `Welcome to Binary Vidya Sales & CRM Team (${data.department})`
+      : `Your Binary Vidya Administrative Staff Credentials (${data.department})`;
+
+    const subBannerText = isSales
+      ? 'Sales & Counselling Operations &bull; Staff Credentials'
+      : 'Main Platform &bull; Staff Administrative Access';
+
+    const roleBadge = isSales
+      ? `🎉 Sales & CRM Team &bull; ${data.department}`
+      : `🛡️ Platform Administration &bull; ${data.department}`;
+
+    const welcomeHeading = isSales
+      ? `Welcome to the Sales Team, ${displayName}!`
+      : `Welcome to the Staff Team, ${displayName}!`;
+
+    const description = isSales
+      ? `You have been granted access to the Binary Vidya Sales & CRM Console as a member of the <strong>${data.department}</strong> team. You can now access your assigned student leads, track call dispositions, and manage admissions.`
+      : `You have been granted administrative access to the Binary Vidya platform in the <strong>${data.department}</strong> department. You can now access the administrative portal to manage platform curriculums, courses, certificates, and student operations.`;
+
+    const ctaButtonText = isSales
+      ? 'Access Sales & CRM Console &rarr;'
+      : 'Sign In to Staff Console &rarr;';
+
+    const tipNotice = isSales
+      ? '<strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password or by entering your registered email for instant 6-digit OTP verification.'
+      : '<strong>🔒 Security Advisory:</strong> For platform security, you will be required to verify a 4-digit code (2FA OTP) and choose a new, secure password upon your first sign in.';
 
     const plainText = `Hello ${displayName},
 
 You have been added to the Binary Vidya team as a member of the ${data.department} department.
 
-Here are your temporary administrative login credentials:
+Here are your administrative login credentials:
 - Login Portal: ${portalUrl}
 - Email / Username: ${data.email}
 - Temporary Password: ${data.temporaryPassword}
+- Assigned Role: ${data.department}
 
 SECURITY ADVISORY:
-For security purposes, you will be required to change this temporary password immediately upon your first login. You will also receive a 4-digit verification code (2FA OTP) at this email address during sign in.
+For security purposes, you will be required to change this temporary password upon your first login. You can also log in via 2FA OTP verification code sent to this email address.
 
 If you have any questions, please contact your Super Administrator.
 
@@ -418,7 +448,7 @@ Binary Vidya Administration Team`;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to Binary Vidya - Team Access</title>
+  <title>${subject}</title>
 </head>
 <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
@@ -441,7 +471,7 @@ Binary Vidya Administration Team`;
     <tr>
       <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
         <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
-          Sales &amp; Counselling Operations &bull; Staff Credentials
+          ${subBannerText}
         </div>
       </td>
     </tr>
@@ -450,15 +480,15 @@ Binary Vidya Administration Team`;
     <tr>
       <td style="padding: 34px 32px 28px;">
         <div style="display: inline-block; padding: 5px 14px; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.5px;">
-          🎉 Welcome to the Team &bull; ${data.department}
+          ${roleBadge}
         </div>
 
         <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
-          Welcome Aboard, ${displayName}!
+          ${welcomeHeading}
         </h1>
 
         <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 24px 0;">
-          You have been granted access to the Binary Vidya Sales &amp; CRM Console as a member of the <strong>${data.department}</strong> team. You can now access your leads, track student call dispositions, and manage enrollments.
+          ${description}
         </p>
 
         <!-- Credentials Card -->
@@ -486,7 +516,7 @@ Binary Vidya Administration Team`;
               </td>
             </tr>
             <tr>
-              <td style="padding: 8px 0 0 0; font-size: 14px; color: #64748b;">Assigned Role:</td>
+              <td style="padding: 8px 0 0 0; font-size: 14px; color: #64748b;">Assigned Department:</td>
               <td style="padding: 8px 0 0 0; font-size: 14px; color: #059669; font-weight: 800;">
                 ${data.department}
               </td>
@@ -499,7 +529,7 @@ Binary Vidya Administration Team`;
           <tr>
             <td align="center">
               <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,0.25);">
-                Access Sales &amp; CRM Console &rarr;
+                ${ctaButtonText}
               </a>
             </td>
           </tr>
@@ -508,7 +538,7 @@ Binary Vidya Administration Team`;
         <!-- Security Notice -->
         <div style="background-color: #fefce8; border: 1px solid #fef08a; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px;">
           <p style="margin: 0; font-size: 13px; color: #854d0e; line-height: 1.5;">
-            <strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password or by entering your registered email for instant 6-digit OTP verification.
+            ${tipNotice}
           </p>
         </div>
 
@@ -533,7 +563,7 @@ Binary Vidya Administration Team`;
       from: `"Binary Vidya Administration" <${EMAIL_USER}>`,
       to: data.email,
       replyTo: EMAIL_USER,
-      subject: `Your Binary Vidya Staff Account Credentials (${data.department})`,
+      subject,
       text: plainText,
       html: htmlContent,
       headers: {
@@ -553,5 +583,3 @@ Binary Vidya Administration Team`;
     return { success: false, error: error?.message || 'Unknown error' };
   }
 };
-
-

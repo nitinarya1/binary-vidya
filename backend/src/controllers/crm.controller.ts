@@ -768,7 +768,11 @@ export const capturePublicLead = async (req: Request, res: Response) => {
 export const getAgents = async (_req: Request, res: Response) => {
   try {
     const agents = await User.find({
-      $or: [{ isTeamMember: true }, { role: 'admin' }],
+      $or: [
+        { department: { $in: ['CSM', 'BDA', 'Lead Generation', 'Sales', 'sales'] } },
+        { salesTeam: { $in: ['CSM', 'BDA', 'Lead Generation'] } },
+      ],
+      isTeamMember: true,
     })
       .select('name email phone department salesTeam teamStatus isTeamMember role permissions createdAt')
       .lean();

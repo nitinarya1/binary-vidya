@@ -82,9 +82,23 @@ export async function GET(req: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
-    const { isRootSuperAdminEmail } = await import('../../../../lib/auth-helpers');
+    const { isRootSuperAdminEmail, isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
 
-    const formatted = teamMembers.map((m: any) => {
+    // Filter out Sales/CRM agents so they only appear in the dedicated /sales/team portal
+    const staffMembersOnly = teamMembers.filter((m: any) => {
+      const isSuper = isSuperAdminEmail(m.email);
+      if (isSuper) return true; // Super admins always visible
+
+      const deptLower = (m.department || '').toLowerCase();
+      const hasSalesTeam = Boolean(m.salesTeam);
+      const isSalesDept = ['csm', 'bda', 'lead generation', 'sales'].some((role) => deptLower.includes(role));
+      const isAgentRole = m.role === 'agent' || m.role === 'sales_admin';
+
+      // If user is part of sales/CRM, exclude from Super Admin staff list
+      return !hasSalesTeam && !isSalesDept && !isAgentRole;
+    });
+
+    const formatted = staffMembersOnly.map((m: any) => {
       const isSuper = isSuperAdminEmail(m.email);
       const isRoot = isRootSuperAdminEmail(m.email);
       const isMemberHR = (m.department || '').toLowerCase().includes('hr');
@@ -126,8 +140,8 @@ export async function GET(req: Request) {
       active: formatted.filter((m: any) => m.teamStatus === 'active').length,
       suspended: formatted.filter((m: any) => m.teamStatus === 'suspended').length,
       hrCount: formatted.filter((m: any) => (m.department || '').toLowerCase().includes('hr')).length,
-      salesCount: formatted.filter((m: any) => (m.department || '').toLowerCase().includes('sales')).length,
       contentCount: formatted.filter((m: any) => (m.department || '').toLowerCase().includes('content')).length,
+      operationsCount: formatted.filter((m: any) => (m.department || '').toLowerCase().includes('op')).length,
     };
 
     return NextResponse.json({
@@ -198,6 +212,21 @@ export async function POST(req: Request) {
       }
     }
 
+    // Reject Sales / CRM department creation from Super Admin dashboard
+    const isSalesDept = ['csm', 'bda', 'lead generation', 'sales'].some((role) =>
+      (department || '').toLowerCase().includes(role)
+    );
+    if (isSalesDept) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Sales & CRM agents (CSM, BDA, Lead Generation) cannot be added from Super Admin. Please add and manage them via the dedicated Sales Team portal at /sales/team.',
+        },
+        { status: 400 }
+      );
+    }
+
     // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -232,10 +261,7 @@ export async function POST(req: Request) {
     try {
       const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
       const portalBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
-      const isSalesTeam = ['csm', 'bda', 'lead generation', 'sales'].some((role) =>
-        memberDepartment.toLowerCase().includes(role)
-      );
-      const targetLoginUrl = isSalesTeam ? `${portalBase}/sales/login` : `${portalBase}/login`;
+      const targetLoginUrl = `${portalBase}/login`;
 
       await sendTeamCredentialsEmail({
         name: newMember.name,
@@ -245,7 +271,7 @@ export async function POST(req: Request) {
         permissions: memberPermissions,
         loginUrl: targetLoginUrl,
       });
-      console.log(`[Admin Team Route] Welcome credentials sent to ${newMember.email}`);
+      console.log(`[Admin Team Route] Staff welcome credentials sent to ${newMember.email}`);
     } catch (mailErr) {
       console.error('[Send Team Credentials Email Error]:', mailErr);
     }

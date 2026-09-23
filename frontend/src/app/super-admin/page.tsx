@@ -1078,7 +1078,7 @@ export default function SuperAdminDashboard() {
                   setTeamModalOpen(true);
                 }}
                 className={styles.quickAddTeamBtn}
-                title="Add Team Member (HR, Sales, Content, etc.)"
+                title="Add Staff Member (HR, Content, Operations, Mentors)"
               >
                 <UserPlus size={15} />
                 <span>+ Add Team</span>
@@ -1256,10 +1256,10 @@ export default function SuperAdminDashboard() {
           {canManageTeam && (
             <div className={styles.metricCard}>
               <div className={styles.metricInfo}>
-                <span className={styles.metricLabel}>Staff & Team</span>
+                <span className={styles.metricLabel}>Administrative Staff</span>
                 <span className={styles.metricValue}>{metrics.totalTeam}</span>
                 <span className={styles.metricSubtext}>
-                  {metrics.activeTeam} Active Staff • HR/Sales/Content
+                  {metrics.activeTeam} Active Staff • HR / Content / Operations
                 </span>
               </div>
               <div className={styles.metricIconWrapper} style={{ background: '#eef2ff', color: '#4f46e5' }}>
@@ -2064,6 +2064,48 @@ export default function SuperAdminDashboard() {
         {/* TAB 5: TEAM & PERMISSIONS MANAGEMENT (SUPER ADMIN STRICT GUARD) */}
         {activeTab === 'team' && canManageTeam && (
           <div>
+            {/* Sales vs Admin Separation Banner */}
+            <div style={{
+              background: '#eff6ff',
+              border: '1.5px solid #bfdbfe',
+              borderRadius: '12px',
+              padding: '12px 18px',
+              marginBottom: '18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ShieldCheck size={20} color="#2563eb" />
+                <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: '1.4' }}>
+                  <strong>Platform Staff Directory:</strong> This tab manages platform administrators and core departmental staff (HR, Content, Operations, Mentors).
+                  Sales &amp; CRM agents (CSM, BDA, Lead Generation) are managed independently via the dedicated Sales Console.
+                </div>
+              </div>
+              <a
+                href="/sales/team"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                Go to Sales Team Portal &rarr;
+              </a>
+            </div>
+
             {/* Filter & Search Toolbar */}
             <div className={styles.controlBar}>
               <div className={styles.searchBox}>
@@ -2084,7 +2126,6 @@ export default function SuperAdminDashboard() {
                 >
                   <option value="all">All Departments</option>
                   <option value="HR">HR Team</option>
-                  <option value="Sales">Sales Team</option>
                   <option value="Content">Content Team</option>
                   <option value="Operations">Operations Team</option>
                   <option value="Mentor">Instructors & Mentors</option>
@@ -2132,8 +2173,8 @@ export default function SuperAdminDashboard() {
                       <td colSpan={6}>
                         <div className={styles.emptyState}>
                           <Users size={40} color="#94a3b8" />
-                          <div className={styles.emptyStateTitle}>No team members found</div>
-                          <p>Add your first HR, Sales, Content, or Operations team member using the button above.</p>
+                          <div className={styles.emptyStateTitle}>No staff members found</div>
+                          <p>Add your first HR, Content, Operations, or Mentorship staff member using the button above.</p>
                         </div>
                       </td>
                     </tr>
@@ -4185,15 +4226,6 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
           manageTeam: true,
         });
         break;
-      case 'Sales Team':
-        setPermissions({
-          manageCourses: false,
-          manageTraining: false,
-          manageCareers: true,
-          viewAnalytics: true,
-          manageCertificates: false,
-        });
-        break;
       case 'Content Team':
         setPermissions({
           manageCourses: true,
@@ -4339,7 +4371,6 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
               <div className={styles.presetButtonGroup}>
                 {[
                   { name: 'HR Team', icon: <Briefcase size={13} /> },
-                  { name: 'Sales Team', icon: <TrendingUp size={13} /> },
                   { name: 'Content Team', icon: <BookOpen size={13} /> },
                   { name: 'Student Operations', icon: <Zap size={13} /> },
                   { name: 'Instructors & Mentors', icon: <GraduationCap size={13} /> },
@@ -4404,12 +4435,14 @@ function TeamMemberModal({ member, onClose, onSave }: TeamMemberModalProps) {
                   onChange={(e) => applyPreset(e.target.value)}
                 >
                   <option value="HR Team">HR Team</option>
-                  <option value="Sales Team">Sales Team</option>
                   <option value="Content Team">Content Team</option>
                   <option value="Student Operations">Student Operations</option>
                   <option value="Instructors & Mentors">Instructors & Mentors</option>
                   <option value="Custom Department">Custom Department</option>
                 </select>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                  Need to add Sales / CRM agents (CSM, BDA, Lead Gen)? <a href="/sales/team" target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600 }}>Use Sales Team Portal &rarr;</a>
+                </div>
               </div>
 
               <div className={styles.formGroup}>
