@@ -23,6 +23,9 @@ import {
   bulkUpdateStatus,
   getCallbacksToday,
   getLeaderboardStats,
+  updateLead,
+  deleteLead,
+  bulkDeleteLeads,
 } from '../controllers/crm.controller';
 import { crmProtect, requireSuperAdmin } from '../middleware/crm.middleware';
 
@@ -43,9 +46,13 @@ router.get('/stats/leaderboard', crmProtect, getLeaderboardStats);
 router.get('/leads/callbacks-today', crmProtect, getCallbacksToday);
 router.post('/leads/bulk-assign', crmProtect, bulkAssignLeads);
 router.patch('/leads/bulk-status', crmProtect, bulkUpdateStatus);
+router.post('/leads/bulk-delete', crmProtect, bulkDeleteLeads);
+router.delete('/leads/bulk-delete', crmProtect, bulkDeleteLeads);
 
 router.get('/leads', crmProtect, getLeads);
 router.post('/leads', crmProtect, createLead);
+router.put('/leads/:leadId', crmProtect, updateLead);
+router.delete('/leads/:leadId', crmProtect, deleteLead);
 router.patch('/leads/:leadId/status', crmProtect, updateLeadStatus);
 router.post('/leads/:leadId/disposition', crmProtect, logDisposition);
 router.post('/leads/:leadId/claim', crmProtect, claimLead);

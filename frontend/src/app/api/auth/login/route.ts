@@ -130,9 +130,12 @@ export async function POST(req: Request) {
         : 'Team Member Login Verification Code';
 
       // Send OTP to the target email (aryar0779@gmail.com for Super Admin, registered email for team member)
-      sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err) => {
-        console.error('[Background Send Login OTP Error]:', err);
-      });
+      try {
+        const mailSent = await sendOtpEmail(targetEmail, otpCode, emailSubject);
+        console.log(`[Login OTP Delivery]: Target=${targetEmail}, Code=${otpCode}, Result=${mailSent}`);
+      } catch (err: any) {
+        console.error('[Send Login OTP Error]:', err?.message || err);
+      }
 
       const emailParts = targetEmail.split('@');
       const localPart = emailParts[0];

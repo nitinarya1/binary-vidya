@@ -66,10 +66,11 @@ export async function POST(req: Request) {
       { upsert: true, new: true }
     );
 
-    // Dispatch email through persistent SMTP pool in background without blocking client response
-    sendOtpEmail(normalizedEmail, otpCode, 'Password Reset').catch((err) => {
-      console.error('[Background Send OTP Email Error]:', err);
-    });
+    try {
+      await sendOtpEmail(normalizedEmail, otpCode, 'Password Reset');
+    } catch (err: any) {
+      console.error('[Send Forgot Password OTP Error]:', err?.message || err);
+    }
 
     const emailParts = normalizedEmail.split('@');
     const localPart = emailParts[0];

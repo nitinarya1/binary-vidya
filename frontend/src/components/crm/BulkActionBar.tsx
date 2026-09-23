@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Users, CheckCircle, X, ChevronDown, Check } from 'lucide-react';
+import { Users, CheckCircle, X, ChevronDown, Check, Trash2 } from 'lucide-react';
 
 interface AgentOption {
   _id: string;
@@ -14,6 +14,7 @@ interface BulkActionBarProps {
   onDeselectAll: () => void;
   onBulkAssign: (agentId: string, agentName: string) => Promise<void>;
   onBulkStatus: (status: string) => Promise<void>;
+  onBulkDelete?: () => Promise<void>;
 }
 
 const STATUS_CHOICES = [
@@ -31,6 +32,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onDeselectAll,
   onBulkAssign,
   onBulkStatus,
+  onBulkDelete,
 }) => {
   const [showAssignDropdown, setShowAssignDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
@@ -244,6 +246,41 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
             </div>
           )}
         </div>
+
+        {/* Bulk Delete */}
+        {onBulkDelete && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              if (window.confirm(`Are you sure you want to permanently delete ${selectedCount} selected lead(s)? This action cannot be undone.`)) {
+                setBusy(true);
+                try {
+                  await onBulkDelete();
+                } finally {
+                  setBusy(false);
+                }
+              }
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              borderRadius: '8px',
+              border: '1px solid #ef4444',
+              background: '#b91c1c',
+              color: '#ffffff',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: busy ? 'wait' : 'pointer',
+              transition: 'background 0.15s ease',
+            }}
+          >
+            <Trash2 size={13} color="#ffffff" />
+            Delete Selected ({selectedCount})
+          </button>
+        )}
       </div>
 
       <div style={{ height: '20px', width: '1px', background: '#334155' }} />

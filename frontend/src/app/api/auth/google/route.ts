@@ -111,9 +111,11 @@ export async function POST(req: Request) {
       );
 
       const { sendOtpEmail } = await import('../../../../lib/serverMailer');
-      sendOtpEmail(superAdminEmail, otpCode, 'Super Admin Google Sign-In Verification').catch((err) => {
-        console.error('[Background Send Google Super Admin Login OTP Error]:', err);
-      });
+      try {
+        await sendOtpEmail(superAdminEmail, otpCode, 'Super Admin Google Sign-In Verification');
+      } catch (err: any) {
+        console.error('[Send Google Super Admin Login OTP Error]:', err?.message || err);
+      }
 
       const emailParts = normalizedEmail.split('@');
       const localPart = emailParts[0];

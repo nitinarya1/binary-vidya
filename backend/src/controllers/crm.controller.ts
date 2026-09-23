@@ -64,9 +64,11 @@ export const crmSendOtp = async (req: Request, res: Response) => {
     );
 
     // 5. Send OTP to mail
-    sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In').catch((err) => {
-      console.error('[Background Send Agent Login OTP Error]:', err);
-    });
+    try {
+      await sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In');
+    } catch (err: any) {
+      console.error('[Send Agent Login OTP Error]:', err?.message || err);
+    }
 
     console.log(`[CRM OTP]: Generated code ${otpCode} for agent ${normalizedEmail}`);
 
@@ -441,13 +443,25 @@ export const createLead = async (req: Request, res: Response) => {
       }
     }
 
+    const {
+      collegeName,
+      year,
+      branch,
+      status = 'new',
+      temperature = 'warm',
+    } = req.body;
+
     const lead = await Lead.create({
       name: name.trim(),
       phone: phone.trim(),
       email: email?.trim() || '',
       course: course?.trim() || '',
+      collegeName: collegeName?.trim() || '',
+      year: year?.trim() || '',
+      branch: branch?.trim() || '',
       source: 'manual',
-      status: 'new',
+      status: status || 'new',
+      temperature: temperature || 'warm',
       statusUpdatedBy: crmUser.id,
       statusUpdatedByName: crmUser.name,
       statusUpdatedAt: new Date(),
@@ -462,6 +476,110 @@ export const createLead = async (req: Request, res: Response) => {
       return res.status(409).json({ success: false, message: 'A lead with this phone already exists.' });
     }
     return res.status(500).json({ success: false, message: 'Failed to create lead.' });
+  }
+};
+
+/**
+ * PUT /api/crm/leads/:leadId
+ * Update lead details (CRM Agent & Super Admin)
+ */
+export const updateLead = async (req: Request, res: Response) => {
+  try {
+    const crmUser = (req as any).crmUser;
+    const { leadId } = req.params;
+    const {
+      name,
+      phone,
+      email,
+      course,
+      collegeName,
+      year,
+      branch,
+      status,
+      temperature,
+      assignedTo,
+    } = req.body;
+
+    const lead = await Lead.findById(leadId);
+    if (!lead) {
+      return res.status(404).json({ success: false, message: 'Lead not found.' });
+    }
+
+    if (name !== undefined) lead.name = name.trim();
+    if (phone !== undefined) lead.phone = phone.trim();
+    if (email !== undefined) lead.email = email.trim();
+    if (course !== undefined) lead.course = course.trim();
+    if (collegeName !== undefined) lead.collegeName = collegeName.trim();
+    if (year !== undefined) lead.year = year.trim();
+    if (branch !== undefined) lead.branch = branch.trim();
+    if (temperature !== undefined) lead.temperature = temperature;
+
+    if (status && status !== lead.status) {
+      lead.status = status;
+      lead.statusUpdatedBy = crmUser.id;
+      lead.statusUpdatedByName = crmUser.name;
+      lead.statusUpdatedAt = new Date();
+    }
+
+    if (assignedTo !== undefined) {
+      if (assignedTo === null || assignedTo === '') {
+        lead.assignedTo = undefined;
+        lead.assignedAgentName = undefined;
+      } else {
+        const agent: any = await User.findById(assignedTo).lean();
+        if (agent) {
+          lead.assignedTo = agent._id.toString();
+          lead.assignedAgentName = agent.name;
+        }
+      }
+    }
+
+    await lead.save();
+    return res.json({ success: true, lead, message: 'Lead updated successfully.' });
+  } catch (err: any) {
+    console.error('[Update Lead Error]:', err);
+    return res.status(500).json({ success: false, message: 'Failed to update lead.' });
+  }
+};
+
+/**
+ * DELETE /api/crm/leads/:leadId
+ * Single lead delete (CRM Agent & Super Admin)
+ */
+export const deleteLead = async (req: Request, res: Response) => {
+  try {
+    const { leadId } = req.params;
+    const deleted = await Lead.findByIdAndDelete(leadId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Lead not found.' });
+    }
+    return res.json({ success: true, message: 'Lead deleted successfully.' });
+  } catch (err: any) {
+    console.error('[Delete Lead Error]:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete lead.' });
+  }
+};
+
+/**
+ * POST /api/crm/leads/bulk-delete
+ * Bulk delete selected leads (CRM Agent & Super Admin)
+ */
+export const bulkDeleteLeads = async (req: Request, res: Response) => {
+  try {
+    const { leadIds } = req.body;
+    if (!Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please provide an array of lead IDs to delete.' });
+    }
+
+    const result = await Lead.deleteMany({ _id: { $in: leadIds } });
+    return res.json({
+      success: true,
+      message: `${result.deletedCount} lead(s) deleted successfully.`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err: any) {
+    console.error('[Bulk Delete Leads Error]:', err);
+    return res.status(500).json({ success: false, message: 'Failed to delete selected leads.' });
   }
 };
 

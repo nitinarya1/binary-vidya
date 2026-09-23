@@ -12,6 +12,7 @@ import { FollowUpSchedulerModal } from '../../../components/crm/FollowUpSchedule
 import { ClaimOrReassignCell } from '../../../components/crm/ClaimOrReassignCell';
 import { BulkActionBar } from '../../../components/crm/BulkActionBar';
 import { LeadActivityDrawer } from '../../../components/crm/LeadActivityDrawer';
+import { LeadFormModal, LeadFormData } from '../../../components/crm/LeadFormModal';
 import {
   Search,
   Phone,
@@ -32,6 +33,9 @@ import {
   Eye,
   CheckSquare,
   Square,
+  UserPlus,
+  Edit3,
+  Trash2,
 } from 'lucide-react';
 
 type LeadStatus = 'new' | 'contacted' | 'interested' | 'follow_up' | 'converted' | 'not_interested' | 'no_answer' | 'invalid';
@@ -437,6 +441,106 @@ export default function LeadsPage() {
     }
   };
 
+  // Lead Create / Edit State & Handlers
+  const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+
+  const handleOpenCreateModal = () => {
+    setEditingLead(null);
+    setLeadModalOpen(true);
+  };
+
+  const handleOpenEditModal = (lead: Lead, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingLead(lead);
+    setLeadModalOpen(true);
+  };
+
+  const handleSaveLead = async (formData: LeadFormData): Promise<boolean> => {
+    try {
+      if (formData._id) {
+        // Edit mode
+        const res = await fetch(`/api/crm/leads/${formData._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadLeads();
+          return true;
+        } else {
+          alert(data.message || 'Failed to update lead');
+          return false;
+        }
+      } else {
+        // Create mode
+        const res = await fetch('/api/crm/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadLeads();
+          return true;
+        } else {
+          alert(data.message || 'Failed to create lead');
+          return false;
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || 'An error occurred while saving lead');
+      return false;
+    }
+  };
+
+  const handleDeleteLead = async (leadId: string, leadName: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete lead "${leadName}"? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/crm/leads/${leadId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setLeads((prev) => prev.filter((l) => l._id !== leadId));
+        setSelectedIds((prev) => prev.filter((id) => id !== leadId));
+        setTotal((prev) => Math.max(0, prev - 1));
+      } else {
+        alert(data.message || 'Failed to delete lead');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error deleting lead');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const res = await fetch('/api/crm/leads/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ leadIds: selectedIds }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedIds([]);
+        loadLeads();
+        loadCallbacksCount();
+      } else {
+        alert(data.message || 'Failed to delete selected leads');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Error deleting selected leads');
+    }
+  };
+
   const handleWhatsAppClick = (lead: Lead, e: React.MouseEvent) => {
     e.stopPropagation();
     const cleanPhone = lead.phone.replace(/\D/g, '');
@@ -552,6 +656,27 @@ export default function LeadsPage() {
             >
               <RefreshCw size={14} style={{ animation: fetching ? 'spin 1s linear infinite' : 'none' }} />
               Refresh
+            </button>
+
+            <button
+              onClick={handleOpenCreateModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '9px 18px',
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                border: 'none',
+                borderRadius: '10px',
+                color: '#ffffff',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              }}
+            >
+              <UserPlus size={15} />
+              + Add Lead
             </button>
           </div>
         </div>
@@ -1051,7 +1176,7 @@ export default function LeadsPage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '40px minmax(210px, 1.2fr) minmax(160px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) 110px 110px',
+              gridTemplateColumns: '40px minmax(210px, 1.2fr) minmax(160px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) 110px 170px',
               padding: '14px 18px',
               background: '#f8fafc',
               borderBottom: '1px solid #e2e8f0',
@@ -1152,7 +1277,7 @@ export default function LeadsPage() {
                   onClick={() => setDrawerLeadId(lead._id)}
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: '40px minmax(210px, 1.2fr) minmax(160px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) 110px 110px',
+                    gridTemplateColumns: '40px minmax(210px, 1.2fr) minmax(160px, 1fr) minmax(150px, 1fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) 110px 170px',
                     padding: '14px 18px',
                     borderBottom: idx < leads.length - 1 ? '1px solid #f1f5f9' : 'none',
                     alignItems: 'center',
@@ -1401,6 +1526,46 @@ export default function LeadsPage() {
                     >
                       <LinkIcon size={13} color="#475569" />
                     </button>
+
+                    {/* Edit Lead */}
+                    <button
+                      title="Edit Lead"
+                      onClick={(e) => handleOpenEditModal(lead, e)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '7px',
+                        border: '1px solid #cbd5e1',
+                        background: '#ffffff',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Edit3 size={13} color="#2563eb" />
+                    </button>
+
+                    {/* Delete Lead */}
+                    <button
+                      title="Delete Lead"
+                      onClick={(e) => handleDeleteLead(lead._id, lead.name, e)}
+                      style={{
+                        width: '30px',
+                        height: '30px',
+                        borderRadius: '7px',
+                        border: '1px solid #fecaca',
+                        background: '#fef2f2',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Trash2 size={13} color="#dc2626" />
+                    </button>
                   </div>
                 </div>
               );
@@ -1416,6 +1581,7 @@ export default function LeadsPage() {
         onDeselectAll={() => setSelectedIds([])}
         onBulkAssign={handleBulkAssign}
         onBulkStatus={handleBulkStatus}
+        onBulkDelete={handleBulkDelete}
       />
 
       {/* Activity Timeline Slide-over Drawer */}
@@ -1459,6 +1625,19 @@ export default function LeadsPage() {
           onClose={() => setSendLinkLead(null)}
         />
       )}
+
+      {/* Lead Create / Edit Modal */}
+      <LeadFormModal
+        isOpen={leadModalOpen}
+        onClose={() => {
+          setLeadModalOpen(false);
+          setEditingLead(null);
+        }}
+        onSave={handleSaveLead}
+        lead={editingLead}
+        availableAgents={availableAgents}
+        isSuperAdmin={isSuperAdmin}
+      />
     </div>
   );
 }
