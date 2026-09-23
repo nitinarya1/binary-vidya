@@ -63,20 +63,26 @@ ${fromAddress}`;
       <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
         <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
           
-          <!-- Modern Royal Blue Header -->
+          <!-- Clean White Logo Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 26px 30px; text-align: center; color: #ffffff;">
-              <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-                <tr>
-                  <td style="background: #ffffff; width: 38px; height: 38px; border-radius: 10px; text-align: center; vertical-align: middle; font-weight: 900; font-size: 18px; color: #2563eb;">
-                    BV
-                  </td>
-                  <td style="padding-left: 12px; text-align: left;">
-                    <div style="font-size: 20px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">Binary Vidya</div>
-                    <div style="font-size: 11px; font-weight: 600; color: #dbeafe; letter-spacing: 0.8px; text-transform: uppercase;">Official Security Verification</div>
-                  </td>
-                </tr>
-              </table>
+            <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
+              <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
+                <img 
+                  src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+                  alt="Binary Vidya" 
+                  width="195" 
+                  style="display: block; width: 195px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
+                />
+              </a>
+            </td>
+          </tr>
+
+          <!-- Royal Blue Accent Sub-Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
+              <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
+                🔒 Official Security Verification
+              </div>
             </td>
           </tr>
 
@@ -147,6 +153,7 @@ ${fromAddress}`;
     `;
 
     const transport = getTransporter();
+    const attachments = getLogoAttachment();
     const subject = `${otp} is your Binary Vidya verification code`;
 
     const info = await transport.sendMail({
@@ -163,6 +170,7 @@ ${fromAddress}`;
         'Auto-Submitted': 'auto-generated',
         'X-Auto-Response-Suppress': 'OOF, AutoReply',
       },
+      attachments,
     });
 
     console.log(`[Nodemailer] Inbox-optimized OTP email sent to ${to}. MessageId: ${info.messageId}`);
@@ -255,10 +263,26 @@ You received this email because an account was created on Binary Vidya for ${use
 </head>
 <body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; -webkit-font-smoothing: antialiased; line-height: 1.6;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);">
-    <!-- Clean Logo Header -->
+    <!-- Clean White Logo Header -->
     <tr>
-      <td align="center" style="padding: 32px 32px 20px; border-bottom: 1px solid #f1f5f9; background-color: #ffffff;">
-        <img src="cid:binaryvidyalogo" alt="Binary Vidya" width="200" style="display: block; width: 200px; max-width: 100%; height: auto; margin: 0 auto;" />
+      <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
+        <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
+          <img 
+            src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+            alt="Binary Vidya" 
+            width="200" 
+            style="display: block; width: 200px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
+          />
+        </a>
+      </td>
+    </tr>
+
+    <!-- Royal Blue Accent Sub-Header -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
+          Student Learning &amp; Tech Community Portal
+        </div>
       </td>
     </tr>
 
@@ -429,20 +453,26 @@ Binary Vidya Administration Team`;
 <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
   <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
     
-    <!-- Royal Blue Gradient Header -->
+    <!-- Clean White Logo Header -->
     <tr>
-      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 28px 32px; text-align: center; color: #ffffff;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
-          <tr>
-            <td style="background: #ffffff; width: 42px; height: 42px; border-radius: 10px; text-align: center; vertical-align: middle; font-weight: 900; font-size: 20px; color: #2563eb;">
-              BV
-            </td>
-            <td style="padding-left: 14px; text-align: left;">
-              <div style="font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">Binary Vidya</div>
-              <div style="font-size: 11px; font-weight: 600; color: #dbeafe; letter-spacing: 0.8px; text-transform: uppercase;">Sales &amp; Counselling Operations</div>
-            </td>
-          </tr>
-        </table>
+      <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
+        <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
+          <img 
+            src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+            alt="Binary Vidya" 
+            width="200" 
+            style="display: block; width: 200px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
+          />
+        </a>
+      </td>
+    </tr>
+
+    <!-- Royal Blue Accent Sub-Header -->
+    <tr>
+      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 11px 24px; text-align: center;">
+        <div style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 1.2px; text-transform: uppercase;">
+          Sales &amp; Counselling Operations &bull; Staff Credentials
+        </div>
       </td>
     </tr>
 
