@@ -209,7 +209,7 @@ export const sendWelcomeEmail = async (
     const transport = getTransporter();
     const fromAddress = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
     const displayName = user.name?.trim() || 'Learner';
-    const portalUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const portalUrl = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
     const coursesUrl = `${portalUrl}/courses`;
     const attachments = getLogoAttachment();
 

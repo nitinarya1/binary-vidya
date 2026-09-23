@@ -192,7 +192,7 @@ export const sendWelcomeEmail = async (user: WelcomeUserData): Promise<{ success
   try {
     const mailClient = getTransporter();
     const displayName = user.name?.trim() || 'Learner';
-    const portalUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const portalUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app';
     const coursesUrl = `${portalUrl}/courses`;
     const attachments = getLogoAttachment();
 
@@ -391,8 +391,8 @@ export const sendTeamCredentialsEmail = async (
     const portalUrl =
       data.loginUrl ||
       (process.env.NEXT_PUBLIC_APP_URL
-        ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
-        : 'http://localhost:3000/login');
+        ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, '')}/sales/login`
+        : 'https://binaryvidya.vercel.app/sales/login');
     const attachments = getLogoAttachment();
 
     const plainText = `Hello ${displayName},
