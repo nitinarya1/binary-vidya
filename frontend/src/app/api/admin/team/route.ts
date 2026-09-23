@@ -231,20 +231,23 @@ export async function POST(req: Request) {
 
     try {
       const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
-      sendTeamCredentialsEmail({
+      const portalBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
+      const isSalesTeam = ['csm', 'bda', 'lead generation', 'sales'].some((role) =>
+        memberDepartment.toLowerCase().includes(role)
+      );
+      const targetLoginUrl = isSalesTeam ? `${portalBase}/sales/login` : `${portalBase}/login`;
+
+      await sendTeamCredentialsEmail({
         name: newMember.name,
         email: newMember.email,
         temporaryPassword: password,
         department: memberDepartment,
         permissions: memberPermissions,
-        loginUrl: process.env.NEXT_PUBLIC_APP_URL
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/login`
-          : 'http://localhost:3000/login',
-      }).catch((mailErr) => {
-        console.error('[Background Send Team Credentials Email Error]:', mailErr);
+        loginUrl: targetLoginUrl,
       });
-    } catch (mailImportErr) {
-      console.error('[Error importing serverMailer for credentials email]:', mailImportErr);
+      console.log(`[Admin Team Route] Welcome credentials sent to ${newMember.email}`);
+    } catch (mailErr) {
+      console.error('[Send Team Credentials Email Error]:', mailErr);
     }
 
     return NextResponse.json(

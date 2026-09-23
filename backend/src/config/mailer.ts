@@ -34,80 +34,110 @@ export const getTransporter = () => {
 export const sendOtpEmail = async (to: string, otp: string, purpose: string = 'Password Reset'): Promise<boolean> => {
   try {
     const fromAddress = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
+    const portalUrl = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
+    const directVerifyUrl = `${portalUrl}/sales/login?email=${encodeURIComponent(to)}&otp=${otp}`;
 
-    // 1. Plain Text Version (Essential for spam filter compliance)
+    // 1. Plain Text Version
     const textContent = `Your Binary Vidya verification code is: ${otp}
 
 This code was requested for: ${purpose}.
 It will expire in 10 minutes.
 
+Direct Login Link: ${directVerifyUrl}
+
 If you did not make this request, you can safely ignore this message. Do not share this code with anyone.
 
 Best regards,
-Binary Vidya Team
+Binary Vidya Security Team
 ${fromAddress}`;
 
-    // 2. High-Deliverability, Clean Light HTML Template
+    // 2. Modern White & Royal Blue Deliverability-Optimized HTML Template
     const htmlContent = `
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml">
+    <!DOCTYPE html>
+    <html>
       <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>${otp} is your Binary Vidya verification code</title>
       </head>
-      <body style="margin: 0; padding: 20px 0; background-color: #f4f6f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px auto; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-          <!-- Header -->
+      <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
+          
+          <!-- Modern Royal Blue Header -->
           <tr>
-            <td style="padding: 28px 32px 20px; text-align: left; border-bottom: 1px solid #f1f5f9;">
-              <table border="0" cellpadding="0" cellspacing="0">
+            <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 26px 30px; text-align: center; color: #ffffff;">
+              <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
                 <tr>
-                  <td style="background-color: #2563eb; width: 36px; height: 36px; border-radius: 8px; text-align: center; vertical-align: middle; color: #ffffff; font-weight: bold; font-size: 16px;">
+                  <td style="background: #ffffff; width: 38px; height: 38px; border-radius: 10px; text-align: center; vertical-align: middle; font-weight: 900; font-size: 18px; color: #2563eb;">
                     BV
                   </td>
-                  <td style="padding-left: 12px; font-size: 20px; font-weight: 700; color: #1e3a8a;">
-                    Binary Vidya
+                  <td style="padding-left: 12px; text-align: left;">
+                    <div style="font-size: 20px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">Binary Vidya</div>
+                    <div style="font-size: 11px; font-weight: 600; color: #dbeafe; letter-spacing: 0.8px; text-transform: uppercase;">Official Security Verification</div>
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Body -->
+          <!-- Main Body -->
           <tr>
-            <td style="padding: 32px 32px 24px;">
-              <h1 style="font-size: 20px; font-weight: 700; color: #0f172a; margin: 0 0 14px 0;">
-                Verification Code
+            <td style="padding: 34px 30px 28px; text-align: center;">
+              <div style="display: inline-block; padding: 4px 14px; background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 700; margin-bottom: 16px;">
+                🔒 One-Time Passcode
+              </div>
+              
+              <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 10px 0;">
+                Authorization Code
               </h1>
+              
               <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 24px 0;">
-                We received a request to verify your email for <strong>${purpose}</strong>. Please enter the following code to continue:
+                Use the verification code below to authorize your sign-in for <strong>${purpose}</strong>:
               </p>
 
-              <!-- OTP Block with anti-spam clean styling -->
-              <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 20px 0 24px;">
+              <!-- Copyable OTP Box with White & Blue Theme -->
+              <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 20px 0;">
                 <tr>
-                  <td align="center" style="background-color: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 18px 24px;">
-                    <div style="font-family: 'Courier New', Courier, monospace, monospace; font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #1d4ed8; text-align: center;">
+                  <td align="center" style="background-color: #f8fbff; border: 2px dashed #2563eb; border-radius: 14px; padding: 22px 20px;">
+                    
+                    <!-- OTP Digits with user-select -->
+                    <div style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #1e40af; text-align: center; user-select: all; -webkit-user-select: all; padding-left: 10px;">
                       ${otp}
                     </div>
-                    <div style="font-size: 12px; color: #64748b; margin-top: 8px; text-align: center;">
-                      Valid for <strong>10 minutes</strong>
+
+                    <!-- Copy Hint Button/Badge -->
+                    <div style="margin-top: 14px; display: inline-block; background-color: #ffffff; border: 1px solid #93c5fd; padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #2563eb; box-shadow: 0 2px 4px rgba(37,99,235,0.06);">
+                      📋 Double-click code to copy
+                    </div>
+
+                    <div style="font-size: 12px; color: #64748b; margin-top: 10px;">
+                      ⏱️ Expires in <strong>10 minutes</strong>
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0 0 8px 0;">
-                If you did not initiate this request, you can safely ignore this email. Someone may have entered your email address by mistake.
+              <!-- 1-Click Verify Direct Button -->
+              <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
+                <tr>
+                  <td align="center" style="background-color: #2563eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+                    <a href="${directVerifyUrl}" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 10px;">
+                      Verify &amp; Enter Console &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
+                If you did not initiate this request, you can safely disregard this email. Never share your authorization code with anyone.
               </p>
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Clean Blue/White Footer -->
           <tr>
-            <td style="padding: 20px 32px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.5;">
-              This is an automated security notification sent by Binary Vidya Support.<br/>
+            <td style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
+              Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, India<br />
               &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
             </td>
           </tr>
@@ -117,12 +147,10 @@ ${fromAddress}`;
     `;
 
     const transport = getTransporter();
-
-    // Natural transactional subject line without spam trigger punctuation
     const subject = `${otp} is your Binary Vidya verification code`;
 
     const info = await transport.sendMail({
-      from: `"Binary Vidya" <${fromAddress}>`,
+      from: `"Binary Vidya Security" <${fromAddress}>`,
       to,
       replyTo: fromAddress,
       subject,
@@ -368,8 +396,8 @@ export const sendTeamCredentialsEmail = async (
     const portalUrl =
       data.loginUrl ||
       (process.env.FRONTEND_URL
-        ? `${process.env.FRONTEND_URL}/login`
-        : 'http://localhost:3000/login');
+        ? `${process.env.FRONTEND_URL}/sales/login`
+        : 'https://binaryvidya.vercel.app/sales/login');
     const attachments = getLogoAttachment();
 
     const plainText = `Hello ${displayName},
@@ -380,9 +408,10 @@ Here are your temporary administrative login credentials:
 - Login Portal: ${portalUrl}
 - Email / Username: ${data.email}
 - Temporary Password: ${data.temporaryPassword}
+- Assigned Role: ${data.department}
 
 SECURITY ADVISORY:
-For security purposes, you will be required to change this temporary password immediately upon your first login. You will also receive a 4-digit verification code (2FA OTP) at this email address during sign in.
+For security purposes, you will be required to change this temporary password immediately upon your first login. You can also log in via instant 6-digit verification code (2FA OTP) sent to this email address.
 
 If you have any questions, please contact your Super Administrator.
 
@@ -394,78 +423,105 @@ Binary Vidya Administration Team`;
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Your Binary Vidya Team Access Credentials</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Binary Vidya - Team Access</title>
 </head>
-<body style="margin: 0; padding: 24px 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);">
+<body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
+  <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
+    
+    <!-- Royal Blue Gradient Header -->
     <tr>
-      <td align="center" style="padding: 28px 24px 20px; border-bottom: 1px solid #f1f5f9; background: #ffffff;">
-        <img src="cid:binaryvidyalogo" alt="Binary Vidya" width="190" style="display: block; max-width: 100%; height: auto;" />
+      <td style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); padding: 28px 32px; text-align: center; color: #ffffff;">
+        <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+          <tr>
+            <td style="background: #ffffff; width: 42px; height: 42px; border-radius: 10px; text-align: center; vertical-align: middle; font-weight: 900; font-size: 20px; color: #2563eb;">
+              BV
+            </td>
+            <td style="padding-left: 14px; text-align: left;">
+              <div style="font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff; line-height: 1.2;">Binary Vidya</div>
+              <div style="font-size: 11px; font-weight: 600; color: #dbeafe; letter-spacing: 0.8px; text-transform: uppercase;">Sales &amp; Counselling Operations</div>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
+
+    <!-- Main Content -->
     <tr>
-      <td style="padding: 32px 32px 24px;">
-        <div style="display: inline-block; padding: 4px 12px; background-color: #dbeafe; color: #1e40af; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-bottom: 16px;">
-          Staff Account Credentials
+      <td style="padding: 34px 32px 28px;">
+        <div style="display: inline-block; padding: 5px 14px; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; border-radius: 99px; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.5px;">
+          🎉 Welcome to the Team &bull; ${data.department}
         </div>
-        <h1 style="font-size: 22px; font-weight: 700; color: #0f172a; margin: 0 0 12px 0;">
-          Welcome to the Team, ${displayName}!
+
+        <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0 0 12px 0; line-height: 1.3;">
+          Welcome Aboard, ${displayName}!
         </h1>
-        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 20px 0;">
-          You have been granted administrative access to the Binary Vidya platform in the <strong>${data.department}</strong> department.
+
+        <p style="font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 24px 0;">
+          You have been granted access to the Binary Vidya Sales &amp; CRM Console as a member of the <strong>${data.department}</strong> team. You can now access your leads, track student call dispositions, and manage enrollments.
         </p>
 
-        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; margin-bottom: 24px;">
-          <div style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
-            Your Login Credentials
+        <!-- Credentials Card -->
+        <div style="background-color: #f8fbff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 22px; margin-bottom: 24px;">
+          <div style="font-size: 12px; font-weight: 800; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px;">
+            🔐 Your Login Credentials
           </div>
           <table border="0" cellpadding="0" cellspacing="0" width="100%">
             <tr>
-              <td style="padding: 6px 0; font-size: 14px; color: #64748b; width: 140px;">Login Portal:</td>
-              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">
+              <td style="padding: 8px 0; font-size: 14px; color: #64748b; width: 140px; border-bottom: 1px solid #e2e8f0;">Login Portal:</td>
+              <td style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">
                 <a href="${portalUrl}" style="color: #2563eb; text-decoration: underline;">${portalUrl}</a>
               </td>
             </tr>
             <tr>
-              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Email Address:</td>
-              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">${data.email}</td>
-            </tr>
-            <tr>
-              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Temporary Password:</td>
-              <td style="padding: 6px 0; font-size: 15px; color: #1e3a8a; font-weight: 800; font-family: monospace; letter-spacing: 1px;">
-                <span style="background: #e0e7ff; padding: 3px 8px; border-radius: 6px;">${data.temporaryPassword}</span>
+              <td style="padding: 8px 0; font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Email / Username:</td>
+              <td style="padding: 8px 0; font-size: 14px; color: #0f172a; font-weight: 700; border-bottom: 1px solid #e2e8f0;">
+                ${data.email}
               </td>
             </tr>
             <tr>
-              <td style="padding: 6px 0; font-size: 14px; color: #64748b;">Department:</td>
-              <td style="padding: 6px 0; font-size: 14px; color: #0f172a; font-weight: 600;">${data.department}</td>
+              <td style="padding: 8px 0; font-size: 14px; color: #64748b; border-bottom: 1px solid #e2e8f0;">Temporary Password:</td>
+              <td style="padding: 8px 0; font-size: 15px; color: #1e40af; font-weight: 800; font-family: monospace; border-bottom: 1px solid #e2e8f0;">
+                <span style="background: #e0e7ff; padding: 4px 10px; border-radius: 6px; letter-spacing: 1px; border: 1px solid #c7d2fe;">${data.temporaryPassword}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0 0 0; font-size: 14px; color: #64748b;">Assigned Role:</td>
+              <td style="padding: 8px 0 0 0; font-size: 14px; color: #059669; font-weight: 800;">
+                ${data.department}
+              </td>
             </tr>
           </table>
         </div>
 
-        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
-          <p style="margin: 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
-            <strong>Mandatory Password Change:</strong> When you log in for the first time, you will verify a 4-digit code sent to this email and will be required to choose a new, secure password before accessing your dashboard.
-          </p>
-        </div>
-
+        <!-- 1-Click Login CTA Button -->
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
           <tr>
             <td align="center">
-              <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; font-size: 15px; font-weight: 600; text-decoration: none;">
-                Sign In to Admin Console &rarr;
+              <a href="${portalUrl}" target="_blank" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 14px rgba(37,99,235,0.25);">
+                Access Sales &amp; CRM Console &rarr;
               </a>
             </td>
           </tr>
         </table>
 
+        <!-- Security Notice -->
+        <div style="background-color: #fefce8; border: 1px solid #fef08a; padding: 14px 16px; border-radius: 10px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 13px; color: #854d0e; line-height: 1.5;">
+            <strong>💡 Quick Tip:</strong> You can sign in using your Temporary Password or by entering your registered email for instant 6-digit OTP verification.
+          </p>
+        </div>
+
         <p style="font-size: 13px; line-height: 1.5; color: #64748b; margin: 0;">
-          If you did not expect this invitation, please notify your administrator or reply to this message immediately.
+          If you have any questions or need access assistance, please reach out to your Super Administrator at <a href="mailto:aryar0779@gmail.com" style="color: #2563eb; text-decoration: underline;">aryar0779@gmail.com</a>.
         </p>
       </td>
     </tr>
+
+    <!-- Footer -->
     <tr>
-      <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center;">
+      <td style="background-color: #f8fafc; padding: 18px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
+        Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, India<br />
         &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved. Confidential Staff Communications.
       </td>
     </tr>

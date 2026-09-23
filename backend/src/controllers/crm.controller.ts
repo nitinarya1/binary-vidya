@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Lead } from '../models/Lead';
 import { User } from '../models/User';
 import { Otp } from '../models/Otp';
-import { sendOtpEmail } from '../config/mailer';
+import { sendOtpEmail, sendTeamCredentialsEmail } from '../config/mailer';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { Coupon } from '../models/Coupon';
@@ -801,15 +801,32 @@ export const addAgent = async (req: Request, res: Response) => {
     const existing = await User.findOne({ email: email.toLowerCase().trim() });
     if (existing) {
       // Promote existing user to team member
-      await User.findByIdAndUpdate(existing._id, {
-        $set: {
-          isTeamMember: true,
+      const updateData: any = {
+        isTeamMember: true,
+        department: chosenTeam,
+        salesTeam: chosenTeam,
+        teamStatus: 'active',
+      };
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+      await User.findByIdAndUpdate(existing._id, { $set: updateData });
+
+      try {
+        const portalUrl = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
+        await sendTeamCredentialsEmail({
+          name: existing.name || name.trim(),
+          email: existing.email,
+          temporaryPassword: password,
           department: chosenTeam,
-          salesTeam: chosenTeam,
-          teamStatus: 'active',
-        },
-      });
-      return res.json({ success: true, message: `${existing.name} assigned to ${chosenTeam} sales team.` });
+          loginUrl: `${portalUrl}/sales/login`,
+        });
+        console.log(`[Team Welcome Email Sent] To: ${existing.email} (${chosenTeam})`);
+      } catch (mailErr) {
+        console.error('[Send Team Welcome Email Error]:', mailErr);
+      }
+
+      return res.json({ success: true, message: `${existing.name} assigned to ${chosenTeam} sales team. Login credentials sent to email!` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -826,6 +843,20 @@ export const addAgent = async (req: Request, res: Response) => {
       salesTeam: chosenTeam,
       teamStatus: 'active',
     });
+
+    try {
+      const portalUrl = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
+      await sendTeamCredentialsEmail({
+        name: agent.name,
+        email: agent.email,
+        temporaryPassword: password,
+        department: chosenTeam,
+        loginUrl: `${portalUrl}/sales/login`,
+      });
+      console.log(`[Team Welcome Email Sent] To: ${agent.email} (${chosenTeam})`);
+    } catch (mailErr) {
+      console.error('[Send Team Welcome Email Error]:', mailErr);
+    }
 
     return res.status(201).json({
       success: true,
