@@ -65,8 +65,6 @@ export const sendOtpEmail = async (
   try {
     const mailClient = getTransporter();
 
-    const portalUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
-    const directVerifyUrl = `${portalUrl}/sales/login?email=${encodeURIComponent(recipientEmail)}&otp=${otpCode}`;
     const attachments = getLogoAttachment();
 
     const mailOptions = {
@@ -80,7 +78,7 @@ export const sendOtpEmail = async (
         'Auto-Submitted': 'auto-generated',
       },
       attachments,
-      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nDirect verification link: ${directVerifyUrl}\n\nIf you did not request this, please ignore this email.`,
+      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nEnter this code on your verification screen to proceed.\n\nIf you did not request this, please ignore this email. Do not share this code with anyone.\n\nBinary Vidya Security Team`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -90,19 +88,17 @@ export const sendOtpEmail = async (
           <title>${otpCode} is your Binary Vidya verification code</title>
         </head>
         <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
-          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
             
-            <!-- Clean White Logo Header -->
+            <!-- Clean White Logo Header (No Links) -->
             <tr>
               <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
-                <a href="${portalUrl}" target="_blank" style="display: inline-block; text-decoration: none;">
-                  <img 
-                    src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
-                    alt="Binary Vidya" 
-                    width="195" 
-                    style="display: block; width: 195px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
-                  />
-                </a>
+                <img 
+                  src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
+                  alt="Binary Vidya" 
+                  width="195" 
+                  style="display: block; width: 195px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
+                />
               </td>
             </tr>
 
@@ -130,38 +126,31 @@ export const sendOtpEmail = async (
                   Use the verification code below to authorize your sign-in for <strong>${purpose}</strong>:
                 </p>
 
-                <!-- Copyable OTP Box with White & Blue Theme -->
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 20px 0;">
+                <!-- Copyable OTP Box with White & Blue Theme (Zero Links) -->
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 0 0 22px 0;">
                   <tr>
-                    <td align="center" style="background-color: #f8fbff; border: 2px dashed #2563eb; border-radius: 14px; padding: 22px 20px;">
+                    <td align="center" style="background-color: #f8fbff; border: 2px dashed #2563eb; border-radius: 14px; padding: 24px 20px;">
                       
-                      <!-- OTP Digits -->
-                      <div style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #1e40af; text-align: center; user-select: all; -webkit-user-select: all; padding-left: 10px;">
+                      <!-- OTP Digits with user-select -->
+                      <div style="font-family: 'SF Mono', Consolas, 'Courier New', monospace; font-size: 40px; font-weight: 900; letter-spacing: 10px; color: #1e40af; text-align: center; user-select: all; -webkit-user-select: all; padding-left: 10px;">
                         ${otpCode}
                       </div>
 
                       <!-- Copy Hint Button/Badge -->
-                      <div style="margin-top: 14px; display: inline-block; background-color: #ffffff; border: 1px solid #93c5fd; padding: 5px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #2563eb; box-shadow: 0 2px 4px rgba(37,99,235,0.06);">
+                      <div style="margin-top: 14px; display: inline-block; background-color: #ffffff; border: 1px solid #93c5fd; padding: 6px 16px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #2563eb; box-shadow: 0 2px 4px rgba(37,99,235,0.06);">
                         📋 Double-click code to copy
                       </div>
 
                       <div style="font-size: 12px; color: #64748b; margin-top: 10px;">
-                        ⏱️ Expires in <strong>10 minutes</strong>
+                        ⏱️ Valid for <strong>10 minutes</strong>
                       </div>
                     </td>
                   </tr>
                 </table>
 
-                <!-- 1-Click Verify Direct Button -->
-                <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 24px auto;">
-                  <tr>
-                    <td align="center" style="background-color: #2563eb; border-radius: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
-                      <a href="${directVerifyUrl}" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none; border-radius: 10px;">
-                        Verify &amp; Enter Console &rarr;
-                      </a>
-                    </td>
-                  </tr>
-                </table>
+                <p style="font-size: 13px; line-height: 1.6; color: #334155; margin: 0 0 14px 0; font-weight: 500;">
+                  Enter this 6-digit code on the sign-in screen to proceed.
+                </p>
 
                 <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
                   If you did not initiate this request, you can safely disregard this email. Never share your authorization code with anyone.
