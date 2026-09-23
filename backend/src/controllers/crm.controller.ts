@@ -24,8 +24,8 @@ export const crmSendOtp = async (req: Request, res: Response) => {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 1. Check if email exists in database
-    const user = await User.findOne({ email: normalizedEmail });
+    // 1. Check if email exists in database (lean query)
+    const user: any = await User.findOne({ email: normalizedEmail }).select('isTeamMember role isSuperAdmin email').lean();
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -63,12 +63,10 @@ export const crmSendOtp = async (req: Request, res: Response) => {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // 5. Send OTP to mail
-    try {
-      await sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In');
-    } catch (err: any) {
+    // 5. Send OTP to mail in background (fire-and-forget for instant API response)
+    sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In').catch((err: any) => {
       console.error('[Send Agent Login OTP Error]:', err?.message || err);
-    }
+    });
 
     console.log(`[CRM OTP]: Generated code ${otpCode} for agent ${normalizedEmail}`);
 

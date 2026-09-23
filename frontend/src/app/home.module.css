@@ -16,8 +16,8 @@
   top: 0;
   z-index: 90;
   background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.05);
+  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
 }
 
@@ -29,6 +29,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  width: 100%;
 }
 
 .brandLink {
@@ -68,18 +69,21 @@
   transform: scale(1.04);
 }
 
-/* Navigation Links & Action Buttons: All Look Identical */
+/* Navigation Links & Action Buttons: Clean text-link style */
 .navLinks {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .navActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .navBtn,
@@ -97,10 +101,10 @@
   justify-content: center;
   font-size: 13.5px;
   font-weight: 600;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 7px 14px;
+  color: #1a1a1a;
+  background: transparent;
+  border: none;
+  padding: 7px 12px;
   border-radius: 8px;
   text-decoration: none;
   white-space: nowrap;
@@ -120,9 +124,8 @@
 .userPill:hover,
 .signInBtn:hover,
 .signUpBtn:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1d4ed8;
+  background: #f4f4f5;
+  color: #000000;
   transform: none;
   box-shadow: none;
 }
@@ -135,11 +138,11 @@
 }
 
 .profileNavAvatar {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   overflow: hidden;
-  background: #2563eb;
+  background: #1a1a1a;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -147,7 +150,7 @@
   font-size: 11px;
   font-weight: 800;
   flex-shrink: 0;
-  border: 1px solid #bfdbfe;
+  border: 2px solid #e5e7eb;
 }
 
 .profileNavAvatarImg {
@@ -160,17 +163,17 @@
 /* Mobile Hamburger & Drawer */
 .mobileMenuToggle {
   display: none;
-  background: #ffffff;
-  border: 1px solid #bfdbfe;
+  background: transparent;
+  border: none;
   border-radius: 8px;
   padding: 6px;
-  color: #2563eb;
+  color: #1a1a1a;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .mobileMenuToggle:hover {
-  background: #eff6ff;
+  background: #f4f4f5;
 }
 
 .mobileDrawer {
@@ -270,15 +273,16 @@
   font-size: 15px;
   font-weight: 700;
   color: #ffffff;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
   text-decoration: none;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
   transition: all 0.25s ease;
 }
 
 .heroPrimaryBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(135deg, #2a2a2a 0%, #111111 100%);
 }
 
 .heroSecondaryBtn {
@@ -289,18 +293,19 @@
   border-radius: 12px;
   font-size: 15px;
   font-weight: 700;
-  color: #1e40af;
+  color: #1a1a1a;
   background: #ffffff;
-  border: 1.5px solid #bfdbfe;
+  border: 1.5px solid #1a1a1a;
   text-decoration: none;
   transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .heroSecondaryBtn:hover {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: #1a1a1a;
+  color: #ffffff;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .heroVerifyLink {
@@ -529,49 +534,83 @@
 .partnersSection {
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
-  padding: 36px 24px;
+  padding: 36px 0 38px;
   text-align: center;
+  overflow: hidden;
 }
 
 .partnersHeading {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: #64748b;
-  margin-bottom: 24px;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 28px;
+  padding: 0 24px;
 }
 
-.partnersGrid {
-  max-width: 1100px;
-  margin: 0 auto;
+/* Fade mask on both edges */
+.marqueeOuter {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 10%,
+    #000 90%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 10%,
+    #000 90%,
+    transparent 100%
+  );
+}
+
+/* Pause on hover */
+.marqueeOuter:hover .marqueeTrack {
+  animation-play-state: paused;
+}
+
+.marqueeTrack {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 28px 36px;
+  gap: 14px;
+  width: max-content;
+  padding: 4px 0;
+  animation: marquee-ltr 28s linear infinite;
+}
+
+@keyframes marquee-ltr {
+  0%   { transform: translateX(-33.333%); }
+  100% { transform: translateX(0%); }
 }
 
 .partnerBadge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 800;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 700;
   color: #475569;
-  padding: 8px 18px;
+  padding: 9px 20px;
   border-radius: 10px;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
+  border: 1px solid #e8edf3;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  cursor: default;
 }
 
 .partnerBadge:hover {
-  color: #2563eb;
+  color: #1d4ed8;
   background: #eff6ff;
   border-color: #bfdbfe;
-  transform: translateY(-2px);
 }
+
 
 /* ==========================================================================
    TRAINING & INTERNSHIP 3-SECTION DEEP DIVE SPOTLIGHT

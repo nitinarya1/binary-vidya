@@ -118,39 +118,45 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  color: #334155;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
+  background: transparent;
+  border: none;
+  color: #1a1a1a;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: none;
 }
 
 .switchAdminBtn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
-  transform: translateY(-1px);
+  background: #f4f4f5;
+  color: #000000;
 }
 
 .userProfilePill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  background: #f1f5f9;
-  padding: 6px 12px 6px 6px;
+  gap: 8px;
+  background: transparent;
+  padding: 4px 12px 4px 6px;
   border-radius: 9999px;
-  border: 1px solid #e2e8f0;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.userProfilePill:hover {
+  background: #f4f4f5;
 }
 
 .userAvatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #1a1a1a;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -162,7 +168,7 @@
 .userName {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: #1a1a1a;
 }
 
 .logoutBtn {

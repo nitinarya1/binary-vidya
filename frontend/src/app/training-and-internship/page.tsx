@@ -244,13 +244,23 @@ export default function TrainingAndInternshipPage() {
           </Link>
 
           <div className={styles.navRight}>
-            <span className={styles.navBadge}>
-              Weekend Batches
-            </span>
+            <Link href="/courses" className={styles.navBtn}>
+              Courses
+            </Link>
+            <Link href="/training-and-internship" className={styles.navBadge}>
+              Training &amp; Internships
+            </Link>
+            <Link href="/verify-certificate" className={styles.navBtn}>
+              Verify Certificate
+            </Link>
+            <Link href="/careers" className={styles.navBtn}>
+              Careers
+            </Link>
 
             <button
               onClick={handleEnrollClick}
               className={styles.navBtn}
+              style={{ fontWeight: 700, color: '#000' }}
             >
               Enroll Now
             </button>

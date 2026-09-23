@@ -20,8 +20,8 @@ export async function POST(req: Request) {
 
     await connectDB();
 
-    // 1. Check if user exists in database
-    const user = await User.findOne({ email: normalizedEmail });
+    // 1. Check user with a lean (no hydration overhead) single query
+    const user = await User.findOne({ email: normalizedEmail }).select('isTeamMember role email').lean();
     if (!user) {
       return NextResponse.json(
         {
@@ -34,10 +34,10 @@ export async function POST(req: Request) {
 
     // 2. Check if user is an authorized CRM team member / agent
     const isSalesAgent =
-      user.isTeamMember ||
-      user.role === 'admin' ||
+      (user as any).isTeamMember ||
+      (user as any).role === 'admin' ||
       Boolean((user as any).isSuperAdmin) ||
-      user.email === 'aryar0779@gmail.com';
+      (user as any).email === 'aryar0779@gmail.com';
 
     if (!isSalesAgent) {
       return NextResponse.json(
@@ -65,9 +65,12 @@ export async function POST(req: Request) {
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 
-    // 5. Send OTP email directly via Gmail SMTP (Instant delivery, no links)
-    const emailSent = await sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In');
-    console.log(`[Fast CRM OTP]: Sent ${otpCode} to ${normalizedEmail} (result=${emailSent})`);
+    // 5. FIRE-AND-FORGET: respond instantly, email sends in background via pooled SMTP
+    sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In').catch((err: any) => {
+      console.error('[CRM OTP Email Background Error]:', err?.message || err);
+    });
+
+    console.log(`[Fast CRM OTP]: Dispatched ${otpCode} to ${normalizedEmail}`);
 
     return NextResponse.json({
       success: true,

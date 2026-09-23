@@ -13,14 +13,19 @@ function getTransporter() {
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
-      pool: false,
+      // Reuse TCP connections — avoids 1-3s handshake per email
+      pool: true,
+      maxConnections: 3,
+      maxMessages: Infinity,
+      rateDelta: 1000,
+      rateLimit: 10,
       auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS,
       },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 45000,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 30000,
     });
     if (transporter && typeof transporter.on === 'function') {
       transporter.on('error', (err: any) => {

@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
-import { User } from '../../../../lib/models';
+import { User, Otp } from '../../../../lib/models';
+import { sendOtpEmail } from '../../../../lib/serverMailer';
+import { isSuperAdminEmail, isDefaultAdminEmail } from '../../../../lib/auth-helpers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
@@ -34,15 +36,15 @@ export async function POST(req: Request) {
 
     let user;
     if (loginId.includes('@')) {
+      // Email lookup — uses index directly
       user = await User.findOne({ email: loginId.toLowerCase() }).select('+password');
     } else {
+      // Phone lookup — try formatted variants only (avoids slow $regex collection scan)
       const formattedPhone = formatPhoneNumber(loginId);
-      const cleanDigits = loginId.replace(/\D/g, '');
       user = await User.findOne({
         $or: [
           { phone: formattedPhone },
           { phone: loginId },
-          { phone: { $regex: cleanDigits.slice(-10) + '$' } },
         ],
       }).select('+password');
     }
@@ -69,29 +71,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const { isSuperAdminEmail, isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
+    // Static imports used — no dynamic import penalty
     const isSuperAdmin = isDefaultAdminEmail(user.email) || isSuperAdminEmail(user.email);
-    const rawDoc: any = (user as any)._doc || user;
+    const rawDoc: any = user;
     const isTeamMember = Boolean(
       rawDoc.isTeamMember ||
-      user.isTeamMember ||
       rawDoc.role === 'admin' ||
-      user.role === 'admin' ||
       rawDoc.department ||
-      user.department ||
       rawDoc.permissions?.manageCourses ||
-      user.permissions?.manageCourses ||
       rawDoc.permissions?.manageTraining ||
-      user.permissions?.manageTraining ||
       rawDoc.permissions?.manageCareers ||
-      user.permissions?.manageCareers ||
       rawDoc.permissions?.manageTeam ||
-      user.permissions?.manageTeam ||
-      rawDoc.permissions?.viewAnalytics ||
-      user.permissions?.viewAnalytics
+      rawDoc.permissions?.viewAnalytics
     );
 
-    // Ensure any recognized team member or default admin has role 'admin'
+    // Only save if role upgrade is actually needed (not on every admin login)
     if ((isSuperAdmin || isTeamMember) && user.role !== 'admin') {
       user.role = 'admin';
       user.isTeamMember = true;
@@ -112,7 +106,7 @@ export async function POST(req: Request) {
       const targetEmail = isSuperAdmin ? 'aryar0779@gmail.com' : normalizedEmail;
       const otpPurpose = isSuperAdmin ? 'SUPER_ADMIN_LOGIN' : 'ADMIN_LOGIN';
 
-      const { Otp } = await import('../../../../lib/models');
+      // Use static Otp import (no dynamic import penalty)
       await Otp.findOneAndUpdate(
         { email: normalizedEmail, purpose: otpPurpose },
         {
@@ -124,18 +118,14 @@ export async function POST(req: Request) {
         { upsert: true, new: true }
       );
 
-      const { sendOtpEmail } = await import('../../../../lib/serverMailer');
       const emailSubject = isSuperAdmin
         ? 'Super Admin Login Verification Code'
         : 'Team Member Login Verification Code';
 
-      // Send OTP to the target email (aryar0779@gmail.com for Super Admin, registered email for team member)
-      try {
-        const mailSent = await sendOtpEmail(targetEmail, otpCode, emailSubject);
-        console.log(`[Login OTP Delivery]: Target=${targetEmail}, Code=${otpCode}, Result=${mailSent}`);
-      } catch (err: any) {
-        console.error('[Send Login OTP Error]:', err?.message || err);
-      }
+      // FIRE-AND-FORGET: respond instantly, don't wait for SMTP
+      sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err: any) => {
+        console.error('[Send Login OTP Background Error]:', err?.message || err);
+      });
 
       const emailParts = targetEmail.split('@');
       const localPart = emailParts[0];

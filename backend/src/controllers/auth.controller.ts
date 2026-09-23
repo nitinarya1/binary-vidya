@@ -158,11 +158,15 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     } else {
       const formattedPhone = formatPhoneNumber(loginId);
       const cleanDigits = loginId.replace(/\D/g, '');
+      const last10 = cleanDigits.slice(-10);
       user = await User.findOne({
         $or: [
           { phone: formattedPhone },
           { phone: loginId },
-          { phone: { $regex: cleanDigits.slice(-10) + '$' } },
+          { phone: last10 },
+          { phone: `+91${last10}` },
+          { phone: `91${last10}` },
+          { phone: `0${last10}` },
         ],
       }).select('+password');
     }

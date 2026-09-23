@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       email: normalizedEmail,
       otp: cleanOtp,
       purpose: 'CRM_AGENT_LOGIN',
-    });
+    }).lean();
 
     if (!otpRecord) {
       return NextResponse.json(
@@ -37,8 +37,8 @@ export async function POST(req: Request) {
       );
     }
 
-    if (new Date() > otpRecord.expiresAt) {
-      await Otp.deleteOne({ _id: otpRecord._id });
+    if (new Date() > (otpRecord as any).expiresAt) {
+      await Otp.deleteOne({ _id: (otpRecord as any)._id });
       return NextResponse.json(
         { success: false, message: 'Verification code has expired. Please request a new code.' },
         { status: 400 }
@@ -46,10 +46,10 @@ export async function POST(req: Request) {
     }
 
     // Delete used OTP
-    await Otp.deleteOne({ _id: otpRecord._id });
+    await Otp.deleteOne({ _id: (otpRecord as any)._id });
 
-    // 2. Fetch User and issue session
-    const user = await User.findOne({ email: normalizedEmail });
+    // 2. Fetch User and issue session (lean query)
+    const user = await User.findOne({ email: normalizedEmail }).lean();
     if (!user) {
       return NextResponse.json({ success: false, message: 'User record not found.' }, { status: 404 });
     }

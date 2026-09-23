@@ -34,6 +34,7 @@ export async function connectDB(): Promise<typeof mongoose> {
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 30000,
         connectTimeoutMS: 10000,
+        family: 4,
       })
       .then((m) => m);
   }

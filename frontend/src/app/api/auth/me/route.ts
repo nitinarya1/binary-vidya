@@ -29,6 +29,7 @@ export async function GET(req: Request) {
     }
 
     await connectDB();
+    // .lean() returns plain JS object — much faster than full Mongoose document
     const user: any = await User.findById(decoded.id).lean();
 
     if (!user) {
@@ -50,9 +51,11 @@ export async function GET(req: Request) {
       user.permissions?.viewAnalytics
     );
 
+    // Only write to DB when role upgrade is actually needed — not on every session check
     if ((isDefaultAdminEmail(user.email) || isTeamMember) && user.role !== 'admin') {
       user.role = 'admin';
-      await User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true });
+      // Fire-and-forget the role update so we don't block the response
+      User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true }).exec().catch(() => {});
     }
 
     return NextResponse.json({

@@ -553,13 +553,15 @@ export default function HomePage() {
         <div className={styles.partnersHeading}>
           Our Learners &amp; Interns Are Hired By Top Global Tech Companies
         </div>
-        <div className={styles.partnersGrid}>
-          {HIRING_PARTNERS.map((partner) => (
-            <div key={partner} className={styles.partnerBadge}>
-              <Building2 size={16} color="#2563eb" />
-              <span>{partner}</span>
-            </div>
-          ))}
+        <div className={styles.marqueeOuter}>
+          <div className={styles.marqueeTrack}>
+            {[...HIRING_PARTNERS, ...HIRING_PARTNERS, ...HIRING_PARTNERS].map((partner, i) => (
+              <div key={i} className={styles.partnerBadge}>
+                <Building2 size={15} color="#2563eb" />
+                <span>{partner}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

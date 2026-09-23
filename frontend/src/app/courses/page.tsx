@@ -107,71 +107,43 @@ export default function CoursesCatalogPage() {
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
           <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
           <div className={styles.navLinks}>
-            <Link href="/" className={styles.navLink}>
-              Home
-            </Link>
             <Link href="/courses" className={`${styles.navLink} ${styles.navLinkActive}`}>
               Courses
             </Link>
-            <a href="/#features" className={styles.navLink}>
-              Features
-            </a>
-            <a href="/#about" className={styles.navLink}>
-              About Us
-            </a>
+            <Link href="/training-and-internship" className={styles.navLink}>
+              Training &amp; Internships
+            </Link>
+            <Link href="/verify-certificate" className={styles.navLink}>
+              Verify Certificate
+            </Link>
+            <Link href="/careers" className={styles.navLink}>
+              Careers
+            </Link>
           </div>
 
           <div className={styles.navActions}>
             {authLoading ? (
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Link
-                  href="/my-learning"
-                  id="nav-my-learning-btn"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    background: 'rgba(37, 99, 235, 0.1)',
-                    color: '#2563eb',
-                    border: '1px solid rgba(147, 197, 253, 0.5)',
-                    textDecoration: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <BookOpen size={15} /> My Learning
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link href="/my-learning" className={styles.signInBtn}>
+                  <BookOpen size={14} /> My Learning
                 </Link>
                 {isAdmin && (
-                  <Link
-                    href="/admin/dashboard"
-                    id="nav-admin-btn"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '8px 14px',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      background: 'rgba(15, 23, 42, 0.06)',
-                      color: '#0f172a',
-                      border: '1px solid #cbd5e1',
-                      textDecoration: 'none',
-                    }}
-                  >
+                  <Link href="/admin/dashboard" className={styles.signInBtn}>
                     Admin
                   </Link>
                 )}
@@ -193,14 +165,14 @@ export default function CoursesCatalogPage() {
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <>
                 <Link href="/login" className={styles.signInBtn}>
                   Sign In
                 </Link>
                 <Link href="/login" className={styles.signUpBtn}>
-                  Get Started <ArrowRight size={14} />
+                  Get Started
                 </Link>
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -95,17 +95,17 @@ export default function CareersPage() {
           </Link>
 
           <div className={styles.navLinks}>
-            <Link href="/" className={styles.navLink}>
-              Home
-            </Link>
-            <Link href="/#courses" className={styles.navLink}>
+            <Link href="/courses" className={styles.navLink}>
               Courses
             </Link>
             <Link href="/training-and-internship" className={styles.navLinkHighlight}>
-              <Sparkles size={14} /> Training &amp; Internships
+              Training &amp; Internships
             </Link>
             <Link href="/verify-certificate" className={styles.navLink}>
               Verify Certificate
+            </Link>
+            <Link href="/careers" className={styles.navLink} style={{ fontWeight: 700, color: '#000' }}>
+              Careers
             </Link>
           </div>
 
@@ -113,9 +113,9 @@ export default function CareersPage() {
             <Link href="/login" className={styles.loginBtn}>
               Sign In
             </Link>
-            <a href="#openings" className={styles.primaryBtn}>
-              View Open Roles
-            </a>
+            <Link href="/login" className={styles.primaryBtn}>
+              Get Started
+            </Link>
           </div>
         </div>
       </nav>

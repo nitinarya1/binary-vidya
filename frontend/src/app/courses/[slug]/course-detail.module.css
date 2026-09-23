@@ -60,20 +60,26 @@
 }
 
 .userPill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 4px 12px 4px 6px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: transparent;
+  border: none;
   border-radius: 24px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.userPill:hover {
+  background: #f4f4f5;
 }
 
 .userAvatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #1a1a1a;
   color: #ffffff;
   font-size: 12px;
   font-weight: 800;

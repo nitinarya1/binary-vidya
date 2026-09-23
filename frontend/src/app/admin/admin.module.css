@@ -77,20 +77,26 @@
 }
 
 .adminProfilePill {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 14px;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  background: transparent;
+  border: none;
   border-radius: 9999px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.adminProfilePill:hover {
+  background: #f4f4f5;
 }
 
 .adminAvatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #1a1a1a;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -109,22 +115,22 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 7px 12px;
   border-radius: 8px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #334155;
-  font-size: 13px;
+  background: transparent;
+  border: none;
+  color: #1a1a1a;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
+  box-shadow: none;
 }
 
 .secondaryBtn:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #0f172a;
+  background: #f4f4f5;
+  color: #000000;
 }
 
 .logoutBtn {
