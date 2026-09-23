@@ -65,8 +65,6 @@ export const sendOtpEmail = async (
   try {
     const mailClient = getTransporter();
 
-    const attachments = getLogoAttachment();
-
     const mailOptions = {
       from: `"Binary Vidya Security" <${EMAIL_USER}>`,
       to: recipientEmail,
@@ -77,7 +75,6 @@ export const sendOtpEmail = async (
         Importance: 'high',
         'Auto-Submitted': 'auto-generated',
       },
-      attachments,
       text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nEnter this code on your verification screen to proceed.\n\nIf you did not request this, please ignore this email. Do not share this code with anyone.\n\nBinary Vidya Security Team`,
       html: `
         <!DOCTYPE html>
@@ -90,15 +87,15 @@ export const sendOtpEmail = async (
         <body style="margin: 0; padding: 28px 12px; background-color: #f0f7ff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #0f172a;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; border: 1.5px solid #bfdbfe; overflow: hidden; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);">
             
-            <!-- Clean White Logo Header (No Links) -->
+            <!-- Clean Header (No Logo Image, Zero Delay) -->
             <tr>
-              <td align="center" style="background-color: #ffffff; padding: 28px 24px 22px; text-align: center; border-bottom: 2px solid #eff6ff;">
-                <img 
-                  src="https://binaryvidya.vercel.app/images/binary-vidya-logo.png" 
-                  alt="Binary Vidya" 
-                  width="195" 
-                  style="display: block; width: 195px; max-width: 100%; height: auto; margin: 0 auto; border: 0; outline: none; text-decoration: none;" 
-                />
+              <td align="center" style="background-color: #ffffff; padding: 28px 24px 20px; text-align: center; border-bottom: 2px solid #eff6ff;">
+                <div style="font-size: 22px; font-weight: 900; color: #1e40af; letter-spacing: -0.5px; text-transform: uppercase;">
+                  Binary Vidya
+                </div>
+                <div style="font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 1.2px; margin-top: 3px; text-transform: uppercase;">
+                  Security &bull; Verification Service
+                </div>
               </td>
             </tr>
 
