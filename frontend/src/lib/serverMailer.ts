@@ -5,36 +5,18 @@ import path from 'path';
 const EMAIL_USER = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
 const EMAIL_PASS = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
-let transporter: any = (global as any).bvTransporter || null;
-
 function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      // Reuse TCP connections — avoids 1-3s handshake per email
-      pool: true,
-      maxConnections: 3,
-      maxMessages: Infinity,
-      rateDelta: 1000,
-      rateLimit: 10,
-      auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 30000,
-    });
-    if (transporter && typeof transporter.on === 'function') {
-      transporter.on('error', (err: any) => {
-        console.error('[Nodemailer Transporter Error Handled]:', err?.message || err);
-      });
-    }
-    (global as any).bvTransporter = transporter;
-  }
-  return transporter;
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS,
+    },
+    // Snappy timeouts prevent hanging in serverless environments
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 8000,
+  });
 }
 
 export function getLogoAttachment() {

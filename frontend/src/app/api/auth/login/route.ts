@@ -103,29 +103,28 @@ export async function POST(req: Request) {
     if (isSuperAdmin || isTeamMember) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
       const normalizedEmail = (user.email || '').toLowerCase().trim();
-      const targetEmail = isSuperAdmin ? 'aryar0779@gmail.com' : normalizedEmail;
+      const targetEmail = normalizedEmail;
       const otpPurpose = isSuperAdmin ? 'SUPER_ADMIN_LOGIN' : 'ADMIN_LOGIN';
-
-      // Use static Otp import (no dynamic import penalty)
-      await Otp.findOneAndUpdate(
-        { email: normalizedEmail, purpose: otpPurpose },
-        {
-          email: normalizedEmail,
-          otp: otpCode,
-          purpose: otpPurpose,
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        },
-        { upsert: true, new: true }
-      );
 
       const emailSubject = isSuperAdmin
         ? 'Super Admin Login Verification Code'
         : 'Team Member Login Verification Code';
 
-      // FIRE-AND-FORGET: respond instantly, don't wait for SMTP
-      sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err: any) => {
-        console.error('[Send Login OTP Background Error]:', err?.message || err);
-      });
+      // Ultra-fast parallel execution: DB upsert + Email sending run simultaneously.
+      // Must be awaited so Vercel Serverless environment does NOT kill the socket before SMTP completes.
+      await Promise.all([
+        Otp.findOneAndUpdate(
+          { email: normalizedEmail, purpose: otpPurpose },
+          {
+            email: normalizedEmail,
+            otp: otpCode,
+            purpose: otpPurpose,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          },
+          { upsert: true, new: true }
+        ),
+        sendOtpEmail(targetEmail, otpCode, emailSubject),
+      ]);
 
       const emailParts = targetEmail.split('@');
       const localPart = emailParts[0];

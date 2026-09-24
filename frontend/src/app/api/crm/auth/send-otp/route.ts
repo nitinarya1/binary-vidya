@@ -53,24 +53,20 @@ export async function POST(req: Request) {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // 4. Save/update OTP in database
-    await Otp.findOneAndUpdate(
-      { email: normalizedEmail, purpose: 'CRM_AGENT_LOGIN' },
-      {
-        email: normalizedEmail,
-        otp: otpCode,
-        purpose: 'CRM_AGENT_LOGIN',
-        expiresAt,
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    // 5. FIRE-AND-FORGET: respond instantly, email sends in background via pooled SMTP
-    sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In').catch((err: any) => {
-      console.error('[CRM OTP Email Background Error]:', err?.message || err);
-    });
-
-    console.log(`[Fast CRM OTP]: Dispatched ${otpCode} to ${normalizedEmail}`);
+    // 4. Save OTP in DB and dispatch email in parallel (<1.5s)
+    await Promise.all([
+      Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: 'CRM_AGENT_LOGIN' },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: 'CRM_AGENT_LOGIN',
+          expiresAt,
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      ),
+      sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In'),
+    ]);
 
     return NextResponse.json({
       success: true,
