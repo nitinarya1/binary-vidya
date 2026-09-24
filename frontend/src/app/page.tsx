@@ -266,12 +266,12 @@ export default function HomePage() {
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Link href="/my-learning" className={styles.navBtn}>
+                <Link href="/my-learning" className={`${styles.navBtn} ${styles.desktopOnly}`}>
                   My Learning
                 </Link>
 
                 {isAdmin && (
-                  <Link href="/super-admin" className={styles.navBtn}>
+                  <Link href="/super-admin" className={`${styles.navBtn} ${styles.desktopOnly}`}>
                     Admin
                   </Link>
                 )}
@@ -294,15 +294,15 @@ export default function HomePage() {
                       'U'
                     )}
                   </div>
-                  <span>{user.name || 'Profile'}</span>
+                  <span className={styles.desktopOnly}>{user.name || 'Profile'}</span>
                 </Link>
               </div>
             ) : (
               <>
-                <Link href="/login" className={styles.navBtn}>
+                <Link href="/login" className={`${styles.navBtn} ${styles.desktopOnly}`}>
                   Sign In
                 </Link>
-                <Link href="/login" className={styles.navBtn} style={{ fontWeight: 700, color: '#2563eb' }}>
+                <Link href="/login" className={`${styles.navBtn} ${styles.desktopOnly}`} style={{ fontWeight: 700, color: '#2563eb' }}>
                   Get Started
                 </Link>
               </>
