@@ -9,12 +9,21 @@ export interface CrmUser {
   role: 'super_admin' | 'agent';
   department: string;
   salesTeam?: string;
+  mustChangePassword?: boolean;
 }
 
 interface CrmContextType {
   crmUser: CrmUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  login: (email: string, password: string) => Promise<{
+    success: boolean;
+    requireOtp?: boolean;
+    mustChangePassword?: boolean;
+    message?: string;
+    email?: string;
+    maskedEmail?: string;
+  }>;
+  changeFirstPassword: (newPassword: string) => Promise<{ success: boolean; message?: string }>;
   sendOtp: (email: string) => Promise<{ success: boolean; message?: string }>;
   verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
@@ -24,6 +33,7 @@ const CrmContext = createContext<CrmContextType>({
   crmUser: null,
   loading: true,
   login: async () => ({ success: false }),
+  changeFirstPassword: async () => ({ success: false }),
   sendOtp: async () => ({ success: false }),
   verifyOtp: async () => ({ success: false }),
   logout: async () => {},
@@ -98,11 +108,43 @@ export const CrmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         credentials: 'include',
       });
       const data = await res.json();
+      if (data.requireOtp) {
+        return {
+          success: true,
+          requireOtp: true,
+          email: data.email,
+          maskedEmail: data.maskedEmail,
+          message: data.message,
+        };
+      }
       if (data.success && data.user) {
         setCrmUser(data.user);
-        return { success: true };
+        return {
+          success: true,
+          mustChangePassword: Boolean(data.mustChangePassword),
+          message: data.message,
+        };
       }
       return { success: false, message: data.message || 'Login failed.' };
+    } catch {
+      return { success: false, message: 'Network error. Please try again.' };
+    }
+  };
+
+  const changeFirstPassword = async (newPassword: string) => {
+    try {
+      const res = await fetch('/api/crm/auth/change-first-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newPassword }),
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success && data.user) {
+        setCrmUser(data.user);
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message || 'Failed to update permanent password.' };
     } catch {
       return { success: false, message: 'Network error. Please try again.' };
     }
@@ -116,7 +158,7 @@ export const CrmProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <CrmContext.Provider value={{ crmUser, loading, login, sendOtp, verifyOtp, logout }}>
+    <CrmContext.Provider value={{ crmUser, loading, login, changeFirstPassword, sendOtp, verifyOtp, logout }}>
       {children}
     </CrmContext.Provider>
   );

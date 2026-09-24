@@ -77,6 +77,7 @@ export async function POST(req: Request) {
       };
       if (password) {
         updateData.password = await bcrypt.hash(password, 10);
+        updateData.mustChangePassword = true;
       }
       savedAgent = await User.findByIdAndUpdate(existing._id, { $set: updateData }, { new: true });
     } else {
@@ -93,6 +94,7 @@ export async function POST(req: Request) {
         department: chosenTeam,
         salesTeam: chosenTeam,
         teamStatus: 'active',
+        mustChangePassword: true,
       });
     }
 

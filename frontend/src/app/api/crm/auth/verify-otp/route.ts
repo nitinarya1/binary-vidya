@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const otpRecord = await Otp.findOne({
       email: normalizedEmail,
       otp: cleanOtp,
-      purpose: 'CRM_AGENT_LOGIN',
+      purpose: { $in: ['CRM_AGENT_LOGIN', 'SUPER_ADMIN_LOGIN', 'ADMIN_LOGIN'] },
     }).lean();
 
     if (!otpRecord) {

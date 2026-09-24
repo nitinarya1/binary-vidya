@@ -464,8 +464,8 @@ Here are your team login credentials:
 Direct Login Link:
 ${portalUrl}
 
-Sign-in options:
-You can log in using your temporary password, or enter your registered email address on the login screen to receive an instant 6-digit one-time verification code.
+First-Time Sign-in Instructions:
+Log in to the portal using your email and temporary password above. On your first sign-in, you will be prompted to create your own secure permanent password before entering the CRM Dashboard.
 
 If you have any questions or require assistance, please contact your Super Administrator at aryar0779@gmail.com.
 
@@ -569,10 +569,10 @@ ${portalBase}`;
           </tr>
         </table>
 
-        <!-- Sign-in Options Note -->
-        <div style="background-color: #f8fafc; border-left: 3px solid #2563eb; padding: 12px 14px; border-radius: 4px; margin-bottom: 18px;">
-          <p style="margin: 0; font-size: 12px; color: #475569; line-height: 1.5;">
-            <strong>Sign-in options:</strong> You can log in using this temporary password, or enter your registered email address on the login screen to receive an instant 6-digit one-time verification code.
+        <!-- First-Time Sign-in Note -->
+        <div style="background-color: #eff6ff; border-left: 3px solid #2563eb; padding: 12px 14px; border-radius: 6px; margin-bottom: 18px;">
+          <p style="margin: 0; font-size: 12px; color: #1e40af; line-height: 1.5;">
+            <strong>First-Time Sign-In:</strong> Log in using your email and temporary password above. On your first sign-in, you will be prompted to create your own secure permanent password before accessing the CRM Dashboard.
           </p>
         </div>
 

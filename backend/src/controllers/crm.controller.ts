@@ -811,6 +811,7 @@ export const addAgent = async (req: Request, res: Response) => {
       };
       if (password) {
         updateData.password = await bcrypt.hash(password, 10);
+        updateData.mustChangePassword = true;
       }
       await User.findByIdAndUpdate(existing._id, { $set: updateData });
 
@@ -845,6 +846,7 @@ export const addAgent = async (req: Request, res: Response) => {
       department: chosenTeam,
       salesTeam: chosenTeam,
       teamStatus: 'active',
+      mustChangePassword: true,
     });
 
     try {
