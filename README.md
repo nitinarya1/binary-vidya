@@ -2,6 +2,8 @@
 
 A full-stack, enterprise-grade educational platform built with Next.js 14, Node.js + Express, and MongoDB Atlas.
 
+> 📖 **Complete System Architecture & Directory Map**: For an exhaustive breakdown of all 50+ API routes, pages, CRM workflows, database models, and components, see [WEBSITE_STRUCTURE.md](WEBSITE_STRUCTURE.md).
+
 ---
 
 ## 🚀 Features
