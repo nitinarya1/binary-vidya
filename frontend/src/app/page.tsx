@@ -475,7 +475,8 @@ export default function HomePage() {
           {/* Left Column: Authoritative Messaging & CTAs */}
           <div className={styles.heroLeft}>
             <div className={styles.heroTag}>
-              <Sparkles size={15} color="#2563eb" />
+              <span className={styles.heroPulseDot} />
+              <Sparkles size={14} color="#2563eb" />
               <span>Admissions Open • Weekend Live Batches 2026</span>
             </div>
 
@@ -500,22 +501,22 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Metrics Bar */}
+            {/* Metrics Bar as 4 Clean Micro Cards */}
             <div className={styles.heroMetricsBar}>
-              <div className={styles.heroMetricBox}>
+              <div className={styles.heroMetricCard}>
                 <span className={styles.heroMetricValue}>15,000+</span>
                 <span className={styles.heroMetricLabel}>Enrolled Engineers</span>
               </div>
-              <div className={styles.heroMetricBox}>
-                <span className={styles.heroMetricValue}>100% Free</span>
+              <div className={styles.heroMetricCard}>
+                <span className={styles.heroMetricValue} style={{ color: '#059669' }}>100% Free</span>
                 <span className={styles.heroMetricLabel}>2-Month Internship</span>
               </div>
-              <div className={styles.heroMetricBox}>
-                <span className={styles.heroMetricValue}>4 Verified</span>
+              <div className={styles.heroMetricCard}>
+                <span className={styles.heroMetricValue} style={{ color: '#2563eb' }}>4 Verified</span>
                 <span className={styles.heroMetricLabel}>Career Credentials</span>
               </div>
-              <div className={styles.heroMetricBox}>
-                <span className={styles.heroMetricValue}>₹12.5 LPA</span>
+              <div className={styles.heroMetricCard}>
+                <span className={styles.heroMetricValue} style={{ color: '#d97706' }}>₹12.5 LPA</span>
                 <span className={styles.heroMetricLabel}>Avg Package Placed</span>
               </div>
             </div>
@@ -524,25 +525,15 @@ export default function HomePage() {
           {/* Right Column: Interactive Flagship Hero Spotlight Card */}
           <div className={styles.heroRight}>
             <div className={styles.spotlightCard}>
-              {/* Program Selector Pills if multiple programs available */}
+              {/* Program Selector Tabs without ugly scrollbars */}
               {trainingPrograms.length > 1 && (
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
-                  {trainingPrograms.slice(0, 3).map((p, idx) => (
+                <div className={styles.spotlightTabs}>
+                  {trainingPrograms.slice(0, 4).map((p, idx) => (
                     <button
                       key={p.id || idx}
                       type="button"
                       onClick={() => setActiveSpotlightIdx(idx)}
-                      style={{
-                        padding: '4px 10px',
-                        borderRadius: '999px',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        border: activeSpotlightIdx === idx ? '1px solid #2563eb' : '1px solid #cbd5e1',
-                        background: activeSpotlightIdx === idx ? '#eff6ff' : '#ffffff',
-                        color: activeSpotlightIdx === idx ? '#2563eb' : '#64748b',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                      }}
+                      className={`${styles.spotlightTabBtn} ${activeSpotlightIdx === idx ? styles.spotlightTabBtnActive : ''}`}
                     >
                       {p.track || p.title.split(' ')[0]}
                     </button>
@@ -550,38 +541,37 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Spotlight Thumbnail if available */}
-              {activeSpotlight.thumbnail && (
-                <div
-                  style={{
-                    width: '100%',
-                    height: '140px',
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    marginBottom: '16px',
-                    border: '1px solid #bfdbfe',
-                  }}
-                >
+              {/* Spotlight 16:9 Thumbnail Image */}
+              <div className={styles.spotlightThumbWrap}>
+                {activeSpotlight.thumbnail ? (
                   <img
                     src={activeSpotlight.thumbnail}
                     alt={activeSpotlight.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    className={styles.spotlightThumbImg}
                   />
-                </div>
-              )}
+                ) : (
+                  <div className={styles.spotlightThumbFallback}>
+                    <Code size={26} color="#38bdf8" />
+                    <span style={{ fontSize: '13px', fontWeight: 800 }}>
+                      {activeSpotlight.track || 'Engineering Track'}
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className={styles.spotlightHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <img
                     src="/images/binary-vidya-icon.png"
                     alt="Binary Vidya"
-                    style={{ height: '26px', width: 'auto', objectFit: 'contain' }}
+                    style={{ height: '24px', width: 'auto', objectFit: 'contain' }}
                   />
                   <span className={styles.spotlightBadge}>
                     {activeSpotlight.track || 'Flagship Cohort'}
                   </span>
                 </div>
                 <span className={styles.spotlightWeekendBadge}>
+                  <Calendar size={12} />
                   {activeSpotlight.schedule?.badge || 'Weekend Live'}
                 </span>
               </div>
@@ -607,22 +597,22 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div className={styles.spotlightFreeInternshipTag}>
-                  <CheckCircle2 size={16} color="#059669" />
+                  <CheckCircle2 size={15} color="#059669" />
                   <span>2-Month Industrial Internship Included (₹0 Fee)</span>
                 </div>
               </div>
 
               <div className={styles.spotlightFeatures}>
                 <div className={styles.spotlightFeatureItem}>
-                  <Clock size={16} color="#2563eb" />
+                  <Clock size={15} color="#2563eb" />
                   <span>Weekend Live Sessions + 24/7 HD Recordings</span>
                 </div>
                 <div className={styles.spotlightFeatureItem}>
-                  <Code2 size={16} color="#2563eb" />
+                  <Code2 size={15} color="#2563eb" />
                   <span>Minor &amp; Major Production Cloud Projects</span>
                 </div>
                 <div className={styles.spotlightFeatureItem}>
-                  <Award size={16} color="#2563eb" />
+                  <Award size={15} color="#2563eb" />
                   <span>4 Credentials: Certificate, Experience Letter, LOR &amp; Transcript</span>
                 </div>
               </div>
@@ -632,13 +622,13 @@ export default function HomePage() {
                   href={`/training-and-internship?program=${activeSpotlight.slug || activeSpotlight.id}`}
                   className={styles.spotlightEnrollBtn}
                 >
-                  Enroll Now <ArrowRight size={15} />
+                  <Zap size={14} /> Enroll Now
                 </Link>
                 <Link
                   href={`/training-and-internship?program=${activeSpotlight.slug || activeSpotlight.id}`}
                   className={styles.spotlightViewBtn}
                 >
-                  View Syllabus
+                  View Syllabus &rarr;
                 </Link>
               </div>
             </div>

@@ -181,33 +181,36 @@
 }
 
 /* ==========================================================================
-   HERO SECTION (Light Mode + Blue Shades UI)
+   HERO SECTION (Elite Modern SaaS / EdTech Design)
    ========================================================================== */
 .hero {
   position: relative;
+  background: radial-gradient(circle at 50% 0%, #f0f7ff 0%, #ffffff 75%);
+  padding: 56px 24px 64px;
   overflow: hidden;
-  padding: 70px 24px 80px;
-  background: radial-gradient(circle at 80% 20%, #e0f2fe 0%, #f0f7ff 35%, #ffffff 70%);
   border-bottom: 1px solid #e2e8f0;
 }
 
 .heroGlowOrb {
   position: absolute;
-  top: -100px;
-  right: -80px;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(14, 165, 233, 0.05) 50%, transparent 70%);
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, rgba(56, 189, 248, 0.06) 50%, transparent 70%);
   pointer-events: none;
+  filter: blur(40px);
 }
 
 .heroContainer {
-  max-width: 1280px;
+  max-width: 1240px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
+  grid-template-columns: 1.1fr 0.9fr;
   align-items: center;
-  gap: 48px;
+  gap: 52px;
   position: relative;
   z-index: 2;
 }
@@ -226,161 +229,270 @@
   color: #1d4ed8;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 6px 16px;
-  border-radius: 999px;
+  padding: 6px 14px;
+  border-radius: 9999px;
   width: fit-content;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.heroPulseDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7);
+  animation: heroPulse 2s infinite;
+}
+
+@keyframes heroPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(5, 150, 105, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
+  }
 }
 
 .heroTitle {
   font-size: 52px;
-  font-weight: 850;
+  font-weight: 900;
   color: #0f172a;
-  line-height: 1.12;
-  letter-spacing: -1.2px;
-  margin-bottom: 20px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0 0 18px;
 }
 
 .heroGradientText {
-  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #0ea5e9 100%);
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0284c7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .heroSubtitle {
-  font-size: 18px;
+  font-size: 16.5px;
   color: #475569;
   line-height: 1.6;
-  margin-bottom: 32px;
-  max-width: 620px;
+  margin: 0 0 28px;
+  max-width: 580px;
 }
 
 .heroCtaGroup {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   flex-wrap: wrap;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
+/* Radiant Modern Royal Blue Primary Button */
 .heroPrimaryBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 28px;
+  padding: 13px 26px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14.5px;
+  font-weight: 800;
   color: #ffffff;
-  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
   text-decoration: none;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  transition: all 0.25s ease;
+  box-shadow: 0 8px 22px -4px rgba(37, 99, 235, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .heroPrimaryBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(135deg, #2a2a2a 0%, #111111 100%);
+  box-shadow: 0 12px 28px -4px rgba(37, 99, 235, 0.55);
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
 }
 
+/* Crisp Clean Secondary Button */
 .heroSecondaryBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
+  padding: 13px 20px;
   border-radius: 12px;
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1e293b;
   background: #ffffff;
-  border: 1.5px solid #1a1a1a;
+  border: 1px solid #cbd5e1;
   text-decoration: none;
   transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .heroSecondaryBtn:hover {
-  background: #1a1a1a;
-  color: #ffffff;
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .heroVerifyLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #0284c7;
+  color: #2563eb;
   text-decoration: none;
-  padding: 10px 14px;
-  transition: color 0.2s ease;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
 }
 
 .heroVerifyLink:hover {
-  color: #0369a1;
+  color: #1d4ed8;
   text-decoration: underline;
 }
 
+/* 4 Metrics as Clean Micro Cards */
 .heroMetricsBar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  padding-top: 24px;
+  gap: 10px;
+  padding-top: 22px;
   border-top: 1px solid #e2e8f0;
 }
 
-.heroMetricBox {
+.heroMetricCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.heroMetricCard:hover {
+  transform: translateY(-2px);
+  border-color: #bfdbfe;
 }
 
 .heroMetricValue {
-  font-size: 24px;
-  font-weight: 850;
-  color: #1e3a8a;
+  font-size: 20px;
+  font-weight: 900;
+  color: #0f172a;
   line-height: 1.2;
 }
 
 .heroMetricLabel {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 /* Hero Right: Spotlight Card */
 .heroRight {
   display: flex;
   justify-content: center;
+  position: relative;
 }
 
 .spotlightCard {
   width: 100%;
-  max-width: 440px;
+  max-width: 460px;
   background: #ffffff;
-  border: 1.5px solid #bfdbfe;
+  border: 1px solid #bfdbfe;
   border-radius: 24px;
-  padding: 28px;
-  box-shadow: 0 20px 40px -10px rgba(37, 99, 235, 0.15), 0 0 0 1px rgba(191, 219, 254, 0.5);
+  padding: 22px;
+  box-shadow: 0 20px 45px -10px rgba(37, 99, 235, 0.15), 0 0 0 1px rgba(191, 219, 254, 0.6);
   position: relative;
-  overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
 }
 
 .spotlightCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 24px 48px -8px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 28px 56px -12px rgba(37, 99, 235, 0.22);
+}
+
+/* Tabs without ugly scrollbar */
+.spotlightTabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+  padding-bottom: 2px;
+}
+
+.spotlightTabs::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.spotlightTabBtn {
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.spotlightTabBtn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.spotlightTabBtnActive {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* Spotlight Thumbnail with fixed 16:9 ratio and clean border */
+.spotlightThumbWrap {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid #e2e8f0;
+  position: relative;
+  background: #0f172a;
+}
+
+.spotlightThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.spotlightThumbFallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffffff;
 }
 
 .spotlightHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .spotlightBadge {
@@ -389,10 +501,10 @@
   color: #2563eb;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
-  padding: 4px 12px;
-  border-radius: 999px;
+  padding: 4px 10px;
+  border-radius: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .spotlightWeekendBadge {
@@ -402,59 +514,72 @@
   background: #ecfdf5;
   border: 1px solid #a7f3d0;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .spotlightTitle {
-  font-size: 22px;
+  font-size: 19px;
   font-weight: 800;
   color: #0f172a;
-  line-height: 1.25;
-  margin-bottom: 8px;
+  line-height: 1.3;
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .spotlightSubtitle {
   font-size: 13px;
   color: #64748b;
   line-height: 1.5;
-  margin-bottom: 20px;
+  margin: 0 0 16px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .spotlightPriceBox {
-  background: #f0f7ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
 }
 
 .spotlightPriceRow {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 6px;
 }
 
 .spotlightPriceMain {
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 900;
-  color: #1e3a8a;
+  color: #0f172a;
 }
 
 .spotlightPriceOld {
-  font-size: 15px;
+  font-size: 14px;
   color: #94a3b8;
   text-decoration: line-through;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .spotlightDiscountPill {
   font-size: 11px;
   font-weight: 800;
-  background: #ef4444;
-  color: #fff;
-  padding: 2px 8px;
-  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #bbf7d0;
+  text-transform: uppercase;
 }
 
 .spotlightFreeInternshipTag {
@@ -462,64 +587,65 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  font-weight: 800;
-  color: #059669;
+  font-weight: 700;
+  color: #0284c7;
 }
 
 .spotlightFeatures {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 24px;
+  gap: 8px;
+  margin-bottom: 18px;
 }
 
 .spotlightFeatureItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #334155;
 }
 
 .spotlightActions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
   gap: 10px;
 }
 
 .spotlightEnrollBtn {
-  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 12px 18px;
+  padding: 12px 16px;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 800;
+  border-radius: 10px;
   text-decoration: none;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
   transition: all 0.2s ease;
 }
 
 .spotlightEnrollBtn:hover {
-  transform: translateY(-1px);
+  background: #1d4ed8;
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
 }
 
 .spotlightViewBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 12px 16px;
+  padding: 12px 14px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #2563eb;
   font-size: 13px;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 10px;
   text-decoration: none;
   transition: all 0.2s ease;
 }
