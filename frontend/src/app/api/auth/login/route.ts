@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
@@ -110,21 +111,24 @@ export async function POST(req: Request) {
         ? 'Super Admin Login Verification Code'
         : 'Team Member Login Verification Code';
 
-      // Ultra-fast parallel execution: DB upsert + Email sending run simultaneously.
-      // Must be awaited so Vercel Serverless environment does NOT kill the socket before SMTP completes.
-      await Promise.all([
-        Otp.findOneAndUpdate(
-          { email: normalizedEmail, purpose: otpPurpose },
-          {
-            email: normalizedEmail,
-            otp: otpCode,
-            purpose: otpPurpose,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-          },
-          { upsert: true, new: true }
-        ),
-        sendOtpEmail(targetEmail, otpCode, emailSubject),
-      ]);
+      // 1. Fast atomic DB upsert (<20ms)
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: otpPurpose },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: otpPurpose,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        { upsert: true, new: true }
+      );
+
+      // 2. Extend serverless lifecycle so email sends in background without stalling HTTP response (<100ms total)
+      waitUntil(
+        sendOtpEmail(targetEmail, otpCode, emailSubject).catch((err: any) => {
+          console.error('[Send Login OTP Background Error]:', err?.message || err);
+        })
+      );
 
       const emailParts = targetEmail.split('@');
       const localPart = emailParts[0];

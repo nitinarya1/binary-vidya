@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { connectDB } from '../../../../../lib/db';
 import { User, Otp } from '../../../../../lib/models';
 import { sendOtpEmail } from '../../../../../lib/serverMailer';
@@ -53,20 +54,24 @@ export async function POST(req: Request) {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // 4. Save OTP in DB and dispatch email in parallel (<1.5s)
-    await Promise.all([
-      Otp.findOneAndUpdate(
-        { email: normalizedEmail, purpose: 'CRM_AGENT_LOGIN' },
-        {
-          email: normalizedEmail,
-          otp: otpCode,
-          purpose: 'CRM_AGENT_LOGIN',
-          expiresAt,
-        },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      ),
-      sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In'),
-    ]);
+    // 4. Save OTP in DB (<20ms)
+    await Otp.findOneAndUpdate(
+      { email: normalizedEmail, purpose: 'CRM_AGENT_LOGIN' },
+      {
+        email: normalizedEmail,
+        otp: otpCode,
+        purpose: 'CRM_AGENT_LOGIN',
+        expiresAt,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    // 5. Extend serverless runtime so email sends in background without stalling HTTP response
+    waitUntil(
+      sendOtpEmail(normalizedEmail, otpCode, 'Binary Vidya Agent Sign In').catch((err: any) => {
+        console.error('[CRM OTP Background Error]:', err?.message || err);
+      })
+    );
 
     return NextResponse.json({
       success: true,

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../../lib/db';
@@ -83,19 +84,22 @@ export async function POST(req: Request) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
       const otpPurpose = 'SUPER_ADMIN_LOGIN';
 
-      await Promise.all([
-        Otp.findOneAndUpdate(
-          { email: normalizedEmail, purpose: otpPurpose },
-          {
-            email: normalizedEmail,
-            otp: otpCode,
-            purpose: otpPurpose,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-          },
-          { upsert: true, new: true }
-        ),
-        sendOtpEmail(normalizedEmail, otpCode, 'Super Admin CRM Login Verification Code'),
-      ]);
+      await Otp.findOneAndUpdate(
+        { email: normalizedEmail, purpose: otpPurpose },
+        {
+          email: normalizedEmail,
+          otp: otpCode,
+          purpose: otpPurpose,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        },
+        { upsert: true, new: true }
+      );
+
+      waitUntil(
+        sendOtpEmail(normalizedEmail, otpCode, 'Super Admin CRM Login Verification Code').catch((err: any) => {
+          console.error('[CRM Login Super Admin OTP Error]:', err?.message || err);
+        })
+      );
 
       const emailParts = normalizedEmail.split('@');
       const localPart = emailParts[0];

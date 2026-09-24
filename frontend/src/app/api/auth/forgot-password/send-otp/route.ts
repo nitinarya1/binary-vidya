@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { connectDB } from '../../../../../lib/db';
 import { User, Otp } from '../../../../../lib/models';
 import { sendOtpEmail } from '../../../../../lib/serverMailer';
@@ -57,20 +58,24 @@ export async function POST(req: Request) {
     const normalizedEmail = user.email.toLowerCase().trim();
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Fast parallel execution: DB upsert + Email dispatch in parallel (<1.5s total)
-    await Promise.all([
-      Otp.findOneAndUpdate(
-        { email: normalizedEmail, purpose: 'FORGOT_PASSWORD' },
-        {
-          email: normalizedEmail,
-          otp: otpCode,
-          purpose: 'FORGOT_PASSWORD',
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        },
-        { upsert: true, new: true }
-      ),
-      sendOtpEmail(normalizedEmail, otpCode, 'Password Reset'),
-    ]);
+    // Fast atomic DB upsert (<20ms)
+    await Otp.findOneAndUpdate(
+      { email: normalizedEmail, purpose: 'FORGOT_PASSWORD' },
+      {
+        email: normalizedEmail,
+        otp: otpCode,
+        purpose: 'FORGOT_PASSWORD',
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      },
+      { upsert: true, new: true }
+    );
+
+    // Extend serverless lifecycle so email sends in background without stalling HTTP response
+    waitUntil(
+      sendOtpEmail(normalizedEmail, otpCode, 'Password Reset').catch((err: any) => {
+        console.error('[Send Forgot Password OTP Error]:', err?.message || err);
+      })
+    );
 
     const emailParts = normalizedEmail.split('@');
     const localPart = emailParts[0];

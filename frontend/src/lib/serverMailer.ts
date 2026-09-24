@@ -5,18 +5,25 @@ import path from 'path';
 const EMAIL_USER = process.env.EMAIL_USER || 'binaryvidyaadmin@gmail.com';
 const EMAIL_PASS = (process.env.EMAIL_PASS || '').replace(/\s+/g, '');
 
+let transporterInstance: any = null;
+
 function getTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: EMAIL_USER,
-      pass: EMAIL_PASS,
-    },
-    // Snappy timeouts prevent hanging in serverless environments
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 8000,
-  });
+  if (!transporterInstance) {
+    transporterInstance = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
+      },
+      pool: true,
+      maxConnections: 3,
+      maxMessages: 100,
+      connectionTimeout: 4000,
+      greetingTimeout: 4000,
+      socketTimeout: 6000,
+    });
+  }
+  return transporterInstance;
 }
 
 export function getLogoAttachment() {
@@ -47,17 +54,25 @@ export function getLogoAttachment() {
 export const sendOtpEmail = async (
   recipientEmail: string,
   otpCode: string,
-  purpose: string = 'Password Reset'
+  purpose: string = 'Security Verification'
 ): Promise<boolean> => {
   try {
     const mailClient = getTransporter();
+    const digitCount = otpCode.length;
 
     const mailOptions = {
       from: `"Binary Vidya" <${EMAIL_USER}>`,
       to: recipientEmail,
       replyTo: EMAIL_USER,
       subject: `${otpCode} is your Binary Vidya verification code`,
-      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nEnter this code on your verification screen to proceed.\n\nIf you did not request this, please ignore this email. Do not share this code with anyone.\n\nBinary Vidya Security Team\n${EMAIL_USER}`,
+      headers: {
+        'X-Priority': '1',
+        'Importance': 'high',
+        'Priority': 'urgent',
+        'Auto-Submitted': 'auto-generated',
+        'X-Auto-Response-Suppress': 'OOF, AutoReply',
+      },
+      text: `Your Binary Vidya verification code is: ${otpCode}\n\nThis verification code was requested for: ${purpose}.\nThis code will expire in 10 minutes.\nEnter this ${digitCount}-digit code on your verification screen to proceed.\n\nDo not share this code with anyone. Binary Vidya security staff will never ask for your verification code.\n\nIf you did not request this code, you can safely ignore this email.\n\nBinary Vidya Security Team\nBengaluru, Karnataka, India - 560001\nhttps://binaryvidya.vercel.app`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -122,7 +137,7 @@ export const sendOtpEmail = async (
                 </table>
 
                 <p style="font-size: 13px; line-height: 1.6; color: #334155; margin: 0 0 12px 0;">
-                  Enter this 6-digit code on the sign-in screen to proceed.
+                  Enter this ${digitCount}-digit code on the sign-in screen to proceed.
                 </p>
 
                 <p style="font-size: 12px; line-height: 1.5; color: #94a3b8; margin: 0;">
@@ -131,10 +146,11 @@ export const sendOtpEmail = async (
               </td>
             </tr>
 
-            <!-- Clean Footer -->
+            <!-- Clean Anti-Spam CAN-SPAM Compliant Footer -->
             <tr>
               <td style="background-color: #f8fafc; padding: 16px 24px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #64748b; text-align: center; line-height: 1.5;">
                 Sent securely by <strong>Binary Vidya</strong> &bull; Bengaluru, Karnataka, India - 560001<br />
+                You received this transactional security code for verification on <a href="https://binaryvidya.vercel.app" style="color: #2563eb; text-decoration: underline;">Binary Vidya</a>.<br />
                 &copy; ${new Date().getFullYear()} Binary Vidya. All rights reserved.
               </td>
             </tr>
@@ -336,6 +352,12 @@ You received this email because an account was created on Binary Vidya for ${use
       to: user.email,
       replyTo: EMAIL_USER,
       subject: `Welcome to Binary Vidya, ${displayName}`,
+      headers: {
+        'X-Priority': '3',
+        'Importance': 'normal',
+        'Auto-Submitted': 'auto-generated',
+        'List-Unsubscribe': `<mailto:${EMAIL_USER}?subject=unsubscribe>`,
+      },
       text: plainText,
       html: htmlContent,
     };
@@ -577,6 +599,12 @@ ${portalBase}`;
       to: data.email,
       replyTo: EMAIL_USER,
       subject,
+      headers: {
+        'X-Priority': '1',
+        'Importance': 'high',
+        'Priority': 'urgent',
+        'Auto-Submitted': 'auto-generated',
+      },
       text: plainText,
       html: htmlContent,
     };
