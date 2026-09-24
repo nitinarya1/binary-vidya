@@ -166,6 +166,7 @@ export async function GET(req: Request) {
         id: p._id.toString(),
         title: p.title,
         subtitle: p.subtitle || '',
+        thumbnail: p.thumbnail || '',
         slug: p.slug,
         domain: p.domain || p.track || 'Web Development',
         track: p.track || p.domain || 'Frontend Developer',
@@ -222,6 +223,7 @@ export async function POST(req: Request) {
     const {
       title,
       subtitle,
+      thumbnail,
       domain,
       track,
       type,
@@ -259,6 +261,7 @@ export async function POST(req: Request) {
     const newProgram = await TrainingInternship.create({
       title: title.trim(),
       subtitle: subtitle ? subtitle.trim() : '',
+      thumbnail: thumbnail ? thumbnail.trim() : '',
       slug,
       domain: domain.trim(),
       track: track ? track.trim() : domain.trim(),

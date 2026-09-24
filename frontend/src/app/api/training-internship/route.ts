@@ -5,64 +5,98 @@ import { FRONTEND_INTERNSHIP_PROGRAM } from '../../../lib/trainingProgramData';
 
 export const dynamic = 'force-dynamic';
 
+function formatSingleProgram(p: any, defaultSlug?: string) {
+  const slug = p.slug || defaultSlug || FRONTEND_INTERNSHIP_PROGRAM.slug;
+  const trainingPrice = p.trainingPrice !== undefined ? Number(p.trainingPrice) : 2400;
+  const originalPrice = p.originalPrice !== undefined ? Number(p.originalPrice) : 7999;
+  const internshipPrice = p.internshipPrice !== undefined ? Number(p.internshipPrice) : 0;
+
+  return {
+    id: p._id?.toString() || slug,
+    slug,
+    title: p.title || FRONTEND_INTERNSHIP_PROGRAM.title,
+    subtitle: p.subtitle || FRONTEND_INTERNSHIP_PROGRAM.subtitle,
+    thumbnail: p.thumbnail || '',
+    track: p.track || p.domain || 'Software Engineer',
+    domain: p.domain || p.track || 'Engineering',
+    type: p.type || 'internship',
+    mode: p.mode || 'Live Online • Weekend Classes',
+    schedule: p.schedule || {
+      badge: 'Weekend Live Batches',
+      days: 'Every Saturday & Sunday',
+      timings: 'Live Interactive Sessions + 24/7 Session Recordings',
+      flexibility: 'Specially crafted for College Students & Working Professionals',
+    },
+    duration: p.durations || {
+      total: p.duration || '2 Months Internship + Training',
+      trainingWeeks: '4 Weeks Intensive Live Training',
+      internshipWeeks: '2 Months Hands-on Industrial Internship',
+    },
+    rawDuration: p.duration || '2 Months Internship + Training',
+    pricing: {
+      trainingPrice,
+      originalPrice,
+      discountPercentage: Math.round((1 - (trainingPrice / (originalPrice || 7999))) * 100) || 70,
+      internshipPrice,
+      internshipStatusText:
+        internshipPrice === 0
+          ? '100% Free of Cost (Bundled with Training)'
+          : `₹${internshipPrice.toLocaleString('en-IN')}`,
+      currency: 'INR',
+      currencySymbol: '₹',
+    },
+    sections: p.sections && p.sections.length > 0 ? p.sections : FRONTEND_INTERNSHIP_PROGRAM.sections,
+    credentials:
+      p.credentials && p.credentials.length > 0 ? p.credentials : FRONTEND_INTERNSHIP_PROGRAM.credentials,
+    highlights:
+      p.perks && p.perks.length > 0
+        ? p.perks
+        : (FRONTEND_INTERNSHIP_PROGRAM as any).benefits || [],
+    eligibility: p.eligibility || 'College Students, Freshers & Working Professionals',
+    deadline: p.deadline || 'Rolling Admissions',
+    status: p.status || 'open',
+    applicantsCount: p.applicantsCount || 0,
+    createdAt: p.createdAt,
+  };
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const slug = url.searchParams.get('slug') || 'frontend-developer-training-internship';
+    const slug = url.searchParams.get('slug');
 
     try {
       await connectDB();
-      const dbProgram = await TrainingInternship.findOne({
-        $or: [
-          { slug },
-          { track: /Frontend/i },
-          { title: /Frontend/i }
-        ],
-        status: { $ne: 'closed' }
-      }).lean();
 
-      if (dbProgram) {
-        const p = dbProgram as any;
-        const formattedProgram = {
-          id: p._id?.toString() || p.slug || slug,
-          slug: p.slug || slug,
-          title: p.title || FRONTEND_INTERNSHIP_PROGRAM.title,
-          subtitle: p.subtitle || FRONTEND_INTERNSHIP_PROGRAM.subtitle,
-          track: p.track || FRONTEND_INTERNSHIP_PROGRAM.track,
-          mode: p.mode || FRONTEND_INTERNSHIP_PROGRAM.mode,
-          schedule: p.schedule || FRONTEND_INTERNSHIP_PROGRAM.schedule,
-          duration: p.durations || {
-            total: p.duration || FRONTEND_INTERNSHIP_PROGRAM.duration.total,
-            trainingWeeks: FRONTEND_INTERNSHIP_PROGRAM.duration.trainingWeeks,
-            internshipWeeks: FRONTEND_INTERNSHIP_PROGRAM.duration.internshipWeeks,
-          },
-          pricing: {
-            trainingPrice: p.trainingPrice !== undefined ? p.trainingPrice : FRONTEND_INTERNSHIP_PROGRAM.pricing.trainingPrice,
-            originalPrice: p.originalPrice !== undefined ? p.originalPrice : FRONTEND_INTERNSHIP_PROGRAM.pricing.originalPrice,
-            discountPercentage: Math.round(
-              (1 - ((p.trainingPrice !== undefined ? p.trainingPrice : 2400) / (p.originalPrice || 7999))) * 100
-            ) || FRONTEND_INTERNSHIP_PROGRAM.pricing.discountPercentage,
-            internshipPrice: p.internshipPrice !== undefined ? p.internshipPrice : 0,
-            internshipStatusText: (p.internshipPrice === 0 || p.internshipPrice === undefined)
-              ? '100% Free of Cost (Bundled with Training)'
-              : `₹${p.internshipPrice}`,
-            currency: 'INR',
-            currencySymbol: '₹',
-          },
-          sections: p.sections && p.sections.length > 0
-            ? p.sections
-            : FRONTEND_INTERNSHIP_PROGRAM.sections,
-          credentials: p.credentials && p.credentials.length > 0
-            ? p.credentials
-            : FRONTEND_INTERNSHIP_PROGRAM.credentials,
-          highlights: p.perks && p.perks.length > 0
-            ? p.perks
-            : (FRONTEND_INTERNSHIP_PROGRAM as any).benefits || [],
-        };
+      // Retrieve all programs that are not closed
+      const dbPrograms = await TrainingInternship.find({
+        status: { $ne: 'closed' },
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (dbPrograms && dbPrograms.length > 0) {
+        const formattedPrograms = dbPrograms.map((p) => formatSingleProgram(p));
+
+        // Find specific requested program or default to first / matching slug
+        let activeProgram = null;
+        if (slug) {
+          activeProgram = formattedPrograms.find(
+            (p) => p.slug === slug || p.id === slug
+          );
+        }
+        if (!activeProgram) {
+          // If no slug or not found, try finding frontend or first
+          activeProgram =
+            formattedPrograms.find((p) => /frontend/i.test(p.slug) || /frontend/i.test(p.title)) ||
+            formattedPrograms[0];
+        }
 
         return NextResponse.json({
           success: true,
-          program: formattedProgram,
+          programs: formattedPrograms,
+          program: activeProgram,
+          total: formattedPrograms.length,
         });
       }
     } catch (dbErr) {
@@ -83,15 +117,18 @@ export async function GET(req: Request) {
       // ignore
     }
 
-    // Fallback static payload if backend server or DB is unreachable
+    // Default static fallback with single standard program wrapped in programs array
+    const defaultProgram = formatSingleProgram(FRONTEND_INTERNSHIP_PROGRAM);
     return NextResponse.json({
       success: true,
-      program: FRONTEND_INTERNSHIP_PROGRAM,
+      programs: [defaultProgram],
+      program: defaultProgram,
+      total: 1,
     });
   } catch (error: any) {
     console.error('[Next.js Training Internship GET Error]:', error);
     return NextResponse.json(
-      { success: false, message: error.message || 'Failed to fetch training and internship program' },
+      { success: false, message: error.message || 'Failed to fetch training and internship programs' },
       { status: 500 }
     );
   }

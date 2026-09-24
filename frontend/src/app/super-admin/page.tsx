@@ -93,6 +93,7 @@ interface TrainingItem {
   id: string;
   title: string;
   subtitle?: string;
+  thumbnail?: string;
   slug: string;
   track?: string;
   domain: string;
@@ -1804,17 +1805,50 @@ export default function SuperAdminDashboard() {
                   ) : (
                     filteredTraining.map((t) => (
                       <tr key={t.id}>
-                        <td style={{ maxWidth: '300px' }}>
-                          <div className={styles.titleCol}>
-                            <span>{t.title}</span>
-                            {t.subtitle && (
-                              <span style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.3 }}>
-                                {t.subtitle}
-                              </span>
+                        <td style={{ maxWidth: '320px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            {t.thumbnail ? (
+                              <img
+                                src={t.thumbnail}
+                                alt={t.title}
+                                style={{
+                                  width: '52px',
+                                  height: '32px',
+                                  borderRadius: '6px',
+                                  objectFit: 'cover',
+                                  flexShrink: 0,
+                                  border: '1px solid #cbd5e1',
+                                }}
+                              />
+                            ) : (
+                              <div
+                                style={{
+                                  width: '52px',
+                                  height: '32px',
+                                  borderRadius: '6px',
+                                  background: '#f1f5f9',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  flexShrink: 0,
+                                  border: '1px solid #e2e8f0',
+                                  color: '#94a3b8',
+                                }}
+                              >
+                                <GraduationCap size={15} />
+                              </div>
                             )}
-                            <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
-                              Track: {t.track || t.domain}
-                            </span>
+                            <div className={styles.titleCol}>
+                              <span>{t.title}</span>
+                              {t.subtitle && (
+                                <span style={{ fontSize: '11px', color: '#64748b', lineHeight: 1.3 }}>
+                                  {t.subtitle}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
+                                Track: {t.track || t.domain}
+                              </span>
+                            </div>
                           </div>
                         </td>
                         <td>
@@ -3429,11 +3463,33 @@ function TrainingFormModal({
   // Basic Info
   const [title, setTitle] = useState(program?.title || '');
   const [subtitle, setSubtitle] = useState(program?.subtitle || '');
+  const [thumbnail, setThumbnail] = useState(program?.thumbnail || '');
+  const [thumbnailStats, setThumbnailStats] = useState<{ orig: string; comp: string; saved: number } | null>(null);
+  const [isCompressingThumb, setIsCompressingThumb] = useState(false);
   const [track, setTrack] = useState(program?.track || 'Frontend Developer');
   const [domain, setDomain] = useState(program?.domain || 'Frontend Web Engineering & Next.js 14');
   const [type, setType] = useState<TrainingItem['type']>(program?.type || 'internship');
   const [mode, setMode] = useState(program?.mode || 'Live Online • Weekend Classes');
   const [status, setStatus] = useState<TrainingItem['status']>(program?.status || 'open');
+
+  const handleThumbnailFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsCompressingThumb(true);
+      const res = await compressThumbnail(file, { maxWidth: 1280, maxHeight: 720, quality: 0.82 });
+      setThumbnail(res.dataUrl);
+      setThumbnailStats({
+        orig: formatBytes(res.originalSize),
+        comp: formatBytes(res.compressedSize),
+        saved: res.reductionPercentage,
+      });
+    } catch (err: any) {
+      alert(err.message || 'Image compression failed');
+    } finally {
+      setIsCompressingThumb(false);
+    }
+  };
 
   // Pricing & Schedule
   const [trainingPrice, setTrainingPrice] = useState(program?.trainingPrice !== undefined ? program.trainingPrice : 2400);
@@ -3560,6 +3616,7 @@ function TrainingFormModal({
     onSave({
       title,
       subtitle,
+      thumbnail,
       track,
       domain,
       type,
@@ -3694,6 +3751,179 @@ function TrainingFormModal({
                     onChange={(e) => setSubtitle(e.target.value)}
                     placeholder="e.g. Master Modern Web Development, Build Production Projects, and Complete a 2-Month Industrial Internship..."
                   />
+                </div>
+
+                {/* Program Thumbnail Section */}
+                <div
+                  className={`${styles.formGroup} ${styles.formFullWidth}`}
+                  style={{
+                    background: '#f8fafc',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    <div>
+                      <h4
+                        style={{
+                          margin: 0,
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          color: '#1e293b',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        <ImageIcon size={16} color="#2563eb" /> Program Thumbnail / Cover Image
+                      </h4>
+                      <span style={{ fontSize: '12px', color: '#64748b' }}>
+                        Upload high-res image (auto-compressed to ~40KB WebP) or paste an external image URL.
+                      </span>
+                    </div>
+                    {thumbnail && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setThumbnail('');
+                          setThumbnailStats(null);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#ef4444',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Remove Thumbnail
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                    {thumbnail ? (
+                      <div
+                        style={{
+                          position: 'relative',
+                          width: '200px',
+                          height: '112px',
+                          borderRadius: '10px',
+                          overflow: 'hidden',
+                          border: '2px solid #2563eb',
+                          flexShrink: 0,
+                          background: '#0f172a',
+                        }}
+                      >
+                        <img
+                          src={thumbnail}
+                          alt="Program Preview"
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          width: '200px',
+                          height: '112px',
+                          borderRadius: '10px',
+                          border: '2px dashed #cbd5e1',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#94a3b8',
+                          gap: '6px',
+                          flexShrink: 0,
+                          background: '#ffffff',
+                        }}
+                      >
+                        <ImageIcon size={26} color="#cbd5e1" />
+                        <span style={{ fontSize: '11px', fontWeight: 600 }}>16:9 Thumbnail</span>
+                      </div>
+                    )}
+
+                    <div style={{ flex: 1, minWidth: '240px' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '9px 16px',
+                          borderRadius: '10px',
+                          background: '#2563eb',
+                          color: '#ffffff',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                        }}
+                      >
+                        <Upload size={15} />
+                        {isCompressingThumb ? 'Compressing Image...' : 'Upload Image File'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleThumbnailFile}
+                          style={{ display: 'none' }}
+                          disabled={isCompressingThumb}
+                        />
+                      </label>
+
+                      {thumbnailStats && (
+                        <div
+                          style={{
+                            marginTop: '10px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '5px 10px',
+                            borderRadius: '8px',
+                            background: '#ecfdf5',
+                            border: '1px solid #a7f3d0',
+                            color: '#065f46',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          <Zap size={13} color="#059669" />
+                          Auto-Optimized: {thumbnailStats.orig} &rarr; {thumbnailStats.comp} ({thumbnailStats.saved}% smaller)
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: '10px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            color: '#64748b',
+                            display: 'block',
+                            marginBottom: '4px',
+                          }}
+                        >
+                          Or paste direct image URL:
+                        </span>
+                        <input
+                          type="url"
+                          className={styles.formInput}
+                          placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                          value={thumbnail}
+                          onChange={(e) => {
+                            setThumbnail(e.target.value);
+                            setThumbnailStats(null);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.formGroup}>

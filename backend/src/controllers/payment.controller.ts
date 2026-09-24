@@ -44,12 +44,44 @@ export const createOrder = async (req: Request, res: Response) => {
       course = await Course.findOne({ title: { $regex: new RegExp(`^${courseId}$`, 'i') } }).lean();
     }
 
-    // Support Training & Internship program checkout (₹2,400)
+    // Check Training & Internship collection if not found in courses
+    if (!course) {
+      try {
+        const mongoose = await import('mongoose');
+        const coll = mongoose.connection.collection('traininginternships');
+        let prog: any = null;
+        if (typeof courseId === 'string' && courseId.match(/^[0-9a-fA-F]{24}$/)) {
+          prog = await coll.findOne({ _id: new mongoose.Types.ObjectId(courseId) });
+        }
+        if (!prog) {
+          prog = await coll.findOne({ slug: courseId });
+        }
+        if (!prog) {
+          prog = await coll.findOne({ title: { $regex: new RegExp(`^${courseId}$`, 'i') } });
+        }
+        if (prog) {
+          course = {
+            _id: prog._id.toString(),
+            title: prog.title,
+            slug: prog.slug,
+            price: prog.trainingPrice !== undefined ? prog.trainingPrice : 2400,
+            category: prog.domain || prog.track || 'Training & Internship',
+            thumbnail: prog.thumbnail || '',
+          };
+        }
+      } catch (tiErr) {
+        console.warn('Error querying traininginternships collection in payment controller:', tiErr);
+      }
+    }
+
+    // Support default Training & Internship program checkout fallback (₹2,400)
     const isTraining =
+      Boolean(course?.category?.includes('Internship') || course?.category?.includes('Training')) ||
       courseId === 'frontend-developer-training-internship' ||
       courseId.includes('frontend') ||
       courseId.includes('internship') ||
-      courseId.includes('training');
+      courseId.includes('training') ||
+      courseId.includes('bootcamp');
 
     if (!course && isTraining) {
       course = {

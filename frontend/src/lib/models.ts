@@ -276,6 +276,7 @@ export const Course: Model<ICourse> =
 export interface ITrainingInternship extends Document {
   title: string;
   subtitle?: string;
+  thumbnail?: string;
   slug: string;
   domain: string;
   track?: string;
@@ -312,6 +313,7 @@ const trainingInternshipSchema = new Schema<ITrainingInternship>(
   {
     title: { type: String, required: true, trim: true },
     subtitle: { type: String, default: '' },
+    thumbnail: { type: String, default: '' },
     slug: { type: String, unique: true, lowercase: true, trim: true },
     domain: { type: String, required: true, trim: true },
     track: { type: String, default: 'Frontend Developer' },

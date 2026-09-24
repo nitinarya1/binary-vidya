@@ -71,9 +71,27 @@ function TrainingCheckoutContent() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptData | null>(null);
 
-  // Coupon States
+  // Program & Coupon States
   const searchParams = useSearchParams();
+  const programSlug = searchParams?.get('program') || 'frontend-developer-training-internship';
   const initialCoupon = searchParams?.get('coupon') || '';
+  const [programData, setProgramData] = useState<any>(null);
+
+  useEffect(() => {
+    async function loadProg() {
+      try {
+        const res = await fetch(`/api/training-internship?slug=${encodeURIComponent(programSlug)}`);
+        const data = await res.json();
+        if (data.success && data.program) {
+          setProgramData(data.program);
+        }
+      } catch (e) {
+        // fallback
+      }
+    }
+    loadProg();
+  }, [programSlug]);
+
   const [couponInput, setCouponInput] = useState(initialCoupon);
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
@@ -85,7 +103,8 @@ function TrainingCheckoutContent() {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
 
-  const basePrice = 2400;
+  const basePrice = programData?.pricing?.trainingPrice !== undefined ? Number(programData.pricing.trainingPrice) : 2400;
+  const programTitle = programData?.title || 'Frontend Developer Training & 2-Month Internship';
 
   // Validate and apply coupon
   const handleApplyCoupon = async (codeToApply: string) => {
@@ -161,7 +180,7 @@ function TrainingCheckoutContent() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            courseId: 'frontend-developer-training-internship',
+            courseId: programData?.slug || programSlug,
             userEmail: currentUser.email,
             userName: currentUser.name || 'Student',
             userId: currentUser.id || '',
@@ -180,7 +199,7 @@ function TrainingCheckoutContent() {
             paymentId: orderData.paymentId || `free_${Date.now()}`,
             orderId: orderData.orderId,
             amount: 0,
-            courseTitle: 'Frontend Developer Training & 2-Month Internship',
+            courseTitle: programTitle,
             userEmail: currentUser.email,
             date: new Date().toLocaleString('en-IN', {
               dateStyle: 'medium',
@@ -209,7 +228,7 @@ function TrainingCheckoutContent() {
           amount: orderData.amount, // in paise
           currency: orderData.currency || 'INR',
           name: 'Binary Vidya',
-          description: 'Frontend Developer Training & 2-Month Internship',
+          description: programTitle,
           image: 'https://binaryvidya.com/logo.png',
           order_id: orderData.orderId,
           handler: async function (response: any) {
@@ -232,7 +251,7 @@ function TrainingCheckoutContent() {
                   paymentId: response.razorpay_payment_id,
                   orderId: response.razorpay_order_id,
                   amount: appliedCoupon ? appliedCoupon.finalAmount : basePrice,
-                  courseTitle: 'Frontend Developer Training & 2-Month Internship',
+                  courseTitle: programTitle,
                   userEmail: currentUser.email,
                   date: new Date().toLocaleString('en-IN', {
                     dateStyle: 'medium',
@@ -263,9 +282,9 @@ function TrainingCheckoutContent() {
             contact: currentUser.phone || '9999999999',
           },
           notes: {
-            program: 'Frontend Developer Training & Internship',
-            track: 'Frontend Development',
-            price: '2400',
+            program: programTitle,
+            track: programData?.track || 'Software Engineering',
+            price: String(basePrice),
           },
           theme: {
             color: '#2563eb',
@@ -346,13 +365,14 @@ function TrainingCheckoutContent() {
 
               <div style={{ marginBottom: '16px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase' }}>
-                  Track: Frontend Developer &bull; 2-Month Cohort
+                  Track: {programData?.track || programData?.domain || 'Software Track'} &bull; 2-Month Cohort
                 </span>
                 <h3 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a', margin: '4px 0 8px' }}>
-                  Frontend Developer Training &amp; 2-Month Industrial Internship
+                  {programTitle}
                 </h3>
                 <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: 1.6 }}>
-                  Intensive live weekend training covering Modern HTML5/CSS3, JavaScript ES6+, TypeScript, React 18, and Next.js 14 App Router, accompanied by 2 production portfolio projects (Minor &amp; Major) and 4 verified completion credentials.
+                  {programData?.subtitle ||
+                    'Intensive live weekend training accompanied by 2 production portfolio projects (Minor & Major) and 4 verified completion credentials.'}
                 </p>
               </div>
 
