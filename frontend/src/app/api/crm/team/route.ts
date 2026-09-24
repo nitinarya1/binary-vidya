@@ -99,8 +99,7 @@ export async function POST(req: Request) {
     }
 
     // Dispatch professional welcome email with login email, temporary password, and direct sales portal login URL
-    const portalBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
-    const salesLoginUrl = `${portalBase}/sales/login`;
+    const salesLoginUrl = 'https://binaryvidya.vercel.app/sales/login';
 
     try {
       const emailResult = await sendTeamCredentialsEmail({

@@ -439,7 +439,8 @@ export const sendTeamCredentialsEmail = async (
     }
 
     const portalBase = (process.env.FRONTEND_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
-    const defaultUrl = isSales ? `${portalBase}/sales/login` : `${portalBase}/login`;
+    const salesLoginUrl = 'https://binaryvidya.vercel.app/sales/login';
+    const defaultUrl = isSales ? salesLoginUrl : `${portalBase}/login`;
     const portalUrl = data.loginUrl || defaultUrl;
 
     // Spam-proof subject line: No emojis, no special symbols, includes company and exact selected team

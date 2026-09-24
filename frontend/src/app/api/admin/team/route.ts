@@ -260,8 +260,12 @@ export async function POST(req: Request) {
 
     try {
       const { sendTeamCredentialsEmail } = await import('../../../../lib/serverMailer');
-      const portalBase = (process.env.NEXT_PUBLIC_APP_URL || 'https://binaryvidya.vercel.app').replace(/\/+$/, '');
-      const targetLoginUrl = `${portalBase}/login`;
+      const isSalesRole = ['CSM', 'BDA', 'Lead Generation', 'Sales', 'Counselor', 'Agent'].some((r) =>
+        (memberDepartment || '').toLowerCase().includes(r.toLowerCase())
+      );
+      const targetLoginUrl = isSalesRole
+        ? 'https://binaryvidya.vercel.app/sales/login'
+        : 'https://binaryvidya.vercel.app/login';
 
       await sendTeamCredentialsEmail({
         name: newMember.name,
@@ -271,7 +275,7 @@ export async function POST(req: Request) {
         permissions: memberPermissions,
         loginUrl: targetLoginUrl,
       });
-      console.log(`[Admin Team Route] Staff welcome credentials sent to ${newMember.email}`);
+      console.log(`[Admin Team Route] Staff welcome credentials sent to ${newMember.email} (Login: ${targetLoginUrl})`);
     } catch (mailErr) {
       console.error('[Send Team Credentials Email Error]:', mailErr);
     }
