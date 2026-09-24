@@ -1261,3 +1261,119 @@
   box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
 }
 
+/* ==========================================================================
+   GLOBAL RESPONSIVE RULES FOR TRAINING & INTERNSHIP PAGE
+   ========================================================================== */
+.desktopNavOnly {
+  display: inline-flex;
+}
+
+@media (max-width: 768px) {
+  .desktopNavOnly {
+    display: none !important;
+  }
+  .container {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+  .navWrapper {
+    padding: 10px 16px;
+  }
+  .brandNavIcon {
+    height: 30px;
+  }
+  .brandNavWordmark {
+    height: 19px;
+  }
+  .hero {
+    padding: 36px 16px 32px;
+  }
+  .pillGroup {
+    gap: 6px;
+  }
+  .badgeTrack,
+  .badgeWeekend,
+  .badgeFreeInternship {
+    font-size: 11px;
+    padding: 4px 10px;
+    white-space: normal;
+    text-align: center;
+  }
+  .heroTitle {
+    font-size: clamp(26px, 7vw, 36px);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  .heroSubtitle {
+    font-size: 14.5px;
+    margin-bottom: 24px;
+  }
+  .pricingHeroCard {
+    padding: 16px;
+    border-radius: 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+    padding: 16px 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .curriculumSection,
+  .projectsSection,
+  .credentialsSection,
+  .scheduleSection,
+  .catalogSection,
+  .faqSection {
+    padding: 40px 16px;
+  }
+  .modulesGrid {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+  .projectSpecsGrid {
+    grid-template-columns: 1fr !important;
+  }
+  .credentialsGrid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .scheduleCard {
+    grid-template-columns: 1fr !important;
+    padding: 18px 16px;
+    gap: 20px;
+  }
+  .catalogGrid {
+    grid-template-columns: 1fr !important;
+    gap: 18px;
+  }
+  .progCardBtnGroup {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .footer {
+    padding: 40px 16px 20px;
+  }
+}
+
+@media (max-width: 440px) {
+  .statsRow {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px;
+    padding: 12px 10px;
+  }
+  .statVal {
+    font-size: 17px;
+  }
+  .statLabel {
+    font-size: 10px;
+  }
+  .progCardBtnGroup {
+    grid-template-columns: 1fr;
+  }
+}
+

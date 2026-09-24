@@ -324,24 +324,24 @@ function TrainingAndInternshipContent() {
           </Link>
 
           <div className={styles.navRight}>
-            <Link href="/courses" className={styles.navBtn}>
+            <Link href="/courses" className={`${styles.navBtn} ${styles.desktopNavOnly}`}>
               Courses
             </Link>
-            <Link href="/training-and-internship" className={styles.navBadge}>
+            <Link href="/training-and-internship" className={`${styles.navBadge} ${styles.desktopNavOnly}`}>
               Training &amp; Internships
             </Link>
-            <Link href="/verify-certificate" className={styles.navBtn}>
+            <Link href="/verify-certificate" className={`${styles.navBtn} ${styles.desktopNavOnly}`}>
               Verify Certificate
             </Link>
-            <Link href="/careers" className={styles.navBtn}>
+            <Link href="/careers" className={`${styles.navBtn} ${styles.desktopNavOnly}`}>
               Careers
             </Link>
 
             {currentProg && (
               <button
                 onClick={() => handleEnrollClick(currentProg)}
-                className={styles.navBtn}
-                style={{ fontWeight: 700, color: '#000' }}
+                className={`${styles.navBtn} ${styles.navEnrollMobileBtn}`}
+                style={{ fontWeight: 800, color: '#2563eb', background: '#eff6ff', border: '1px solid #bfdbfe' }}
               >
                 Enroll Now
               </button>

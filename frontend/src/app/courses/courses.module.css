@@ -736,3 +736,46 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .pageContainer {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .navWrapper {
+    padding: 10px 16px;
+  }
+  .navLinks {
+    display: none;
+  }
+  .header {
+    padding: 36px 16px 28px;
+  }
+  .title {
+    font-size: clamp(24px, 6vw, 32px);
+  }
+  .subtitle {
+    font-size: 14px;
+  }
+  .searchContainer {
+    width: 100%;
+  }
+  .categoryBar {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+  }
+  .categoryBar::-webkit-scrollbar {
+    display: none;
+  }
+  .mainContent {
+    padding: 24px 16px 60px;
+  }
+  .coursesGrid {
+    grid-template-columns: 1fr !important;
+    gap: 18px;
+  }
+}
