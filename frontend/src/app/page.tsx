@@ -35,6 +35,10 @@ import {
   Mail,
   Phone,
   MapPin,
+  GraduationCap,
+  Laptop,
+  Code,
+  Calendar,
 } from 'lucide-react';
 
 interface VideoLesson {
@@ -100,7 +104,7 @@ const FAQS = [
   },
   {
     q: 'Is the 2-Month Industrial Internship really 100% Free of Cost?',
-    a: 'Yes! The 2-Month Industrial Internship is bundled completely free of charge (₹0 fee) along with the Frontend Developer training tuition (₹2,400). You receive full industrial mentorship, code reviews, and live production experience at no additional charge.',
+    a: 'Yes! The 2-Month Industrial Internship is bundled completely free of charge (₹0 fee) along with the training tuition (₹2,400). You receive full industrial mentorship, code reviews, and live production experience at no additional charge.',
   },
   {
     q: 'What official credentials do I receive upon program completion?',
@@ -124,6 +128,11 @@ export default function HomePage() {
   const router = useRouter();
   const { user, logout, isLoading, isAdmin } = useAuth();
 
+  // Training & Internship programs from Database
+  const [trainingPrograms, setTrainingPrograms] = useState<any[]>([]);
+  const [activeSpotlightIdx, setActiveSpotlightIdx] = useState<number>(0);
+
+  // Courses state
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [loadingCourses, setLoadingCourses] = useState<boolean>(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -140,8 +149,21 @@ export default function HomePage() {
   // FAQ Accordion State
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
+  // Fetch both courses and live training programs from DB
   useEffect(() => {
-    async function loadCourses() {
+    async function loadData() {
+      // 1. Fetch Training & Internship programs
+      try {
+        const res = await fetch('/api/training-internship', { cache: 'no-store' });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.programs)) {
+          setTrainingPrograms(data.programs);
+        }
+      } catch (err) {
+        console.warn('Failed to load training programs for homepage:', err);
+      }
+
+      // 2. Fetch Courses
       try {
         setLoadingCourses(true);
         const url =
@@ -162,7 +184,8 @@ export default function HomePage() {
         setLoadingCourses(false);
       }
     }
-    loadCourses();
+
+    loadData();
   }, [selectedCategory]);
 
   const handleInstantVerify = (e?: React.FormEvent) => {
@@ -186,14 +209,28 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Active spotlight program for hero card
+  const activeSpotlight =
+    trainingPrograms[activeSpotlightIdx] ||
+    trainingPrograms[0] || {
+      title: 'Frontend Developer Training & 2-Month Internship',
+      subtitle:
+        'Master React 18, Next.js 14 App Router, TypeScript, and complete an industrial internship with 4 verified credentials.',
+      slug: 'frontend-developer-training-internship',
+      track: 'Frontend Developer',
+      pricing: { trainingPrice: 2400, originalPrice: 7999, discountPercentage: 70 },
+      thumbnail: '',
+      schedule: { badge: 'Saturday & Sunday Live' },
+    };
+
   return (
     <div className={styles.container}>
       {/* =====================================================================
-          STICKY NAVBAR (Light Mode, Blue Shades UI, Required Action Buttons)
+          STICKY NAVBAR (Light Mode, Blue Shades UI, Action Buttons)
           ===================================================================== */}
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
-          {/* Brand Logo with Official Company 3D Icon & Wordmark Lockup */}
+          {/* Brand Logo Lockup */}
           <Link href="/" className={styles.brandLink} title="Binary Vidya Academy">
             <img
               src="/images/binary-vidya-icon.png"
@@ -209,22 +246,15 @@ export default function HomePage() {
 
           {/* Desktop Navigation Links */}
           <div className={styles.navLinks}>
-            {/* 1. Course Button */}
+            <a href="#programs" className={styles.navBtn}>
+              Training &amp; Internships
+            </a>
             <a href="#courses" className={styles.navBtn}>
               Courses
             </a>
-
-            {/* 2. Training & Internships Button */}
-            <Link href="/training-and-internship" className={styles.navBtn}>
-              Training &amp; Internships
-            </Link>
-
-            {/* 3. Verify Certificate Button */}
             <Link href="/verify-certificate" className={styles.navBtn}>
               Verify Certificate
             </Link>
-
-            {/* 4. Careers Button */}
             <Link href="/careers" className={styles.navBtn}>
               Careers
             </Link>
@@ -258,8 +288,10 @@ export default function HomePage() {
                         alt={user.name || 'User'}
                         className={styles.profileNavAvatarImg}
                       />
+                    ) : user.name ? (
+                      user.name.charAt(0).toUpperCase()
                     ) : (
-                      user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                      'U'
                     )}
                   </div>
                   <span>{user.name || 'Profile'}</span>
@@ -270,7 +302,7 @@ export default function HomePage() {
                 <Link href="/login" className={styles.navBtn}>
                   Sign In
                 </Link>
-                <Link href="/login" className={styles.navBtn}>
+                <Link href="/login" className={styles.navBtn} style={{ fontWeight: 700, color: '#2563eb' }}>
                   Get Started
                 </Link>
               </>
@@ -314,15 +346,6 @@ export default function HomePage() {
             </div>
 
             <div className={styles.mobileDrawerLinks}>
-              <a
-                href="#courses"
-                className={styles.navBtn}
-                style={{ width: '100%', justifyContent: 'flex-start' }}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Courses
-              </a>
-
               <Link
                 href="/training-and-internship"
                 className={styles.navBtn}
@@ -331,6 +354,15 @@ export default function HomePage() {
               >
                 Training &amp; Internships
               </Link>
+
+              <a
+                href="#courses"
+                className={styles.navBtn}
+                style={{ width: '100%', justifyContent: 'flex-start' }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Courses
+              </a>
 
               <Link
                 href="/verify-certificate"
@@ -373,8 +405,10 @@ export default function HomePage() {
                           alt={user.name || 'User'}
                           className={styles.profileNavAvatarImg}
                         />
+                      ) : user.name ? (
+                        user.name.charAt(0).toUpperCase()
                       ) : (
-                        user.name ? user.name.charAt(0).toUpperCase() : 'U'
+                        'U'
                       )}
                     </div>
                     <span>{user.name || 'Profile'}</span>
@@ -433,7 +467,7 @@ export default function HomePage() {
       )}
 
       {/* =====================================================================
-          HERO SECTION (Light Mode + Blue Shades UI)
+          HERO SECTION (Recreated Impressive, High-Conversion & Responsive)
           ===================================================================== */}
       <section className={styles.hero}>
         <div className={styles.heroGlowOrb} />
@@ -451,12 +485,12 @@ export default function HomePage() {
             </h1>
 
             <p className={styles.heroSubtitle}>
-              India's premier modern technical academy. Master modern full-stack web engineering, algorithms, and cloud systems with live weekend masterclasses, 2-month industrial internships, and 4 verified credentials.
+              India&apos;s premier modern technical academy. Master modern full-stack web engineering, cloud architectures, and applied AI with live weekend masterclasses, 2-month industrial internships, and 4 verified credentials.
             </p>
 
             <div className={styles.heroCtaGroup}>
               <Link href="/training-and-internship" className={styles.heroPrimaryBtn}>
-                <Sparkles size={16} /> Explore Training &amp; Internship
+                <Sparkles size={16} /> Explore Flagship Programs
               </Link>
               <a href="#courses" className={styles.heroSecondaryBtn}>
                 <BookOpen size={16} /> Browse All Courses
@@ -466,6 +500,7 @@ export default function HomePage() {
               </Link>
             </div>
 
+            {/* Metrics Bar */}
             <div className={styles.heroMetricsBar}>
               <div className={styles.heroMetricBox}>
                 <span className={styles.heroMetricValue}>15,000+</span>
@@ -486,31 +521,90 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right Column: Spotlight Card (Frontend Dev Training & 2-Month Internship) */}
+          {/* Right Column: Interactive Flagship Hero Spotlight Card */}
           <div className={styles.heroRight}>
             <div className={styles.spotlightCard}>
+              {/* Program Selector Pills if multiple programs available */}
+              {trainingPrograms.length > 1 && (
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
+                  {trainingPrograms.slice(0, 3).map((p, idx) => (
+                    <button
+                      key={p.id || idx}
+                      type="button"
+                      onClick={() => setActiveSpotlightIdx(idx)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '999px',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        border: activeSpotlightIdx === idx ? '1px solid #2563eb' : '1px solid #cbd5e1',
+                        background: activeSpotlightIdx === idx ? '#eff6ff' : '#ffffff',
+                        color: activeSpotlightIdx === idx ? '#2563eb' : '#64748b',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {p.track || p.title.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Spotlight Thumbnail if available */}
+              {activeSpotlight.thumbnail && (
+                <div
+                  style={{
+                    width: '100%',
+                    height: '140px',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    marginBottom: '16px',
+                    border: '1px solid #bfdbfe',
+                  }}
+                >
+                  <img
+                    src={activeSpotlight.thumbnail}
+                    alt={activeSpotlight.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+              )}
+
               <div className={styles.spotlightHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <img
                     src="/images/binary-vidya-icon.png"
                     alt="Binary Vidya"
-                    style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
+                    style={{ height: '26px', width: 'auto', objectFit: 'contain' }}
                   />
-                  <span className={styles.spotlightBadge}>Flagship Cohort</span>
+                  <span className={styles.spotlightBadge}>
+                    {activeSpotlight.track || 'Flagship Cohort'}
+                  </span>
                 </div>
-                <span className={styles.spotlightWeekendBadge}>Saturday &amp; Sunday Live</span>
+                <span className={styles.spotlightWeekendBadge}>
+                  {activeSpotlight.schedule?.badge || 'Weekend Live'}
+                </span>
               </div>
 
-              <h2 className={styles.spotlightTitle}>Frontend Developer Training &amp; 2-Month Internship</h2>
+              <h2 className={styles.spotlightTitle}>{activeSpotlight.title}</h2>
               <p className={styles.spotlightSubtitle}>
-                Master React 18, Next.js 14 App Router, TypeScript, and complete an industrial internship with 4 verified credentials.
+                {activeSpotlight.subtitle ||
+                  'Master modern architectures, build production cloud projects, and complete a 2-month industrial internship with 4 verified credentials.'}
               </p>
 
               <div className={styles.spotlightPriceBox}>
                 <div className={styles.spotlightPriceRow}>
-                  <span className={styles.spotlightPriceMain}>₹2,400</span>
-                  <span className={styles.spotlightPriceOld}>₹7,999</span>
-                  <span className={styles.spotlightDiscountPill}>70% OFF</span>
+                  <span className={styles.spotlightPriceMain}>
+                    ₹{(activeSpotlight.pricing?.trainingPrice || 2400).toLocaleString('en-IN')}
+                  </span>
+                  {activeSpotlight.pricing?.originalPrice && (
+                    <span className={styles.spotlightPriceOld}>
+                      ₹{activeSpotlight.pricing.originalPrice.toLocaleString('en-IN')}
+                    </span>
+                  )}
+                  <span className={styles.spotlightDiscountPill}>
+                    {activeSpotlight.pricing?.discountPercentage || 70}% OFF
+                  </span>
                 </div>
                 <div className={styles.spotlightFreeInternshipTag}>
                   <CheckCircle2 size={16} color="#059669" />
@@ -534,10 +628,16 @@ export default function HomePage() {
               </div>
 
               <div className={styles.spotlightActions}>
-                <Link href="/training-and-internship" className={styles.spotlightEnrollBtn}>
+                <Link
+                  href={`/training-and-internship?program=${activeSpotlight.slug || activeSpotlight.id}`}
+                  className={styles.spotlightEnrollBtn}
+                >
                   Enroll Now <ArrowRight size={15} />
                 </Link>
-                <Link href="/training-and-internship" className={styles.spotlightViewBtn}>
+                <Link
+                  href={`/training-and-internship?program=${activeSpotlight.slug || activeSpotlight.id}`}
+                  className={styles.spotlightViewBtn}
+                >
                   View Syllabus
                 </Link>
               </div>
@@ -564,6 +664,128 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* =====================================================================
+          PROGRAMS CATALOG SHOWCASE (ALL PROGRAMS UPDATED BY SUPER ADMIN)
+          ===================================================================== */}
+      {trainingPrograms.length > 0 && (
+        <section id="programs" className={styles.homeProgramsSection}>
+          <div className={styles.sectionHeaderCenter}>
+            <div className={styles.sectionBadge}>
+              <GraduationCap size={14} /> Live Cohorts ({trainingPrograms.length})
+            </div>
+            <h2 className={styles.sectionMainTitle}>Super Admin Verified Programs</h2>
+            <p className={styles.sectionDescription}>
+              Accelerate your engineering journey with live weekend sessions, industry projects, and verified internship credentials.
+            </p>
+          </div>
+
+          <div className={styles.homeProgramsGrid}>
+            {trainingPrograms.map((prog) => {
+              const trainingPrice =
+                prog.pricing?.trainingPrice !== undefined ? prog.pricing.trainingPrice : 2400;
+              const originalPrice =
+                prog.pricing?.originalPrice !== undefined ? prog.pricing.originalPrice : 7999;
+              const discountPct =
+                prog.pricing?.discountPercentage ||
+                Math.round((1 - trainingPrice / originalPrice) * 100) ||
+                70;
+
+              return (
+                <div key={prog.id || prog.slug} className={styles.homeProgCard}>
+                  {/* Thumbnail Image or Gradient Cover */}
+                  <div className={styles.homeProgThumbBox}>
+                    {prog.thumbnail ? (
+                      <img
+                        src={prog.thumbnail}
+                        alt={prog.title}
+                        className={styles.homeProgThumbImg}
+                      />
+                    ) : (
+                      <div className={styles.homeProgThumbFallback}>
+                        <Code size={28} color="#38bdf8" />
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#e2e8f0' }}>
+                          {prog.track || prog.domain || 'Engineering Track'}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={styles.homeProgThumbBadges}>
+                      <span className={styles.homeProgTrackBadge}>
+                        {prog.track || prog.domain || 'Engineering'}
+                      </span>
+                      <span className={styles.homeProgTypeBadge}>
+                        {prog.type || 'Internship'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className={styles.homeProgBody}>
+                    <h3 className={styles.homeProgTitle} title={prog.title}>
+                      {prog.title}
+                    </h3>
+                    <p className={styles.homeProgSubtitle}>
+                      {prog.subtitle ||
+                        'Comprehensive mentor-led weekend live sessions, capstone projects, and verified credentials.'}
+                    </p>
+
+                    <div className={styles.homeProgMetaRow}>
+                      <div className={styles.homeProgMetaItem}>
+                        <Calendar size={14} color="#059669" />
+                        <span>{prog.schedule?.badge || 'Weekend Live Classes'}</span>
+                      </div>
+                      <div className={styles.homeProgMetaItem}>
+                        <Clock size={14} color="#2563eb" />
+                        <span>{prog.rawDuration || prog.duration?.total || '2 Months Internship + Training'}</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.homeProgPriceBlock}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>
+                          Tuition Bundle
+                        </div>
+                        <span className={styles.homeProgPriceVal}>
+                          ₹{trainingPrice.toLocaleString('en-IN')}
+                        </span>
+                        {originalPrice > trainingPrice && (
+                          <span className={styles.homeProgOrigPrice}>
+                            ₹{originalPrice.toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
+                      <span className={styles.homeProgDiscountPill}>{discountPct}% Off</span>
+                    </div>
+
+                    <div className={styles.homeProgBtnGroup}>
+                      <Link
+                        href={`/training-and-internship?program=${prog.slug || prog.id}`}
+                        className={styles.homeProgViewBtn}
+                      >
+                        <BookOpen size={13} /> Syllabus
+                      </Link>
+                      <Link
+                        href={`/training-and-internship?program=${prog.slug || prog.id}`}
+                        className={styles.homeProgEnrollBtn}
+                      >
+                        <Zap size={13} /> Enroll Now
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: '36px' }}>
+            <Link href="/training-and-internship" className={styles.heroPrimaryBtn}>
+              <span>View All Training &amp; Internship Programs</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* =====================================================================
           FLAGSHIP SPOTLIGHT: 3 DEDICATED CURRICULUM SECTIONS
@@ -802,7 +1024,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Interactive Live Certificate Verification Box right on the page */}
+          {/* Interactive Live Certificate Verification Box */}
           <div className={styles.instantVerifyCard}>
             <div className={styles.instantVerifyHeader}>
               <div className={styles.instantVerifyTitleWrap}>
@@ -1011,7 +1233,7 @@ export default function HomePage() {
           </div>
           <h2 className={styles.sectionMainTitle}>Loved by Ambitious Coders Across India</h2>
           <p className={styles.sectionDescription}>
-            Hear how Binary Vidya's weekend cohorts and industrial internship launched high-growth careers.
+            Hear how Binary Vidya&apos;s weekend cohorts and industrial internship launched high-growth careers.
           </p>
         </div>
 
@@ -1023,7 +1245,7 @@ export default function HomePage() {
               ))}
             </div>
             <p className={styles.testimonialText}>
-              "The weekend classes fit perfectly into my final-year engineering schedule. The 2-month internship gave me real production Git workflow experience that impressed my interviewers at Flipkart!"
+              &ldquo;The weekend classes fit perfectly into my final-year engineering schedule. The 2-month internship gave me real production Git workflow experience that impressed my interviewers at Flipkart!&rdquo;
             </p>
             <div className={styles.testimonialAuthor}>
               <div className={styles.testimonialAvatar}>A</div>
@@ -1041,7 +1263,7 @@ export default function HomePage() {
               ))}
             </div>
             <p className={styles.testimonialText}>
-              "The 4 credentials with the instant QR code verification made my resume stand out. The mentor-led capstone project helped me land a 12 LPA SDE offer before graduation."
+              &ldquo;The 4 credentials with the instant QR code verification made my resume stand out. The mentor-led capstone project helped me land a 12 LPA SDE offer before graduation.&rdquo;
             </p>
             <div className={styles.testimonialAuthor}>
               <div className={styles.testimonialAvatar}>R</div>
@@ -1059,7 +1281,7 @@ export default function HomePage() {
               ))}
             </div>
             <p className={styles.testimonialText}>
-              "Getting the 2-month industrial internship completely free with the ₹2,400 training fee was unbeatable. You build actual production code, not just basic todo apps."
+              &ldquo;Getting the 2-month industrial internship completely free with the ₹2,400 training fee was unbeatable. You build actual production code, not just basic todo apps.&rdquo;
             </p>
             <div className={styles.testimonialAuthor}>
               <div className={styles.testimonialAvatar}>P</div>
@@ -1132,7 +1354,7 @@ export default function HomePage() {
       </section>
 
       {/* =====================================================================
-          COMPREHENSIVE RICH FOOTER (Everything provided by Binary Vidya)
+          COMPREHENSIVE RICH FOOTER
           ===================================================================== */}
       <footer className={styles.footer}>
         <div className={styles.footerWrapper}>
@@ -1145,7 +1367,7 @@ export default function HomePage() {
                 className={styles.footerLogoImg}
               />
               <p className={styles.footerBrandDesc}>
-                Binary Vidya is India's leading modern technical academy providing industry-grade software engineering training, 2-month verified industrial internships, production project mentorship, and verifiable ISO-compliant credentials.
+                Binary Vidya is India&apos;s leading modern technical academy providing industry-grade software engineering training, 2-month verified industrial internships, production project mentorship, and verifiable ISO-compliant credentials.
               </p>
               <div className={styles.footerContactList}>
                 <div className={styles.footerContactItem}>
@@ -1248,7 +1470,7 @@ export default function HomePage() {
               <ul className={styles.footerLinksList}>
                 <li>
                   <Link href="/careers">
-                    <Briefcase size={12} color="#059669" /> We're Hiring (All Roles)
+                    <Briefcase size={12} color="#059669" /> We&apos;re Hiring (All Roles)
                   </Link>
                 </li>
                 <li>
@@ -1336,7 +1558,16 @@ export default function HomePage() {
           <div className={styles.syllabusModalCard} onClick={(e) => e.stopPropagation()}>
             <div className={styles.syllabusModalHeader}>
               <div>
-                <span style={{ fontSize: '11px', fontWeight: 800, color: '#2563eb', background: '#eff6ff', padding: '3px 8px', borderRadius: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    color: '#2563eb',
+                    background: '#eff6ff',
+                    padding: '3px 8px',
+                    borderRadius: '6px',
+                  }}
+                >
                   {previewCourse.category}
                 </span>
                 <h3 style={{ margin: '8px 0 4px', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
@@ -1357,7 +1588,16 @@ export default function HomePage() {
                   <div key={ch.id || chIdx} className={styles.syllabusChapterBox}>
                     <div className={styles.syllabusChapterHeader}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, background: '#2563eb', color: '#fff', padding: '2px 8px', borderRadius: '4px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            background: '#2563eb',
+                            color: '#fff',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                          }}
+                        >
                           CH {chIdx + 1}
                         </span>
                         <strong style={{ fontSize: '14px', color: '#0f172a' }}>{ch.title}</strong>
@@ -1392,7 +1632,16 @@ export default function HomePage() {
                                 )}
                               </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '12px',
+                                color: '#64748b',
+                                fontWeight: 600,
+                              }}
+                            >
                               <Clock size={12} /> {les.duration || '15 Mins'}
                             </div>
                           </div>
