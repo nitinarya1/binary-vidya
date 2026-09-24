@@ -476,8 +476,8 @@ export default function HomePage() {
           <div className={styles.heroLeft}>
             <div className={styles.heroTag}>
               <span className={styles.heroPulseDot} />
-              <Sparkles size={14} color="#2563eb" />
-              <span>Admissions Open • Weekend Live Batches 2026</span>
+              <Sparkles size={13} color="#2563eb" style={{ flexShrink: 0 }} />
+              <span>Admissions Open • Weekend Batches 2026</span>
             </div>
 
             <h1 className={styles.heroTitle}>
