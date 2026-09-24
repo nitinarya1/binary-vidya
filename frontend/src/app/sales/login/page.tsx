@@ -53,7 +53,7 @@ export default function SalesLoginPage() {
     if (res.success) {
       setSuccessMsg(res.message || `A 6-digit login code has been sent to ${cleanEmail}`);
       setStep('otp');
-      setCountdown(60);
+      setCountdown(20);
       setOtp('');
     } else {
       setError(res.message || 'Email not found in authorized agent database.');

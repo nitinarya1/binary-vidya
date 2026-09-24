@@ -68,7 +68,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
       setSuccessMsg(res.message || 'OTP code sent to your registered email.');
       setStep(2);
-      setResendCooldown(60);
+      setResendCooldown(20);
       setOtpDigits(['', '', '', '']);
       setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
     } catch (err: any) {

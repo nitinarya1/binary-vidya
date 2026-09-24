@@ -121,7 +121,7 @@ export default function LoginPage() {
         setSuccessMsg(result.message || 'A 4-digit verification code has been sent to your registered email!');
         setMode('superadmin-otp');
         setOtpDigits(['', '', '', '']);
-        setResendCooldown(60);
+        setResendCooldown(20);
         setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
         return;
       }
@@ -322,7 +322,7 @@ export default function LoginPage() {
       const res = await login(email, password);
       if (res.requireOtp) {
         setSuccessMsg('A new 4-digit OTP has been sent to your email.');
-        setResendCooldown(60);
+        setResendCooldown(20);
         setOtpDigits(['', '', '', '']);
         setTimeout(() => otpInputsRef.current[0]?.focus(), 100);
       }
