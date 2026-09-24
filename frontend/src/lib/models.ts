@@ -171,6 +171,9 @@ const otpSchema = new Schema<IOtp>(
   }
 );
 
+// Compound index for the exact query pattern used in all OTP upserts: { email, purpose }
+otpSchema.index({ email: 1, purpose: 1 });
+
 export const Otp: Model<IOtp> =
   mongoose.models.Otp || mongoose.model<IOtp>('Otp', otpSchema);
 

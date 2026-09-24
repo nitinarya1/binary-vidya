@@ -29,19 +29,22 @@ export async function POST(req: Request) {
       );
     }
 
-    let user;
+    let user: any;
     if (target.includes('@')) {
-      user = await User.findOne({ email: target.toLowerCase() });
+      user = await User.findOne({ email: target.toLowerCase() }).select('email').lean();
     } else {
       const formattedPhone = formatPhoneNumber(target);
       const cleanDigits = target.replace(/\D/g, '');
+      const last10 = cleanDigits.slice(-10);
       user = await User.findOne({
         $or: [
           { phone: formattedPhone },
           { phone: target },
-          { phone: { $regex: cleanDigits.slice(-10) + '$' } },
+          { phone: last10 },
+          { phone: `+91${last10}` },
+          { phone: `91${last10}` },
         ],
-      });
+      }).select('email').lean();
     }
 
     if (!user || !user.email) {
@@ -66,11 +69,10 @@ export async function POST(req: Request) {
       { upsert: true, new: true }
     );
 
-    try {
-      await sendOtpEmail(normalizedEmail, otpCode, 'Password Reset');
-    } catch (err: any) {
+    // FIRE-AND-FORGET: respond instantly, email sends in background
+    sendOtpEmail(normalizedEmail, otpCode, 'Password Reset').catch((err: any) => {
       console.error('[Send Forgot Password OTP Error]:', err?.message || err);
-    }
+    });
 
     const emailParts = normalizedEmail.split('@');
     const localPart = emailParts[0];

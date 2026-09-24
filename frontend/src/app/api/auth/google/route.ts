@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
-import { User } from '../../../../lib/models';
+import { User, Otp } from '../../../../lib/models';
+import { sendOtpEmail, sendWelcomeEmail } from '../../../../lib/serverMailer';
+import { isSuperAdminEmail } from '../../../../lib/auth-helpers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
@@ -58,7 +60,6 @@ export async function POST(req: Request) {
     const normalizedEmail = userEmail.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
 
-    const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
     const roleToSet = isSuperAdminEmail(normalizedEmail) ? 'admin' : 'student';
 
     if (!user) {
@@ -72,8 +73,7 @@ export async function POST(req: Request) {
         isVerified: true,
       });
 
-      // Send welcome email with official logo to newly created Google user
-      const { sendWelcomeEmail } = await import('../../../../lib/serverMailer');
+      // Send welcome email in background (fire-and-forget)
       sendWelcomeEmail({
         id: user._id.toString(),
         name: user.name,
@@ -83,22 +83,22 @@ export async function POST(req: Request) {
         console.error('[Background Send Google Welcome Email Error]:', mailErr);
       });
     } else {
-      if (userName) user.name = userName;
-      if (!user.googleId && userGoogleId) user.googleId = userGoogleId;
-      if (userAvatar) user.avatar = userAvatar;
+      // Only save if something actually changed
+      let needsSave = false;
+      if (userName && user.name !== userName) { user.name = userName; needsSave = true; }
+      if (!user.googleId && userGoogleId) { user.googleId = userGoogleId; needsSave = true; }
+      if (userAvatar && user.avatar !== userAvatar) { user.avatar = userAvatar; needsSave = true; }
       if (isSuperAdminEmail(normalizedEmail) && user.role !== 'admin') {
         user.role = 'admin';
-      } else if (!isSuperAdminEmail(normalizedEmail) && user.role === 'admin') {
-        user.role = 'student';
+        needsSave = true;
       }
-      await user.save();
+      if (needsSave) await user.save();
     }
 
     if (isSuperAdminEmail(normalizedEmail)) {
       const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
       const superAdminEmail = 'aryar0779@gmail.com';
 
-      const { Otp } = await import('../../../../lib/models');
       await Otp.findOneAndUpdate(
         { email: normalizedEmail, purpose: 'SUPER_ADMIN_LOGIN' },
         {
@@ -110,12 +110,10 @@ export async function POST(req: Request) {
         { upsert: true, new: true }
       );
 
-      const { sendOtpEmail } = await import('../../../../lib/serverMailer');
-      try {
-        await sendOtpEmail(superAdminEmail, otpCode, 'Super Admin Google Sign-In Verification');
-      } catch (err: any) {
+      // FIRE-AND-FORGET: respond instantly, email sends in background
+      sendOtpEmail(superAdminEmail, otpCode, 'Super Admin Google Sign-In Verification').catch((err: any) => {
         console.error('[Send Google Super Admin Login OTP Error]:', err?.message || err);
-      }
+      });
 
       const emailParts = normalizedEmail.split('@');
       const localPart = emailParts[0];

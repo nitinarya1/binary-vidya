@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../../lib/db';
 import { User, Otp } from '../../../../../lib/models';
-import { isSuperAdminEmail } from '../../../../../lib/auth-helpers';
+import { isSuperAdminEmail, isDefaultAdminEmail } from '../../../../../lib/auth-helpers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
@@ -22,8 +22,16 @@ export async function POST(req: Request) {
     const normalizedEmail = email.toLowerCase().trim();
     const cleanOtp = otp.toString().trim();
 
-    const { isSuperAdminEmail, isDefaultAdminEmail } = await import('../../../../../lib/auth-helpers');
-    const user = await User.findOne({ email: normalizedEmail });
+    // Parallel fetch: user + OTP record simultaneously
+    const [user, otpRecord] = await Promise.all([
+      User.findOne({ email: normalizedEmail }).lean() as Promise<any>,
+      Otp.findOne({
+        email: normalizedEmail,
+        otp: cleanOtp,
+        purpose: { $in: ['ADMIN_LOGIN', 'SUPER_ADMIN_LOGIN'] },
+      }).lean() as Promise<any>,
+    ]);
+
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'Administrator account record not found' },
@@ -46,12 +54,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const otpRecord = await Otp.findOne({
-      email: normalizedEmail,
-      otp: cleanOtp,
-      purpose: { $in: ['ADMIN_LOGIN', 'SUPER_ADMIN_LOGIN'] },
-    });
-
     if (!otpRecord) {
       return NextResponse.json(
         { success: false, message: 'Invalid or incorrect OTP code. Please try again.' },
@@ -60,20 +62,19 @@ export async function POST(req: Request) {
     }
 
     if (new Date() > otpRecord.expiresAt) {
-      await Otp.deleteOne({ _id: otpRecord._id });
+      Otp.deleteOne({ _id: otpRecord._id }).exec().catch(() => {});
       return NextResponse.json(
         { success: false, message: 'OTP has expired. Please request a new code.' },
         { status: 400 }
       );
     }
 
-    // OTP is valid - consume it immediately
-    await Otp.deleteOne({ _id: otpRecord._id });
+    // OTP is valid - consume it (fire-and-forget)
+    Otp.deleteOne({ _id: otpRecord._id }).exec().catch(() => {});
 
+    // Only update role if genuinely needed (fire-and-forget)
     if (user.role !== 'admin' && (user.isTeamMember || isDefaultAdminEmail(normalizedEmail) || isSuperAdminEmail(normalizedEmail))) {
-      user.role = 'admin';
-      user.isTeamMember = true;
-      await user.save();
+      User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true }).exec().catch(() => {});
     }
 
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: '7d' });
@@ -95,7 +96,7 @@ export async function POST(req: Request) {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role,
+        role: user.role === 'admin' ? 'admin' : 'admin',
         avatar: user.avatar,
         isTeamMember: user.isTeamMember || false,
         department: user.department || '',

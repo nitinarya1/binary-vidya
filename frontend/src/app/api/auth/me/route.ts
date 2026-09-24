@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
 import { User } from '../../../../lib/models';
+import { isDefaultAdminEmail } from '../../../../lib/auth-helpers';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,6 @@ export async function GET(req: Request) {
       );
     }
 
-    const { isDefaultAdminEmail } = await import('../../../../lib/auth-helpers');
     const isTeamMember = Boolean(
       user.isTeamMember ||
       user.role === 'admin' ||
@@ -53,7 +53,6 @@ export async function GET(req: Request) {
 
     // Only write to DB when role upgrade is actually needed — not on every session check
     if ((isDefaultAdminEmail(user.email) || isTeamMember) && user.role !== 'admin') {
-      user.role = 'admin';
       // Fire-and-forget the role update so we don't block the response
       User.findByIdAndUpdate(user._id, { role: 'admin', isTeamMember: true }).exec().catch(() => {});
     }

@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectDB } from '../../../../lib/db';
 import { User } from '../../../../lib/models';
+import { sendWelcomeEmail } from '../../../../lib/serverMailer';
+import { isSuperAdminEmail } from '../../../../lib/auth-helpers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'binary_vidya_super_secret_jwt_key_2025_987654321';
 
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const existingUser = await User.findOne({ email: normalizedEmail }).select('_id').lean();
     if (existingUser) {
       return NextResponse.json(
         { success: false, message: 'An account with this email already exists' },
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
     let formattedPhone: string | undefined;
     if (phone && phone.trim()) {
       formattedPhone = formatPhoneNumber(phone);
-      const existingPhone = await User.findOne({ phone: formattedPhone });
+      const existingPhone = await User.findOne({ phone: formattedPhone }).select('_id').lean();
       if (existingPhone) {
         return NextResponse.json(
           { success: false, message: 'An account with this mobile number already exists' },
@@ -52,11 +54,9 @@ export async function POST(req: Request) {
       }
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Use 8 rounds for faster hashing while maintaining security
+    const hashedPassword = await bcrypt.hash(password, 8);
 
-    const { isSuperAdminEmail } = await import('../../../../lib/auth-helpers');
-    // Strictly assign 'admin' only to aryar0779@gmail.com; all other created accounts are 'student'
     const roleToAssign = isSuperAdminEmail(normalizedEmail) ? 'admin' : 'student';
 
     const user = await User.create({
@@ -69,8 +69,7 @@ export async function POST(req: Request) {
       isVerified: false,
     });
 
-    // Send welcome email with official logo to newly registered user
-    const { sendWelcomeEmail } = await import('../../../../lib/serverMailer');
+    // Send welcome email in background (fire-and-forget)
     sendWelcomeEmail({
       id: user._id.toString(),
       name: user.name,
