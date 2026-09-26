@@ -53,7 +53,7 @@ function formatSingleProgram(p: any, defaultSlug?: string) {
         ? p.perks
         : (FRONTEND_INTERNSHIP_PROGRAM as any).benefits || [],
     eligibility: p.eligibility || 'College Students, Freshers & Working Professionals',
-    deadline: p.deadline || 'Rolling Admissions',
+    deadline: p.deadline || 'Enrollment Open',
     status: p.status || 'open',
     applicantsCount: p.applicantsCount || 0,
     createdAt: p.createdAt,

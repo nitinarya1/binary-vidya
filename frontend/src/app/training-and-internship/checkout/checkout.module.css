@@ -26,6 +26,18 @@
   text-decoration: none;
 }
 
+.brandNavIcon {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+
+.brandNavWordmark {
+  height: 19px;
+  width: auto;
+  object-fit: contain;
+}
+
 .brandLogo {
   width: 36px;
   height: 36px;

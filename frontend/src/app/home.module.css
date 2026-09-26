@@ -1622,10 +1622,14 @@
 /* ==========================================================================
    COMPREHENSIVE RICH FOOTER (All Services, Programs, Credentials, Policies)
    ========================================================================== */
+/* ==========================================================================
+   COMPREHENSIVE RICH FOOTER (Clean Light Mode)
+   ========================================================================== */
 .footer {
-  background: #0b1329;
-  color: #e2e8f0;
-  padding: 80px 24px 30px;
+  background: #f8fafc;
+  color: #334155;
+  padding: 80px 24px 36px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .footerWrapper {
@@ -1637,8 +1641,8 @@
   display: grid;
   grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr;
   gap: 36px;
-  padding-bottom: 60px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 50px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .footerBrandCol {
@@ -1647,17 +1651,18 @@
 }
 
 .footerLogoImg {
-  height: 52px;
+  height: 48px;
   width: auto;
   object-fit: contain;
   margin-bottom: 16px;
+  align-self: flex-start;
 }
 
 .footerBrandDesc {
-  font-size: 13px;
-  color: #94a3b8;
-  line-height: 1.6;
-  margin-bottom: 24px;
+  font-size: 13.5px;
+  color: #64748b;
+  line-height: 1.65;
+  margin-bottom: 22px;
 }
 
 .footerContactList {
@@ -1665,7 +1670,7 @@
   flex-direction: column;
   gap: 10px;
   font-size: 13px;
-  color: #cbd5e1;
+  color: #475569;
 }
 
 .footerContactItem {
@@ -1675,11 +1680,11 @@
 }
 
 .footerColTitle {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #ffffff;
+  color: #0f172a;
   margin-bottom: 18px;
   position: relative;
   padding-bottom: 8px;
@@ -1692,7 +1697,7 @@
   left: 0;
   width: 24px;
   height: 2px;
-  background: #3b82f6;
+  background: #2563eb;
   border-radius: 2px;
 }
 
@@ -1701,11 +1706,13 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  padding: 0;
+  margin: 0;
 }
 
 .footerLinksList li a {
   font-size: 13px;
-  color: #94a3b8;
+  color: #64748b;
   text-decoration: none;
   transition: all 0.2s ease;
   display: inline-flex;
@@ -1714,8 +1721,9 @@
 }
 
 .footerLinksList li a:hover {
-  color: #60a5fa;
+  color: #2563eb;
   transform: translateX(3px);
+  font-weight: 600;
 }
 
 .footerTrustStrip {
@@ -1724,8 +1732,12 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 20px;
-  padding: 30px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 24px 28px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  margin: 36px 0 28px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .trustBadgeItem {
@@ -1734,7 +1746,7 @@
   gap: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #334155;
 }
 
 .footerBottomBar {
@@ -1743,8 +1755,8 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
-  padding-top: 24px;
-  font-size: 12px;
+  padding-top: 20px;
+  font-size: 13px;
   color: #64748b;
 }
 
@@ -1754,34 +1766,41 @@
   gap: 20px;
 }
 
-.footerBottomLinks a {
+.footerBottomLinks a,
+.footerBottomLinks span {
   color: #64748b;
   text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
 }
 
-.footerBottomLinks a:hover {
-  color: #94a3b8;
+.footerBottomLinks a:hover,
+.footerBottomLinks span:hover {
+  color: #0f172a;
 }
 
 .backToTopBtn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #94a3b8;
-  padding: 6px 14px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  padding: 7px 16px;
   border-radius: 8px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .backToTopBtn:hover {
   background: #2563eb;
   color: #ffffff;
   border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
 }
 
 /* ==========================================================================

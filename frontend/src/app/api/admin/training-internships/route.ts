@@ -107,7 +107,7 @@ export async function GET(req: Request) {
         credentials: p.credentials || [],
         eligibility: p.eligibility || 'College Students & Working Professionals',
         perks: p.perks || [],
-        deadline: p.deadline || 'Rolling Admissions',
+        deadline: p.deadline || 'Enrollment Open',
         status: p.status || 'open',
         applicantsCount: p.applicantsCount || 0,
         createdAt: p.createdAt,
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
       credentials: credentials || [],
       eligibility: eligibility || 'College Students, Freshers & Working Professionals',
       perks: formattedPerks,
-      deadline: deadline || 'Rolling Admissions',
+      deadline: deadline || 'Enrollment Open',
       status: status || 'open',
       applicantsCount: 0,
     });

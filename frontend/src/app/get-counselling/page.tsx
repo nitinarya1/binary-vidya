@@ -326,7 +326,7 @@ export default function GetCounsellingPage() {
                 maxWidth: '520px',
                 margin: '0 auto 24px',
               }}>
-                Hi <strong>{formData.name}</strong>, your application for the <strong>{formData.preferredDomain}</strong> AICTE, MSME &amp; ISO 9001:2015 verified internship has been registered. Our admissions coordinator will review your profile and connect via Call/WhatsApp within <strong>24 hours</strong>.
+                Hi <strong>{formData.name}</strong>, your application for the <strong>{formData.preferredDomain}</strong> AICTE, MSME &amp; ISO 9001:2015 verified internship has been registered. Our program coordinator will review your profile and connect via Call/WhatsApp within <strong>24 hours</strong>.
               </p>
 
               <div style={{

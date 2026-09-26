@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import confetti from 'canvas-confetti';
 import { useAuth } from '../../context/AuthContext';
 import { AuthModal } from '../../components/AuthModal';
+import Footer from '../../components/Footer';
 import styles from './training.module.css';
 import {
   ShieldCheck,
@@ -350,7 +351,7 @@ function TrainingAndInternshipContent() {
           {/* Pill Badges */}
           <div className={styles.pillGroup}>
             <span className={styles.badgeTrack}>
-              <Code size={14} color="#38bdf8" /> Super Admin Verified Programs
+              <Code size={14} color="#38bdf8" /> Industry Certified Programs
             </span>
             <span className={styles.badgeWeekend}>
               <Calendar size={14} color="#059669" /> Weekend Live Classes (Sat &amp; Sun)
@@ -1146,6 +1147,9 @@ function TrainingAndInternshipContent() {
           </div>
         </main>
       )}
+
+      {/* Modern Light Mode Footer */}
+      <Footer />
 
       {/* ================= PAYMENT RECEIPT MODAL ON SUCCESS ================= */}
       {paymentStep === 'success' && paymentReceipt && (

@@ -58,6 +58,8 @@ interface CourseItem {
   enrolledCount?: number;
 }
 
+import Footer from '../../components/Footer';
+
 export default function CoursesCatalogPage() {
   const { user, logout, isLoading: authLoading, isAdmin } = useAuth();
 
@@ -67,7 +69,6 @@ export default function CoursesCatalogPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [categories, setCategories] = useState<string[]>([]);
-  const [previewCourse, setPreviewCourse] = useState<CourseItem | null>(null);
 
   // Fetch courses from backend
   const fetchCourses = async () => {
@@ -182,7 +183,7 @@ export default function CoursesCatalogPage() {
       <header className={styles.heroSection}>
         <div className={styles.heroContent}>
           <div className={styles.heroBadge}>
-            <Sparkles size={14} color="#60a5fa" /> Verified Engineering Curricula
+            <Sparkles size={14} color="#60a5fa" /> Technical Specializations &amp; Tracks
           </div>
           <h1 className={styles.heroTitle}>Master In-Demand Technical Specializations</h1>
           <p className={styles.heroSubtitle}>
@@ -333,7 +334,7 @@ export default function CoursesCatalogPage() {
                       <span className={styles.levelBadge}>{course.level || 'All Levels'}</span>
                     </div>
                     <div style={{ fontSize: '12px', color: '#dbeafe', fontWeight: 600 }}>
-                      {course.duration} • {course.totalLessons || 15} Lessons
+                      {course.duration} • Guided Projects
                     </div>
                   </div>
                 )}
@@ -355,29 +356,18 @@ export default function CoursesCatalogPage() {
                     By <strong>{course.instructor || 'Binary Vidya Faculty'}</strong>
                   </div>
 
-                  {/* Modules & Chapters Metadata */}
+                  {/* Modules Metadata */}
                   <div className={styles.metaRow}>
                     <span className={styles.metaItem}>
                       <Layers size={14} color="#2563eb" />
-                      <strong>{course.chaptersCount || course.chapters?.length || 1}</strong> Chapters
+                      <strong>{course.chaptersCount || course.chapters?.length || 1}</strong> Modules
                     </span>
                     <span>•</span>
                     <span className={styles.metaItem}>
-                      <Video size={14} color="#2563eb" />
-                      <strong>{course.totalLessons || 15}</strong> Video Lectures
+                      <Clock size={14} color="#2563eb" />
+                      <strong>{course.duration || 'Flexible Track'}</strong>
                     </span>
                   </div>
-
-                  {/* View Syllabus CTA */}
-                  {course.chapters && course.chapters.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setPreviewCourse(course)}
-                      className={styles.viewSyllabusBtn}
-                    >
-                      <PlayCircle size={14} /> View Syllabus &amp; Video Lessons
-                    </button>
-                  )}
 
                   {/* Footer Action */}
                   <div className={styles.courseFooter}>
@@ -398,96 +388,8 @@ export default function CoursesCatalogPage() {
         )}
       </main>
 
-      {/* Interactive Syllabus Preview Modal */}
-      {previewCourse && (
-        <div className={styles.modalOverlay} onClick={() => setPreviewCourse(null)}>
-          <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div>
-                <span className={styles.levelBadge} style={{ marginBottom: '6px' }}>
-                  {previewCourse.category}
-                </span>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                  {previewCourse.title}
-                </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                  Curriculum Structure • {previewCourse.chapters?.length || 0} Chapters • {previewCourse.totalLessons || 0} Lectures • Instructor: {previewCourse.instructor}
-                </p>
-              </div>
-              <button onClick={() => setPreviewCourse(null)} className={styles.closeBtn}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ padding: '24px' }}>
-              {previewCourse.chapters && previewCourse.chapters.length > 0 ? (
-                previewCourse.chapters.map((ch, chIdx) => (
-                  <div key={ch.id || chIdx} className={styles.chapterCard}>
-                    <div className={styles.chapterHeader}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, background: '#2563eb', color: '#fff', padding: '3px 8px', borderRadius: '4px' }}>
-                          CH {chIdx + 1}
-                        </span>
-                        <strong style={{ fontSize: '14px', color: '#0f172a' }}>{ch.title}</strong>
-                      </div>
-                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                        {ch.lessons?.length || 0} Video Lessons
-                      </span>
-                    </div>
-
-                    {ch.description && (
-                      <p style={{ margin: '8px 16px', fontSize: '12px', color: '#64748b' }}>
-                        {ch.description}
-                      </p>
-                    )}
-
-                    <div>
-                      {ch.lessons && ch.lessons.map((les, lIdx) => (
-                        <div key={les.id || lIdx} className={styles.lessonRow}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                            {les.thumbnail ? (
-                              <img src={les.thumbnail} alt={les.title} className={styles.lessonThumb} />
-                            ) : (
-                              <div className={styles.lessonThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                                <Film size={16} />
-                              </div>
-                            )}
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
-                                {les.title}
-                              </div>
-                              {les.description && (
-                                <div style={{ fontSize: '11px', color: '#64748b' }}>{les.description}</div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                            <Clock size={12} /> {les.duration || '15 Mins'}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  No syllabus uploaded yet for this course.
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px' }}>
-                <button onClick={() => setPreviewCourse(null)} className={styles.modalCancelBtn}>
-                  Close
-                </button>
-                <Link href={`/courses/${previewCourse.slug || previewCourse.id}`} className={styles.modalEnrollBtn}>
-                  Enroll in this Masterclass <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modern Light Mode Footer */}
+      <Footer />
     </div>
   );
 }

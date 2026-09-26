@@ -445,10 +445,16 @@ function CourseCheckoutContent() {
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
           <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-            </div>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -517,11 +523,11 @@ function CourseCheckoutContent() {
                     </span>
                     <span>•</span>
                     <span className={styles.metaPill}>
-                      <Layers size={13} color="#2563eb" /> {course.chaptersCount || course.chapters?.length || 1} Chapters
+                      <Layers size={13} color="#2563eb" /> {course.chaptersCount || course.chapters?.length || 1} Modules
                     </span>
                     <span>•</span>
                     <span className={styles.metaPill}>
-                      <Video size={13} color="#2563eb" /> {course.totalLessons || 12} Lectures
+                      <Award size={13} color="#059669" /> Certificate Included
                     </span>
                   </div>
                 </div>

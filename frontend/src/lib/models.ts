@@ -355,7 +355,7 @@ const trainingInternshipSchema = new Schema<ITrainingInternship>(
     credentials: [{ type: Schema.Types.Mixed }],
     eligibility: { type: String, default: 'College Students, Freshers & Working Professionals' },
     perks: [{ type: String }],
-    deadline: { type: String, default: 'Rolling Admissions' },
+    deadline: { type: String, default: 'Enrollment Open' },
     status: {
       type: String,
       enum: ['open', 'ongoing', 'closed'],

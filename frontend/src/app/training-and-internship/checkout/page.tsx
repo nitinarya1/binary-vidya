@@ -432,8 +432,16 @@ function TrainingCheckoutContent({ initialSlug }: { initialSlug?: string }) {
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
           <Link href="/training-and-internship" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <span className={styles.brandName}>Binary Vidya</span>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
           <div className={styles.secureBadge}>
             <Lock size={14} />

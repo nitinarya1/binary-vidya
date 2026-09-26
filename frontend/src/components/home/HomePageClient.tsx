@@ -461,7 +461,7 @@ export default function HomePageClient({
             <div className={styles.heroTag}>
               <span className={styles.heroPulseDot} />
               <Sparkles size={13} color="#2563eb" style={{ flexShrink: 0 }} />
-              <span>Admissions Open • Weekend Batches 2026</span>
+              <span>Enrollment Open • Weekend Batches 2026</span>
             </div>
 
             <h1 className={styles.heroTitle}>
@@ -630,7 +630,7 @@ export default function HomePageClient({
             <div className={styles.sectionBadge}>
               <GraduationCap size={14} /> Live Cohorts ({trainingPrograms.length})
             </div>
-            <h2 className={styles.sectionMainTitle}>Super Admin Verified Programs</h2>
+            <h2 className={styles.sectionMainTitle}>Flagship Engineering Programs</h2>
             <p className={styles.sectionDescription}>
               Accelerate your engineering journey with live weekend sessions, industry projects, and verified internship credentials.
             </p>
@@ -926,8 +926,8 @@ export default function HomePageClient({
                       <span>{course.duration || '12+ Hours'}</span>
                     </div>
                     <div className={styles.courseMetaItem}>
-                      <Film size={13} color="#0284c7" />
-                      <span>{course.totalLessons || 24} Lessons</span>
+                      <Layers size={13} color="#0284c7" />
+                      <span>{course.chapters?.length || 4} Modules</span>
                     </div>
                     <div className={styles.courseMetaItem}>
                       <Star size={13} color="#f59e0b" fill="#f59e0b" />
@@ -938,12 +938,12 @@ export default function HomePageClient({
                   <div className={styles.courseFooter}>
                     <div className={styles.coursePrice}>₹{course.price}</div>
                     <div className={styles.courseActions}>
-                      <button
-                        onClick={() => setPreviewCourse(course)}
+                      <Link
+                        href={`/courses/${course.slug || course.id}`}
                         className={styles.syllabusBtn}
                       >
-                        Syllabus
-                      </button>
+                        Details
+                      </Link>
                       <Link
                         href={`/courses/${course.slug || course.id}`}
                         className={styles.enrollBtn}
@@ -1501,151 +1501,6 @@ export default function HomePageClient({
           </div>
         </div>
       </footer>
-
-      {/* =====================================================================
-          SYLLABUS PREVIEW MODAL
-          ===================================================================== */}
-      {previewCourse && (
-        <div className={styles.syllabusModalOverlay} onClick={() => setPreviewCourse(null)}>
-          <div className={styles.syllabusModalCard} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.syllabusModalHeader}>
-              <div>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    color: '#2563eb',
-                    background: '#eff6ff',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                  }}
-                >
-                  {previewCourse.category}
-                </span>
-                <h3 style={{ margin: '8px 0 4px', fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-                  {previewCourse.title}
-                </h3>
-                <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-                  Complete Course Curriculum • {previewCourse.chapters?.length || 0} Chapters • {previewCourse.totalLessons || 0} Lectures
-                </p>
-              </div>
-              <button onClick={() => setPreviewCourse(null)} className={styles.syllabusCloseBtn}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ padding: '24px' }}>
-              {previewCourse.chapters && previewCourse.chapters.length > 0 ? (
-                previewCourse.chapters.map((ch, chIdx) => (
-                  <div key={ch.id || chIdx} className={styles.syllabusChapterBox}>
-                    <div className={styles.syllabusChapterHeader}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 800,
-                            background: '#2563eb',
-                            color: '#fff',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                          }}
-                        >
-                          CH {chIdx + 1}
-                        </span>
-                        <strong style={{ fontSize: '14px', color: '#0f172a' }}>{ch.title}</strong>
-                      </div>
-                      <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                        {ch.lessons?.length || 0} Lectures
-                      </span>
-                    </div>
-
-                    {ch.description && (
-                      <p style={{ margin: '8px 16px', fontSize: '12px', color: '#64748b' }}>
-                        {ch.description}
-                      </p>
-                    )}
-
-                    <div>
-                      {ch.lessons &&
-                        ch.lessons.map((les, lIdx) => (
-                          <div key={les.id || lIdx} className={styles.syllabusLessonRow}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-                              <div className={styles.syllabusLessonThumb}>
-                                <Film size={16} color="#2563eb" />
-                              </div>
-                              <div>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
-                                  {les.title}
-                                </div>
-                                {les.description && (
-                                  <div style={{ fontSize: '11px', color: '#64748b' }}>
-                                    {les.description}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '12px',
-                                color: '#64748b',
-                                fontWeight: 600,
-                              }}
-                            >
-                              <Clock size={12} /> {les.duration || '15 Mins'}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  Comprehensive syllabus being finalized. Check back soon!
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px', gap: '12px' }}>
-                <button
-                  onClick={() => setPreviewCourse(null)}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '10px',
-                    background: '#f1f5f9',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: '#475569',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Close
-                </button>
-                <Link
-                  href={`/courses/${previewCourse.slug || previewCourse.id}`}
-                  style={{
-                    padding: '10px 24px',
-                    borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    color: '#ffffff',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  Enroll in this Course <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

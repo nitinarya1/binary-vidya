@@ -28,9 +28,9 @@ import {
   Share2,
   X,
   Tag,
-  Gift,
+  BookOpen,
 } from 'lucide-react';
-import { VideoPlayer } from '../../../components/VideoPlayer';
+import Footer from '../../../components/Footer';
 
 interface VideoLesson {
   id?: string;
@@ -76,7 +76,6 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<CourseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [previewLesson, setPreviewLesson] = useState<{ title: string; videoUrl: string; thumbnail?: string } | null>(null);
 
   useEffect(() => {
     async function loadCourse() {
@@ -134,7 +133,6 @@ export default function CourseDetailPage() {
   const originalPrice = Math.round((course.price || 2999) * 2.2);
   const discountPercent = course.price > 0 ? Math.round(((originalPrice - course.price) / originalPrice) * 100) : 100;
   const totalChapters = course.chapters?.length || course.chaptersCount || 1;
-  const totalLessons = course.totalLessons || 12;
 
   return (
     <div className={styles.container}>
@@ -142,11 +140,16 @@ export default function CourseDetailPage() {
       <nav className={styles.navbar}>
         <div className={styles.navWrapper}>
           <Link href="/" className={styles.brandLink}>
-            <div className={styles.brandLogo}>BV</div>
-            <div>
-              <div className={styles.brandName}>Binary Vidya</div>
-              <div className={styles.brandTagline}>Technical Academy</div>
-            </div>
+            <img
+              src="/images/binary-vidya-icon.png"
+              alt="Binary Vidya"
+              className={styles.brandNavIcon}
+            />
+            <img
+              src="/images/binary-vidya-wordmark.png"
+              alt="Binary Vidya"
+              className={styles.brandNavWordmark}
+            />
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -274,11 +277,11 @@ export default function CourseDetailPage() {
               </div>
               <div className={styles.highlightItem}>
                 <Layers size={16} color="#2563eb" />
-                <span>{totalChapters} structured chapters</span>
+                <span>{totalChapters} structured modules</span>
               </div>
               <div className={styles.highlightItem}>
-                <Video size={16} color="#2563eb" />
-                <span>{totalLessons} hands-on video lectures</span>
+                <Code2 size={16} color="#2563eb" />
+                <span>Production codebases &amp; real-world projects</span>
               </div>
               <div className={styles.highlightItem}>
                 <Award size={16} color="#2563eb" />
@@ -297,11 +300,11 @@ export default function CourseDetailPage() {
       <section className={styles.contentSection} id="curriculum">
         <div className={styles.sectionHeader}>
           <div className={styles.sectionBadge}>
-            <Layers size={14} /> Step-By-Step Syllabus
+            <Layers size={14} /> Curriculum Architecture
           </div>
-          <h2 className={styles.sectionTitle}>Course Curriculum &amp; Video Lessons</h2>
+          <h2 className={styles.sectionTitle}>Track Modules &amp; Engineering Path</h2>
           <p className={styles.sectionSubtitle}>
-            Explore the multi-chapter learning path. Each lesson includes production code and hands-on deliverables.
+            Engineered learning path designed for production mastery. Complete interactive video lectures, exercises, and guided codebases are unlocked upon enrollment inside your My Learning student portal.
           </p>
         </div>
 
@@ -312,79 +315,45 @@ export default function CourseDetailPage() {
                 <div className={styles.chapterHeader}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 800, background: '#2563eb', color: '#ffffff', padding: '3px 8px', borderRadius: '6px' }}>
-                      CHAPTER {chIdx + 1}
+                      MODULE {chIdx + 1}
                     </span>
                     <strong style={{ fontSize: '15px', color: '#0f172a' }}>{chapter.title}</strong>
                   </div>
-                  <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                    {chapter.lessons?.length || 0} Lessons
+                  <span style={{ fontSize: '12px', color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={13} /> Included in Track
                   </span>
                 </div>
 
                 {chapter.description && (
-                  <p style={{ margin: '10px 20px', fontSize: '13px', color: '#64748b' }}>
+                  <p style={{ margin: '10px 20px', fontSize: '13px', color: '#64748b', lineHeight: 1.5 }}>
                     {chapter.description}
                   </p>
                 )}
-
-                <div>
-                  {chapter.lessons && chapter.lessons.map((lesson, lIdx) => (
-                    <div
-                      key={lesson.id || lIdx}
-                      className={styles.lessonRow}
-                      onClick={() => setPreviewLesson(lesson)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-                        {lesson.thumbnail ? (
-                          <img src={lesson.thumbnail} alt={lesson.title} className={styles.lessonThumb} />
-                        ) : (
-                          <div className={styles.lessonThumb} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
-                            <Film size={18} />
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
-                            {lesson.title}
-                          </div>
-                          {lesson.description && (
-                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                              {lesson.description}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
-                          <Clock size={13} /> {lesson.duration || '15 Mins'}
-                        </span>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            background: '#eff6ff',
-                            border: '1px solid #bfdbfe',
-                            color: '#2563eb',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          <PlayCircle size={13} /> Preview
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             ))}
+
+            <div style={{ marginTop: '24px', padding: '22px 24px', background: '#f8fafc', borderRadius: '14px', border: '1.5px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                  <BookOpen size={22} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                    Interactive Video Lectures &amp; Code Player
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#64748b' }}>
+                    Full chapter video lectures, exercises, progress tracking, and downloadable repositories are reserved for enrolled students in My Learning.
+                  </div>
+                </div>
+              </div>
+              <Link href={`/courses/${course.slug || course.id}/checkout`} className={styles.heroEnrollBtn} style={{ padding: '10px 22px', fontSize: '13px' }}>
+                Enroll to Access Videos <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
         ) : (
           <div style={{ padding: '32px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', color: '#64748b' }}>
-            Curriculum overview is being finalized. Full syllabus will be unlocked upon enrollment.
+            Curriculum overview is being finalized. Full modules will be unlocked upon enrollment.
           </div>
         )}
       </section>
@@ -578,83 +547,8 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* Video Player Preview Modal */}
-      {previewLesson && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 99999,
-            background: 'rgba(15, 23, 42, 0.8)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '20px',
-          }}
-          onClick={() => setPreviewLesson(null)}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '880px',
-              background: '#0f172a',
-              borderRadius: '20px',
-              overflow: 'hidden',
-              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                padding: '16px 20px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#1e293b',
-                color: '#fff',
-              }}
-            >
-              <div>
-                <span style={{ fontSize: '11px', color: '#60a5fa', fontWeight: 800, textTransform: 'uppercase' }}>
-                  Curriculum Video Lecture Preview
-                </span>
-                <h4 style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 700 }}>
-                  {previewLesson.title}
-                </h4>
-              </div>
-              <button
-                onClick={() => setPreviewLesson(null)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  border: 'none',
-                  color: '#cbd5e1',
-                  borderRadius: '8px',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ padding: '16px' }}>
-              <VideoPlayer
-                src={previewLesson.videoUrl}
-                title={previewLesson.title}
-                poster={previewLesson.thumbnail || course?.thumbnail}
-                autoPlay={true}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Modern Light Mode Footer */}
+      <Footer />
     </div>
   );
 }
