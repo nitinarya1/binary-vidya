@@ -541,23 +541,20 @@ export default function HomePage() {
                 </div>
               )}
 
-              {/* Spotlight 16:9 Thumbnail Image */}
-              <div className={styles.spotlightThumbWrap}>
-                {activeSpotlight.thumbnail ? (
+              {/* Spotlight Thumbnail Image (Only when an actual image URL is provided) */}
+              {activeSpotlight.thumbnail && activeSpotlight.thumbnail.trim() ? (
+                <div className={styles.spotlightThumbWrap}>
                   <img
                     src={activeSpotlight.thumbnail}
                     alt={activeSpotlight.title}
                     className={styles.spotlightThumbImg}
+                    onError={(e) => {
+                      const parent = (e.currentTarget as HTMLElement).parentElement;
+                      if (parent) parent.style.display = 'none';
+                    }}
                   />
-                ) : (
-                  <div className={styles.spotlightThumbFallback}>
-                    <Code size={26} color="#38bdf8" />
-                    <span style={{ fontSize: '13px', fontWeight: 800 }}>
-                      {activeSpotlight.track || 'Engineering Track'}
-                    </span>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : null}
 
               <div className={styles.spotlightHeader}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
