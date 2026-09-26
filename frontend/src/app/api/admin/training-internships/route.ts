@@ -243,9 +243,12 @@ export async function POST(req: Request) {
       status,
     } = body;
 
-    if (!title || !domain) {
-      return NextResponse.json({ success: false, message: 'Title and domain/track are required' }, { status: 400 });
+    if (!title) {
+      return NextResponse.json({ success: false, message: 'Internship title is required' }, { status: 400 });
     }
+
+    const effectiveDomain = (domain || track || title || 'Engineering').trim();
+    const effectiveDescription = (body.description || subtitle || '').trim();
 
     const slug = (body.slug || title)
       .toLowerCase()
@@ -260,11 +263,12 @@ export async function POST(req: Request) {
 
     const newProgram = await TrainingInternship.create({
       title: title.trim(),
-      subtitle: subtitle ? subtitle.trim() : '',
+      description: effectiveDescription,
+      subtitle: subtitle ? subtitle.trim() : effectiveDescription,
       thumbnail: thumbnail ? thumbnail.trim() : '',
       slug,
-      domain: domain.trim(),
-      track: track ? track.trim() : domain.trim(),
+      domain: effectiveDomain,
+      track: track ? track.trim() : effectiveDomain,
       type: type || 'internship',
       duration: duration || '2 Months Internship + Training',
       mode: mode || 'Live Online • Weekend Classes',

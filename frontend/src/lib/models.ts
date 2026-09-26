@@ -182,7 +182,10 @@ export interface IVideoLesson {
   id?: string;
   title: string;
   videoUrl: string;
-  duration: string;
+  videoName?: string;
+  pptUrl?: string;
+  pptName?: string;
+  duration?: string;
   thumbnail?: string;
   description?: string;
 }
@@ -198,18 +201,19 @@ export interface ICourse extends Document {
   title: string;
   slug: string;
   description: string;
-  category: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
-  duration: string;
+  category?: string;
+  level?: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
+  duration?: string;
   price: number;
-  instructor: string;
+  originalPrice?: number;
+  instructor?: string;
   thumbnail?: string;
-  tags: string[];
-  chapters: IChapter[];
-  modules: { title: string; lecturesCount: number; duration: string }[];
-  status: 'active' | 'draft' | 'archived';
-  enrolledCount: number;
-  rating: number;
+  tags?: string[];
+  chapters?: IChapter[];
+  modules?: { title: string; lecturesCount: number; duration: string }[];
+  status?: 'active' | 'draft' | 'archived';
+  enrolledCount?: number;
+  rating?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -219,15 +223,16 @@ const courseSchema = new Schema<ICourse>(
     title: { type: String, required: true, trim: true },
     slug: { type: String, unique: true, lowercase: true, trim: true },
     description: { type: String, required: true },
-    category: { type: String, required: true, trim: true, default: 'Full Stack Development' },
+    category: { type: String, trim: true, default: 'General' },
     level: {
       type: String,
       enum: ['Beginner', 'Intermediate', 'Advanced', 'All Levels'],
       default: 'Beginner',
     },
-    duration: { type: String, required: true, default: '10 Weeks' },
+    duration: { type: String, default: '10 Weeks' },
     price: { type: Number, default: 0 },
-    instructor: { type: String, required: true, default: 'Binary Vidya Faculty' },
+    originalPrice: { type: Number, default: 0 },
+    instructor: { type: String, default: 'Binary Vidya Faculty' },
     thumbnail: { type: String, default: '' },
     tags: [{ type: String }],
     chapters: [
@@ -238,6 +243,9 @@ const courseSchema = new Schema<ICourse>(
           {
             title: { type: String, required: true },
             videoUrl: { type: String, default: '' },
+            videoName: { type: String, default: '' },
+            pptUrl: { type: String, default: '' },
+            pptName: { type: String, default: '' },
             duration: { type: String, default: '15 Mins' },
             thumbnail: { type: String, default: '' },
             description: { type: String, default: '' },
@@ -275,6 +283,7 @@ export const Course: Model<ICourse> =
 // TRAINING & INTERNSHIP MODEL
 export interface ITrainingInternship extends Document {
   title: string;
+  description?: string;
   subtitle?: string;
   thumbnail?: string;
   slug: string;
@@ -312,6 +321,7 @@ export interface ITrainingInternship extends Document {
 const trainingInternshipSchema = new Schema<ITrainingInternship>(
   {
     title: { type: String, required: true, trim: true },
+    description: { type: String, default: '' },
     subtitle: { type: String, default: '' },
     thumbnail: { type: String, default: '' },
     slug: { type: String, unique: true, lowercase: true, trim: true },

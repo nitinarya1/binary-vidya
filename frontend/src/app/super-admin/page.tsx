@@ -48,6 +48,8 @@ import {
   Percent,
   IndianRupee,
   Copy,
+  FileText,
+  Loader2,
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
 import { CouponAdminModal, CouponItem } from '../../components/CouponAdminModal';
@@ -57,6 +59,9 @@ export interface VideoLessonItem {
   id?: string;
   title: string;
   videoUrl: string;
+  videoName?: string;
+  pptUrl?: string;
+  pptName?: string;
   duration: string;
   thumbnail?: string;
   description?: string;
@@ -79,6 +84,7 @@ interface CourseItem {
   level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels';
   duration: string;
   price: number;
+  originalPrice?: number;
   instructor: string;
   thumbnail?: string;
   tags: string[];
@@ -93,6 +99,7 @@ interface TrainingItem {
   id: string;
   title: string;
   subtitle?: string;
+  description?: string;
   thumbnail?: string;
   slug: string;
   track?: string;
@@ -2696,6 +2703,7 @@ export default function SuperAdminDashboard() {
       {courseModalOpen && canManageCourses && (
         <CourseFormModal
           course={editingCourse}
+          token={token || undefined}
           onClose={() => {
             setCourseModalOpen(false);
             setEditingCourse(null);
@@ -2708,6 +2716,7 @@ export default function SuperAdminDashboard() {
       {trainingModalOpen && canManageTraining && (
         <TrainingFormModal
           program={editingTraining}
+          token={token || undefined}
           onClose={() => {
             setTrainingModalOpen(false);
             setEditingTraining(null);
@@ -2769,57 +2778,114 @@ export default function SuperAdminDashboard() {
 }
 
 // -------------------------------------------------------------
-// COURSE FORM MODAL COMPONENT
+// SHARED MEDIA UPLOAD HELPER (CLOUDINARY / LOCAL)
+// -------------------------------------------------------------
+async function uploadAdminMedia(
+  file: File,
+  token?: string,
+  onStatusChange?: (msg: string) => void
+): Promise<{ url: string; originalFilename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('folder', 'binaryvidya/media');
+
+  if (onStatusChange) onStatusChange('Uploading...');
+
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Media file upload failed');
+  }
+
+  return {
+    url: data.url,
+    originalFilename: data.originalFilename || file.name,
+  };
+}
+
+export interface VideoPptItem {
+  id: string;
+  title: string;
+  videoUrl: string;
+  videoName?: string;
+  pptUrl: string;
+  pptName?: string;
+  duration?: string;
+}
+
+// -------------------------------------------------------------
+// COURSE FORM MODAL COMPONENT (STREAMLINED: TITLE, PRICING, DESC, THUMBNAIL, VIDEOS & PPT CRUD)
 // -------------------------------------------------------------
 function CourseFormModal({
   course,
+  token,
   onClose,
   onSave,
 }: {
   course: CourseItem | null;
+  token?: string;
   onClose: () => void;
   onSave: (data: Partial<CourseItem>) => void;
 }) {
   const [title, setTitle] = useState(course?.title || '');
-  const [category, setCategory] = useState(course?.category || 'Web Development');
-  const [level, setLevel] = useState<CourseItem['level']>(course?.level || 'Beginner');
-  const [duration, setDuration] = useState(course?.duration || '10 Weeks');
-  const [price, setPrice] = useState(course?.price !== undefined ? course.price : 4999);
-  const [instructor, setInstructor] = useState(course?.instructor || 'Binary Vidya Lead');
+  const [originalPrice, setOriginalPrice] = useState<number | string>(
+    course?.originalPrice !== undefined ? course.originalPrice : (course?.price ? course.price * 2 : 4999)
+  );
+  const [price, setPrice] = useState<number | string>(
+    course?.price !== undefined ? course.price : 1499
+  );
   const [description, setDescription] = useState(course?.description || '');
-  const [status, setStatus] = useState<CourseItem['status']>(course?.status || 'active');
-  const [tags, setTags] = useState(course?.tags?.join(', ') || 'React, Next.js, Node.js');
 
-  // Course Thumbnail States
+  // Thumbnail state
   const [thumbnail, setThumbnail] = useState(course?.thumbnail || '');
   const [thumbnailStats, setThumbnailStats] = useState<{ orig: string; comp: string; saved: number } | null>(null);
   const [isCompressingMain, setIsCompressingMain] = useState(false);
 
-  // Chapters & Video Lessons States
-  const [chapters, setChapters] = useState<ChapterItem[]>(
-    course?.chapters && course.chapters.length > 0
-      ? course.chapters
-      : [
-          {
-            id: 'ch_1',
-            title: 'Chapter 1: Foundations & Architecture',
-            description: 'Core concepts, setup, and engineering fundamentals',
-            lessons: [
-              {
-                id: 'les_1',
-                title: 'Lesson 1.1: Platform Introduction & Course Overview',
-                videoUrl: '',
-                duration: '12 Mins',
-                thumbnail: '',
-                description: '',
-              },
-            ],
-          },
-        ]
-  );
+  // Videos & Related PPTs state
+  const [videos, setVideos] = useState<VideoPptItem[]>(() => {
+    if (course?.chapters && course.chapters.length > 0) {
+      const flat = course.chapters.flatMap((c, cIdx) =>
+        (c.lessons || []).map((l, lIdx) => ({
+          id: l.id || `vid_${cIdx}_${lIdx}_${Date.now()}`,
+          title: l.title || `Lesson ${lIdx + 1}`,
+          videoUrl: l.videoUrl || '',
+          videoName: l.videoName || '',
+          pptUrl: (l as any).pptUrl || '',
+          pptName: (l as any).pptName || '',
+          duration: l.duration || '15 Mins',
+        }))
+      );
+      if (flat.length > 0) return flat;
+    }
+    return [
+      {
+        id: `vid_1_${Date.now()}`,
+        title: 'Lecture 1: Introduction & Architecture',
+        videoUrl: '',
+        videoName: '',
+        pptUrl: '',
+        pptName: '',
+        duration: '15 Mins',
+      },
+    ];
+  });
 
-  // Compress and set main course thumbnail
-  const handleMainThumbnailFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Uploading trackers
+  const [uploadingVideoIdx, setUploadingVideoIdx] = useState<number | null>(null);
+  const [uploadingPptIdx, setUploadingPptIdx] = useState<number | null>(null);
+
+  // Handle Thumbnail File
+  const handleThumbnailFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -2838,125 +2904,143 @@ function CourseFormModal({
     }
   };
 
-  // Add Chapter
-  const handleAddChapter = () => {
-    setChapters([
-      ...chapters,
+  // Add Video & PPT Item
+  const handleAddVideo = () => {
+    setVideos([
+      ...videos,
       {
-        id: `ch_${Date.now()}`,
-        title: `Chapter ${chapters.length + 1}: `,
-        description: '',
-        lessons: [
-          {
-            id: `les_${Date.now()}_1`,
-            title: `Lesson ${chapters.length + 1}.1: `,
-            videoUrl: '',
-            duration: '15 Mins',
-            thumbnail: '',
-            description: '',
-          },
-        ],
+        id: `vid_${videos.length + 1}_${Date.now()}`,
+        title: `Lecture ${videos.length + 1}: `,
+        videoUrl: '',
+        videoName: '',
+        pptUrl: '',
+        pptName: '',
+        duration: '15 Mins',
       },
     ]);
   };
 
-  // Remove Chapter
-  const handleRemoveChapter = (chIdx: number) => {
-    if (chapters.length <= 1) {
-      alert('A course must have at least 1 chapter.');
+  // Remove Video Item
+  const handleRemoveVideo = (idx: number) => {
+    if (videos.length <= 1) {
+      alert('Course must have at least 1 video lecture.');
       return;
     }
-    setChapters(chapters.filter((_, idx) => idx !== chIdx));
+    setVideos(videos.filter((_, i) => i !== idx));
   };
 
-  // Update Chapter Title/Description
-  const handleChapterChange = (chIdx: number, field: 'title' | 'description', val: string) => {
-    const updated = [...chapters];
-    updated[chIdx][field] = val;
-    setChapters(updated);
+  // Update Item Field
+  const handleVideoChange = (idx: number, field: keyof VideoPptItem, val: string) => {
+    const updated = [...videos];
+    updated[idx] = { ...updated[idx], [field]: val };
+    setVideos(updated);
   };
 
-  // Add Video Lesson to Chapter
-  const handleAddLesson = (chIdx: number) => {
-    const updated = [...chapters];
-    const lessonNum = updated[chIdx].lessons.length + 1;
-    updated[chIdx].lessons.push({
-      id: `les_${Date.now()}`,
-      title: `Lesson ${chIdx + 1}.${lessonNum}: `,
-      videoUrl: '',
-      duration: '15 Mins',
-      thumbnail: '',
-      description: '',
-    });
-    setChapters(updated);
-  };
-
-  // Remove Video Lesson
-  const handleRemoveLesson = (chIdx: number, lesIdx: number) => {
-    const updated = [...chapters];
-    if (updated[chIdx].lessons.length <= 1) {
-      alert('A chapter must have at least 1 video lesson.');
-      return;
-    }
-    updated[chIdx].lessons = updated[chIdx].lessons.filter((_, idx) => idx !== lesIdx);
-    setChapters(updated);
-  };
-
-  // Update Lesson Field
-  const handleLessonChange = (
-    chIdx: number,
-    lesIdx: number,
-    field: 'title' | 'videoUrl' | 'duration' | 'thumbnail' | 'description',
-    val: string
-  ) => {
-    const updated = [...chapters];
-    updated[chIdx].lessons[lesIdx][field] = val;
-    setChapters(updated);
-  };
-
-  // Compress & set individual video thumbnail
-  const handleLessonThumbnailFile = async (chIdx: number, lesIdx: number, file: File) => {
+  // Upload Video File
+  const handleUploadVideoFile = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     try {
-      const res = await compressThumbnail(file, { maxWidth: 640, maxHeight: 360, quality: 0.8 });
-      const updated = [...chapters];
-      updated[chIdx].lessons[lesIdx].thumbnail = res.dataUrl;
-      updated[chIdx].lessons[lesIdx]._stats = {
-        orig: formatBytes(res.originalSize),
-        comp: formatBytes(res.compressedSize),
-        saved: res.reductionPercentage,
-      };
-      setChapters(updated);
+      setUploadingVideoIdx(idx);
+      const uploaded = await uploadAdminMedia(file, token);
+      const updated = [...videos];
+      updated[idx].videoUrl = uploaded.url;
+      updated[idx].videoName = uploaded.originalFilename;
+      setVideos(updated);
     } catch (err: any) {
-      alert(err.message || 'Video thumbnail compression failed');
+      alert(err.message || 'Video upload failed');
+    } finally {
+      setUploadingVideoIdx(null);
     }
   };
+
+  // Upload PPT File
+  const handleUploadPptFile = async (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingPptIdx(idx);
+      const uploaded = await uploadAdminMedia(file, token);
+      const updated = [...videos];
+      updated[idx].pptUrl = uploaded.url;
+      updated[idx].pptName = uploaded.originalFilename;
+      setVideos(updated);
+    } catch (err: any) {
+      alert(err.message || 'PPT/Document upload failed');
+    } finally {
+      setUploadingPptIdx(null);
+    }
+  };
+
+  const numOrig = Number(originalPrice) || 0;
+  const numFinal = Number(price) || 0;
+  const discountAmount = numOrig > numFinal ? numOrig - numFinal : 0;
+  const discountPct = numOrig > 0 && discountAmount > 0 ? Math.round((discountAmount / numOrig) * 100) : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) {
+      alert('Please enter a course title');
+      return;
+    }
+    if (!description.trim()) {
+      alert('Please enter a course description');
+      return;
+    }
+
     onSave({
-      title,
-      category,
-      level,
-      duration,
-      price: Number(price),
-      instructor,
-      description,
-      status,
+      title: title.trim(),
+      originalPrice: numOrig,
+      price: numFinal,
+      description: description.trim(),
       thumbnail,
-      chapters,
-      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      chapters: [
+        {
+          title: 'Course Curriculum',
+          description: 'Comprehensive video lectures and corresponding presentations',
+          lessons: videos.map((v, i) => ({
+            id: v.id || `les_${i + 1}`,
+            title: v.title || `Lecture ${i + 1}`,
+            videoUrl: v.videoUrl || '',
+            videoName: v.videoName || '',
+            pptUrl: v.pptUrl || '',
+            pptName: v.pptName || '',
+            duration: v.duration || '15 Mins',
+            thumbnail: thumbnail,
+            description: '',
+          })),
+        },
+      ],
+      modules: [
+        {
+          title: title.trim(),
+          lecturesCount: videos.length,
+          duration: `${videos.length} Lectures`,
+        },
+      ],
+      category: course?.category || 'General',
+      level: course?.level || 'All Levels',
+      duration: course?.duration || `${videos.length} Lectures`,
+      instructor: course?.instructor || 'Binary Vidya Faculty',
+      status: course?.status || 'active',
+      tags: course?.tags || ['Engineering', 'Certification'],
     });
   };
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '880px' }}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '860px' }}>
         <div className={styles.modalHeader}>
-          <div>
-            <h3 className={styles.modalTitle}>{course ? 'Edit Course Curriculum' : 'Create & Upload Course'}</h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-              Upload course media with automatic thumbnail compression for instant, lightweight delivery.
-            </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BookOpen size={20} />
+            </div>
+            <div>
+              <h3 className={styles.modalTitle}>{course ? 'Edit Course' : 'Add New Course'}</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                Configure course title, pricing, description, thumbnail, and upload videos with related PPTs.
+              </p>
+            </div>
           </div>
           <button onClick={onClose} className={styles.closeModalBtn}>
             <X size={20} />
@@ -2965,143 +3049,90 @@ function CourseFormModal({
 
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
-            {/* 1. BASIC INFORMATION */}
-            <div style={{ marginBottom: '22px' }}>
-              <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BookOpen size={16} color="#2563eb" /> 1. General Course Details
-              </h4>
+            {/* 1. COURSE TITLE */}
+            <div style={{ marginBottom: '20px' }}>
+              <label className={styles.formLabel} style={{ fontWeight: 700, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                Course Title *
+              </label>
+              <input
+                type="text"
+                required
+                className={styles.formInput}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Master Full-Stack Web Architecture & Next.js"
+                style={{ fontSize: '14px', fontWeight: 600 }}
+              />
+            </div>
+
+            {/* 2. PRICING (ORIGINAL & AFTER DISCOUNT) */}
+            <div style={{ marginBottom: '22px', padding: '16px 18px', background: '#f8fafc', borderRadius: '14px', border: '1.5px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IndianRupee size={16} color="#059669" /> Course Pricing
+                </span>
+                {discountAmount > 0 && (
+                  <span style={{ fontSize: '11px', fontWeight: 800, background: '#ecfdf5', color: '#059669', padding: '3px 8px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                    Save ₹{discountAmount.toLocaleString('en-IN')} ({discountPct}% OFF)
+                  </span>
+                )}
+              </div>
               <div className={styles.formGrid}>
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Course Title *</label>
-                  <input
-                    type="text"
-                    required
-                    className={styles.formInput}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Full Stack Next.js 15 & Cloud Architecture Mastery"
-                  />
-                </div>
-
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Category</label>
-                  <select
-                    className={styles.formSelect}
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                  >
-                    <option value="Web Development">Web Development</option>
-                    <option value="Artificial Intelligence">Artificial Intelligence</option>
-                    <option value="Cloud & DevOps">Cloud & DevOps</option>
-                    <option value="Computer Science Core">Computer Science Core</option>
-                    <option value="Data Science & ML">Data Science & ML</option>
-                  </select>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Difficulty Level</label>
-                  <select
-                    className={styles.formSelect}
-                    value={level}
-                    onChange={(e) => setLevel(e.target.value as any)}
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="All Levels">All Levels</option>
-                  </select>
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Course Duration</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="e.g. 12 Weeks"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Price (INR)</label>
+                  <label className={styles.formLabel}>Original Price (₹)</label>
                   <input
                     type="number"
+                    min="0"
+                    className={styles.formInput}
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    placeholder="e.g. 4999"
+                  />
+                  <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    Strikethrough reference price shown to learners
+                  </span>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Price After Discount (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
                     className={styles.formInput}
                     value={price}
-                    onChange={(e) => setPrice(Number(e.target.value))}
-                    placeholder="0 for Free"
+                    onChange={(e) => setPrice(e.target.value)}
+                    placeholder="e.g. 1499 (0 for Free)"
+                    style={{ fontWeight: 700, color: '#059669' }}
                   />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Lead Instructor</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={instructor}
-                    onChange={(e) => setInstructor(e.target.value)}
-                    placeholder="e.g. Nitin Arya"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Status</label>
-                  <select
-                    className={styles.formSelect}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
-                  >
-                    <option value="active">Active (Published)</option>
-                    <option value="draft">Draft (Hidden)</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Tags (comma separated)</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    placeholder="React, Next.js, Node.js, MongoDB, TypeScript"
-                  />
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Description *</label>
-                  <textarea
-                    required
-                    rows={3}
-                    className={styles.formTextarea}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Comprehensive overview of syllabus and hands-on deliverables..."
-                  />
+                  <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                    Final discounted price learner pays during checkout
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 2. COURSE THUMBNAIL (AUTO-COMPRESSED) */}
-            <div
-              style={{
-                marginBottom: '26px',
-                padding: '18px 20px',
-                background: '#f8fafc',
-                borderRadius: '14px',
-                border: '1.5px solid #e2e8f0',
-              }}
-            >
+            {/* 3. DESCRIPTION */}
+            <div style={{ marginBottom: '22px' }}>
+              <label className={styles.formLabel} style={{ fontWeight: 700, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                Course Description *
+              </label>
+              <textarea
+                required
+                rows={3}
+                className={styles.formTextarea}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Comprehensive description of concepts covered, syllabus, and what students will build..."
+              />
+            </div>
+
+            {/* 4. COURSE THUMBNAIL */}
+            <div style={{ marginBottom: '26px', padding: '18px 20px', background: '#f8fafc', borderRadius: '14px', border: '1.5px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <ImageIcon size={16} color="#2563eb" /> 2. Course Thumbnail (Auto-Compressed for Ultra-Fast UI)
-                  </h4>
-                  <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Upload any high-res image (PNG/JPG); it will automatically be optimized to ~40KB WebP.
-                  </span>
-                </div>
+                <span style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ImageIcon size={16} color="#2563eb" /> Course Thumbnail
+                </span>
                 {thumbnail && (
                   <button
                     type="button"
@@ -3118,12 +3149,12 @@ function CourseFormModal({
 
               <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {thumbnail ? (
-                  <div style={{ position: 'relative', width: '220px', height: '124px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #2563eb', flexShrink: 0, background: '#0f172a' }}>
-                    <img src={thumbnail} alt="Course Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'relative', width: '200px', height: '112px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #2563eb', flexShrink: 0, background: '#0f172a' }}>
+                    <img src={thumbnail} alt="Thumbnail Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
-                  <div style={{ width: '220px', height: '124px', borderRadius: '10px', border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '6px', flexShrink: 0, background: '#ffffff' }}>
-                    <ImageIcon size={28} color="#cbd5e1" />
+                  <div style={{ width: '200px', height: '112px', borderRadius: '10px', border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '6px', flexShrink: 0, background: '#ffffff' }}>
+                    <ImageIcon size={26} color="#cbd5e1" />
                     <span style={{ fontSize: '11px', fontWeight: 600 }}>16:9 Thumbnail</span>
                   </div>
                 )}
@@ -3149,36 +3180,22 @@ function CourseFormModal({
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleMainThumbnailFile}
+                      onChange={handleThumbnailFile}
                       style={{ display: 'none' }}
                       disabled={isCompressingMain}
                     />
                   </label>
 
                   {thumbnailStats && (
-                    <div
-                      style={{
-                        marginTop: '10px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '5px 10px',
-                        borderRadius: '8px',
-                        background: '#ecfdf5',
-                        border: '1px solid #a7f3d0',
-                        color: '#065f46',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                      }}
-                    >
+                    <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 8px', borderRadius: '6px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', fontWeight: 700 }}>
                       <Zap size={13} color="#059669" />
-                      Auto-Optimized: {thumbnailStats.orig} &rarr; {thumbnailStats.comp} ({thumbnailStats.saved}% smaller)
+                      Optimized: {thumbnailStats.orig} &rarr; {thumbnailStats.comp} ({thumbnailStats.saved}% smaller)
                     </div>
                   )}
 
                   <div style={{ marginTop: '10px' }}>
                     <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>
-                      Or paste an external thumbnail image URL:
+                      Or paste direct image URL:
                     </span>
                     <input
                       type="url"
@@ -3186,27 +3203,27 @@ function CourseFormModal({
                       onChange={(e) => setThumbnail(e.target.value)}
                       placeholder="https://images.unsplash.com/... or CDN link"
                       className={styles.formInput}
-                      style={{ padding: '8px 12px', fontSize: '12px' }}
+                      style={{ padding: '7px 10px', fontSize: '12px' }}
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 3. CHAPTERS & VIDEO LESSONS (WITH PER-VIDEO AUTO-COMPRESSED THUMBNAILS) */}
+            {/* 5. UPLOAD VIDEO AND PPT RELATED TO VIDEO (CRUD) */}
             <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Film size={18} color="#2563eb" /> 3. Chapters & Video Lessons
+                    <Video size={18} color="#2563eb" /> Course Videos &amp; Related PPT Presentations ({videos.length})
                   </h4>
                   <span style={{ fontSize: '12px', color: '#64748b' }}>
-                    Organize multi-chapter courses. Every video lesson can have its own auto-compressed thumbnail.
+                    Upload video lessons and attach corresponding presentation PPT/PDF for each video.
                   </span>
                 </div>
                 <button
                   type="button"
-                  onClick={handleAddChapter}
+                  onClick={handleAddVideo}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -3221,224 +3238,175 @@ function CourseFormModal({
                     cursor: 'pointer',
                   }}
                 >
-                  <Plus size={14} /> Add Chapter
+                  <Plus size={14} /> Add Video &amp; PPT
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {chapters.map((ch, chIdx) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {videos.map((vid, idx) => (
                   <div
-                    key={ch.id || chIdx}
+                    key={vid.id || idx}
                     style={{
                       border: '1.5px solid #e2e8f0',
-                      borderRadius: '14px',
+                      borderRadius: '12px',
                       background: '#ffffff',
-                      overflow: 'hidden',
+                      padding: '16px',
                       boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
                     }}
                   >
-                    {/* Chapter Header */}
-                    <div
-                      style={{
-                        padding: '12px 18px',
-                        background: '#f1f5f9',
-                        borderBottom: '1.5px solid #e2e8f0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                        <span style={{ fontWeight: 800, fontSize: '12px', color: '#475569', background: '#ffffff', padding: '3px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                          CH {chIdx + 1}
+                    {/* Item Top Row */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        <span style={{ fontWeight: 800, fontSize: '12px', color: '#2563eb', background: '#eff6ff', padding: '3px 8px', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                          Video #{idx + 1}
                         </span>
                         <input
                           type="text"
-                          value={ch.title}
-                          onChange={(e) => handleChapterChange(chIdx, 'title', e.target.value)}
-                          placeholder={`Chapter ${chIdx + 1} Title`}
-                          style={{
-                            flex: 1,
-                            fontWeight: 700,
-                            fontSize: '14px',
-                            background: 'transparent',
-                            border: 'none',
-                            outline: 'none',
-                            color: '#0f172a',
-                          }}
+                          required
+                          value={vid.title}
+                          onChange={(e) => handleVideoChange(idx, 'title', e.target.value)}
+                          placeholder={`Lecture ${idx + 1} Title (e.g. Component Lifecycles)`}
+                          className={styles.formInput}
+                          style={{ fontSize: '13px', fontWeight: 600, padding: '6px 10px' }}
                         />
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {videos.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => handleAddLesson(chIdx)}
+                          onClick={() => handleRemoveVideo(idx)}
                           style={{
-                            background: '#ffffff',
-                            border: '1px solid #cbd5e1',
-                            color: '#2563eb',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            padding: '4px 10px',
-                            borderRadius: '6px',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#dc2626',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 600,
                             cursor: 'pointer',
-                            display: 'inline-flex',
+                            display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
+                            marginLeft: '10px',
                           }}
                         >
-                          <Plus size={12} /> Add Video
+                          <Trash2 size={13} /> Remove
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveChapter(chIdx)}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#94a3b8',
-                            cursor: 'pointer',
-                            padding: '4px',
-                          }}
-                          title="Delete Chapter"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Chapter Description input */}
-                    <div style={{ padding: '10px 18px 0 18px' }}>
-                      <input
-                        type="text"
-                        value={ch.description || ''}
-                        onChange={(e) => handleChapterChange(chIdx, 'description', e.target.value)}
-                        placeholder="Chapter summary (optional, e.g. Core architectural principles)"
-                        style={{
-                          width: '100%',
-                          fontSize: '12px',
-                          color: '#64748b',
-                          background: 'transparent',
-                          border: 'none',
-                          borderBottom: '1px dashed #e2e8f0',
-                          paddingBottom: '6px',
-                          outline: 'none',
-                        }}
-                      />
-                    </div>
-
-                    {/* Lessons list */}
-                    <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {ch.lessons.map((les, lesIdx) => (
-                        <div
-                          key={les.id || lesIdx}
-                          style={{
-                            padding: '12px',
-                            borderRadius: '10px',
-                            background: '#f8fafc',
-                            border: '1px solid #e2e8f0',
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Video size={14} color="#2563eb" />
-                              <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>
-                                Video Lesson {chIdx + 1}.{lesIdx + 1}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveLesson(chIdx, lesIdx)}
-                              style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
-                            >
-                              Delete
-                            </button>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.6fr 90px', gap: '10px', marginBottom: '10px' }}>
-                            <input
-                              type="text"
-                              value={les.title}
-                              onChange={(e) => handleLessonChange(chIdx, lesIdx, 'title', e.target.value)}
-                              placeholder="Lesson Title"
-                              className={styles.formInput}
-                              style={{ fontSize: '12px', padding: '6px 10px' }}
-                            />
-                            <input
-                              type="text"
-                              value={les.videoUrl}
-                              onChange={(e) => handleLessonChange(chIdx, lesIdx, 'videoUrl', e.target.value)}
-                              placeholder="Video URL (YouTube/Vimeo/MP4)"
-                              className={styles.formInput}
-                              style={{ fontSize: '12px', padding: '6px 10px' }}
-                            />
-                            <input
-                              type="text"
-                              value={les.duration}
-                              onChange={(e) => handleLessonChange(chIdx, lesIdx, 'duration', e.target.value)}
-                              placeholder="15 Mins"
-                              className={styles.formInput}
-                              style={{ fontSize: '12px', padding: '6px 10px' }}
-                            />
-                          </div>
-
-                          {/* Video Thumbnail Upload Row */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                            {les.thumbnail ? (
-                              <div style={{ width: '80px', height: '46px', borderRadius: '6px', overflow: 'hidden', border: '1px solid #2563eb', flexShrink: 0, background: '#000' }}>
-                                <img src={les.thumbnail} alt="Lesson Thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              </div>
-                            ) : (
-                              <div style={{ width: '80px', height: '46px', borderRadius: '6px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', flexShrink: 0, background: '#fff' }}>
-                                <ImageIcon size={16} />
-                              </div>
-                            )}
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
-                              <label
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  padding: '5px 10px',
-                                  borderRadius: '6px',
-                                  background: '#ffffff',
-                                  border: '1px solid #cbd5e1',
-                                  color: '#1e293b',
-                                  fontSize: '11px',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <Upload size={12} /> Auto-Compress Thumb
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  style={{ display: 'none' }}
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleLessonThumbnailFile(chIdx, lesIdx, file);
-                                  }}
-                                />
-                              </label>
-
-                              <input
-                                type="text"
-                                value={les.thumbnail || ''}
-                                onChange={(e) => handleLessonChange(chIdx, lesIdx, 'thumbnail', e.target.value)}
-                                placeholder="or image URL"
-                                className={styles.formInput}
-                                style={{ fontSize: '11px', padding: '4px 8px', flex: 1 }}
-                              />
-                            </div>
-
-                            {les._stats && (
-                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#059669', background: '#ecfdf5', padding: '3px 6px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
-                                ⚡ {les._stats.orig} &rarr; {les._stats.comp} ({les._stats.saved}% saved)
-                              </span>
-                            )}
-                          </div>
+                    {/* Media Uploads Grid: Video & PPT */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                      {/* Video Column */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Video size={14} color="#2563eb" /> Video Lecture File / URL
+                          </span>
+                          {vid.videoUrl && (
+                            <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={12} /> Ready
+                            </span>
+                          )}
                         </div>
-                      ))}
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '7px 12px',
+                              borderRadius: '8px',
+                              background: '#2563eb',
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {uploadingVideoIdx === idx ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            {uploadingVideoIdx === idx ? 'Uploading...' : 'Upload Video'}
+                            <input
+                              type="file"
+                              accept="video/*,.mp4,.mov,.webm,.mkv"
+                              onChange={(e) => handleUploadVideoFile(idx, e)}
+                              style={{ display: 'none' }}
+                              disabled={uploadingVideoIdx === idx}
+                            />
+                          </label>
+
+                          <input
+                            type="url"
+                            value={vid.videoUrl}
+                            onChange={(e) => handleVideoChange(idx, 'videoUrl', e.target.value)}
+                            placeholder="Or paste video link (MP4 / YouTube / CDN)"
+                            className={styles.formInput}
+                            style={{ fontSize: '11px', padding: '6px 8px', flex: 1 }}
+                          />
+                        </div>
+                        {vid.videoName && (
+                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📁 {vid.videoName}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Related PPT Column */}
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <FileText size={14} color="#059669" /> Related Presentation (PPT / PDF)
+                          </span>
+                          {vid.pptUrl && (
+                            <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <CheckCircle2 size={12} /> PPT Attached
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                          <label
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '7px 12px',
+                              borderRadius: '8px',
+                              background: '#059669',
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {uploadingPptIdx === idx ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                            {uploadingPptIdx === idx ? 'Uploading...' : 'Upload PPT/PDF'}
+                            <input
+                              type="file"
+                              accept=".ppt,.pptx,.pdf,.doc,.docx"
+                              onChange={(e) => handleUploadPptFile(idx, e)}
+                              style={{ display: 'none' }}
+                              disabled={uploadingPptIdx === idx}
+                            />
+                          </label>
+
+                          <input
+                            type="url"
+                            value={vid.pptUrl}
+                            onChange={(e) => handleVideoChange(idx, 'pptUrl', e.target.value)}
+                            placeholder="Or paste PPT / PDF document link"
+                            className={styles.formInput}
+                            style={{ fontSize: '11px', padding: '6px 8px', flex: 1 }}
+                          />
+                        </div>
+                        {vid.pptName && (
+                          <span style={{ fontSize: '11px', color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            📊 {vid.pptName}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -3451,7 +3419,7 @@ function CourseFormModal({
               Cancel
             </button>
             <button type="submit" className={styles.submitBtn}>
-              <Check size={16} /> Save Course & Curriculum
+              <Check size={16} /> Save Course &amp; Media
             </button>
           </div>
         </form>
@@ -3461,31 +3429,108 @@ function CourseFormModal({
 }
 
 // -------------------------------------------------------------
-// TRAINING / INTERNSHIP FORM MODAL COMPONENT (FULL CRUD)
+// TRAINING & INTERNSHIP FORM MODAL COMPONENT (STREAMLINED: TITLE, DESC, THUMBNAIL, TRAINING FEES, SECTIONS 1, 2, 3 CRUD)
 // -------------------------------------------------------------
 function TrainingFormModal({
   program,
+  token,
   onClose,
   onSave,
 }: {
   program: TrainingItem | null;
+  token?: string;
   onClose: () => void;
   onSave: (data: Partial<TrainingItem>) => void;
 }) {
-  const [modalTab, setModalTab] = useState<'basic' | 'pricing' | 'curriculum' | 'credentials'>('basic');
-
-  // Basic Info
   const [title, setTitle] = useState(program?.title || '');
-  const [subtitle, setSubtitle] = useState(program?.subtitle || '');
+  const [description, setDescription] = useState(
+    program?.description || program?.subtitle || ''
+  );
+
+  // Thumbnail
   const [thumbnail, setThumbnail] = useState(program?.thumbnail || '');
   const [thumbnailStats, setThumbnailStats] = useState<{ orig: string; comp: string; saved: number } | null>(null);
   const [isCompressingThumb, setIsCompressingThumb] = useState(false);
-  const [track, setTrack] = useState(program?.track || 'Frontend Developer');
-  const [domain, setDomain] = useState(program?.domain || 'Frontend Web Engineering & Next.js 14');
-  const [type, setType] = useState<TrainingItem['type']>(program?.type || 'internship');
-  const [mode, setMode] = useState(program?.mode || 'Live Online • Weekend Classes');
-  const [status, setStatus] = useState<TrainingItem['status']>(program?.status || 'open');
 
+  // Training Fees (Original & After Discount)
+  const [originalPrice, setOriginalPrice] = useState<number | string>(
+    program?.originalPrice !== undefined ? program.originalPrice : 7999
+  );
+  const [trainingPrice, setTrainingPrice] = useState<number | string>(
+    program?.trainingPrice !== undefined ? program.trainingPrice : 2400
+  );
+
+  // SECTION 1: Training Video & PPT related to video
+  const [sec1Items, setSec1Items] = useState<VideoPptItem[]>(() => {
+    const rawItems = program?.sections?.[0]?.items;
+    if (Array.isArray(rawItems) && rawItems.length > 0) return rawItems;
+    const modules = program?.sections?.[0]?.modules;
+    if (Array.isArray(modules) && modules.length > 0) {
+      return modules.map((m: any, i: number) => ({
+        id: `s1_${i + 1}`,
+        title: m.title || `Training Module ${i + 1}`,
+        videoUrl: m.videoUrl || '',
+        videoName: m.videoName || '',
+        pptUrl: m.pptUrl || '',
+        pptName: m.pptName || '',
+        duration: '1 Hour',
+      }));
+    }
+    return [
+      {
+        id: `s1_1_${Date.now()}`,
+        title: 'Training Module 1: Core Technical Foundations',
+        videoUrl: '',
+        videoName: '',
+        pptUrl: '',
+        pptName: '',
+        duration: '1 Hour',
+      },
+    ];
+  });
+
+  // SECTION 2: Minor Project PPT & related video
+  const [sec2Items, setSec2Items] = useState<VideoPptItem[]>(() => {
+    const rawItems = program?.sections?.[1]?.items;
+    if (Array.isArray(rawItems) && rawItems.length > 0) return rawItems;
+    const sec2 = program?.sections?.[1];
+    return [
+      {
+        id: `s2_1_${Date.now()}`,
+        title: sec2?.title || 'Minor Project: Implementation & Architecture',
+        videoUrl: sec2?.videoUrl || '',
+        videoName: '',
+        pptUrl: sec2?.pptUrl || '',
+        pptName: '',
+        duration: '2 Weeks',
+      },
+    ];
+  });
+
+  // SECTION 3: Major Project & PPT related to video
+  const [sec3Items, setSec3Items] = useState<VideoPptItem[]>(() => {
+    const rawItems = program?.sections?.[2]?.items;
+    if (Array.isArray(rawItems) && rawItems.length > 0) return rawItems;
+    const sec3 = program?.sections?.[2];
+    return [
+      {
+        id: `s3_1_${Date.now()}`,
+        title: sec3?.title || 'Major Project: Enterprise Capstone Deliverables',
+        videoUrl: sec3?.videoUrl || '',
+        videoName: '',
+        pptUrl: sec3?.pptUrl || '',
+        pptName: '',
+        duration: '4 Weeks',
+      },
+    ];
+  });
+
+  // Uploading trackers for the 3 sections
+  const [uploadSec, setUploadSec] = useState<number | null>(null);
+  const [uploadIdx, setUploadIdx] = useState<number | null>(null);
+  const [uploadType, setUploadType] = useState<'video' | 'ppt' | null>(null);
+
+  // Compress / Set Thumbnail
   const handleThumbnailFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -3505,741 +3550,676 @@ function TrainingFormModal({
     }
   };
 
-  // Pricing & Schedule
-  const [trainingPrice, setTrainingPrice] = useState(program?.trainingPrice !== undefined ? program.trainingPrice : 2400);
-  const [originalPrice, setOriginalPrice] = useState(program?.originalPrice !== undefined ? program.originalPrice : 7999);
-  const [internshipPrice, setInternshipPrice] = useState(program?.internshipPrice !== undefined ? program.internshipPrice : 0);
-  const [stipendOrFee, setStipendOrFee] = useState(program?.stipendOrFee || '₹2,400 Tuition • Free 2-Month Internship');
-  const [scheduleBadge, setScheduleBadge] = useState(program?.schedule?.badge || 'Weekend Live Batches');
-  const [scheduleDays, setScheduleDays] = useState(program?.schedule?.days || 'Every Saturday & Sunday');
-  const [scheduleTimings, setScheduleTimings] = useState(
-    program?.schedule?.timings || 'Live Interactive Sessions + 24/7 Session Recordings'
-  );
-  const [duration, setDuration] = useState(program?.duration || '2 Months Internship + Training');
-  const [trainingWeeks, setTrainingWeeks] = useState(program?.durations?.trainingWeeks || '4 Weeks Intensive Live Training');
-  const [internshipWeeks, setInternshipWeeks] = useState(program?.durations?.internshipWeeks || '2 Months Hands-on Industrial Internship');
-  const [deadline, setDeadline] = useState(program?.deadline || 'Rolling Admissions');
+  // Section items CRUD handlers
+  const handleAddItem = (sectionNumber: 1 | 2 | 3) => {
+    const newItem: VideoPptItem = {
+      id: `s${sectionNumber}_${Date.now()}`,
+      title: sectionNumber === 1
+        ? `Training Module ${sec1Items.length + 1}: `
+        : sectionNumber === 2
+        ? `Minor Project Milestone ${sec2Items.length + 1}: `
+        : `Major Project Milestone ${sec3Items.length + 1}: `,
+      videoUrl: '',
+      videoName: '',
+      pptUrl: '',
+      pptName: '',
+      duration: '1 Hour',
+    };
 
-  // Curriculum & Projects
-  const [sec1Title, setSec1Title] = useState(
-    program?.sections?.[0]?.title || 'Section 1: Intensive Frontend Engineering Training'
-  );
-  const [sec1Tagline, setSec1Tagline] = useState(
-    program?.sections?.[0]?.tagline || 'From Foundational Web Standards to Modern React 18+ & Next.js 14 Production Architectures'
-  );
-  const [minorProjectTitle, setMinorProjectTitle] = useState(
-    program?.sections?.[1]?.title || 'SaaS Pulse • Modern Analytics & Productivity Dashboard'
-  );
-  const [minorProjectDesc, setMinorProjectDesc] = useState(
-    program?.sections?.[1]?.description ||
-      'Production-grade dashboard with reusable component architecture, theme switching, interactive charts, and responsive layouts.'
-  );
-  const [majorProjectTitle, setMajorProjectTitle] = useState(
-    program?.sections?.[2]?.title || 'Binary Studio • Enterprise E-Learning & Collaborative Platform'
-  );
-  const [majorProjectDesc, setMajorProjectDesc] = useState(
-    program?.sections?.[2]?.description ||
-      'Commercial-grade web application featuring JWT auth, catalog browsing, video streaming with progress tracking, and Razorpay checkout integration.'
-  );
-
-  // Eligibility, Credentials & Perks
-  const [eligibility, setEligibility] = useState(program?.eligibility || 'College Students, Freshers & Working Professionals');
-  const [perks, setPerks] = useState(
-    program?.perks?.join('\n') ||
-      'Official Internship Certificate with unique verification ID\nLetter of Recommendation (LOR) signed by Lead Architect\n100% Free 2-Month Industrial Internship (₹0)\nWeekend Live Interactive Classes + 24/7 Recordings\nMinor Project (SaaS Pulse) & Major Project (Binary Studio)\nResume & LinkedIn profile optimization workshop'
-  );
-
-  // Auto-Fill Frontend Developer Standard Template
-  const handleLoadFrontendTemplate = () => {
-    setTitle('Frontend Developer Training & 2-Month Internship');
-    setSubtitle(
-      'Master Modern Web Development, Build Production Projects, and Complete a 2-Month Industrial Internship with 4 Verified Credentials'
-    );
-    setTrack('Frontend Developer');
-    setDomain('Frontend Web Engineering & Next.js 14');
-    setType('internship');
-    setMode('Live Online • Weekend Classes');
-    setStatus('open');
-    setTrainingPrice(2400);
-    setOriginalPrice(7999);
-    setInternshipPrice(0);
-    setStipendOrFee('₹2,400 Tuition • Free 2-Month Internship');
-    setScheduleBadge('Weekend Live Batches');
-    setScheduleDays('Every Saturday & Sunday');
-    setScheduleTimings('Live Interactive Sessions + 24/7 Session Recordings');
-    setDuration('2 Months Internship + Training');
-    setTrainingWeeks('4 Weeks Intensive Live Training');
-    setInternshipWeeks('2 Months Hands-on Industrial Internship');
-    setDeadline('Rolling Admissions');
-    setSec1Title('Section 1: Intensive Frontend Engineering Training');
-    setSec1Tagline('From Foundational Web Standards to Modern React 18+ & Next.js 14 Production Architectures');
-    setMinorProjectTitle('SaaS Pulse • Modern Analytics & Productivity Dashboard');
-    setMinorProjectDesc(
-      'Production-grade dashboard with reusable component architecture, theme switching, interactive charts, and responsive layouts.'
-    );
-    setMajorProjectTitle('Binary Studio • Enterprise E-Learning & Collaborative Platform');
-    setMajorProjectDesc(
-      'Commercial-grade web application featuring JWT auth, catalog browsing, video streaming with progress tracking, and Razorpay checkout integration.'
-    );
-    setEligibility('College Students, Freshers & Working Professionals');
-    setPerks(
-      'Official Internship Certificate with unique verification ID\nLetter of Recommendation (LOR) signed by Lead Architect\n100% Free 2-Month Industrial Internship (₹0)\nWeekend Live Interactive Classes + 24/7 Recordings\nMinor Project (SaaS Pulse) & Major Project (Binary Studio)\nResume & LinkedIn profile optimization workshop'
-    );
+    if (sectionNumber === 1) setSec1Items([...sec1Items, newItem]);
+    else if (sectionNumber === 2) setSec2Items([...sec2Items, newItem]);
+    else setSec3Items([...sec3Items, newItem]);
   };
+
+  const handleRemoveItem = (sectionNumber: 1 | 2 | 3, idx: number) => {
+    if (sectionNumber === 1) {
+      if (sec1Items.length <= 1) return alert('Section 1 must have at least 1 training item.');
+      setSec1Items(sec1Items.filter((_, i) => i !== idx));
+    } else if (sectionNumber === 2) {
+      if (sec2Items.length <= 1) return alert('Section 2 must have at least 1 minor project item.');
+      setSec2Items(sec2Items.filter((_, i) => i !== idx));
+    } else {
+      if (sec3Items.length <= 1) return alert('Section 3 must have at least 1 major project item.');
+      setSec3Items(sec3Items.filter((_, i) => i !== idx));
+    }
+  };
+
+  const handleItemChange = (sectionNumber: 1 | 2 | 3, idx: number, field: keyof VideoPptItem, val: string) => {
+    if (sectionNumber === 1) {
+      const updated = [...sec1Items];
+      updated[idx] = { ...updated[idx], [field]: val };
+      setSec1Items(updated);
+    } else if (sectionNumber === 2) {
+      const updated = [...sec2Items];
+      updated[idx] = { ...updated[idx], [field]: val };
+      setSec2Items(updated);
+    } else {
+      const updated = [...sec3Items];
+      updated[idx] = { ...updated[idx], [field]: val };
+      setSec3Items(updated);
+    }
+  };
+
+  // Upload file for a specific section and item
+  const handleUploadFileForSection = async (
+    sectionNumber: 1 | 2 | 3,
+    idx: number,
+    type: 'video' | 'ppt',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadSec(sectionNumber);
+      setUploadIdx(idx);
+      setUploadType(type);
+
+      const uploaded = await uploadAdminMedia(file, token);
+
+      if (sectionNumber === 1) {
+        const updated = [...sec1Items];
+        if (type === 'video') {
+          updated[idx].videoUrl = uploaded.url;
+          updated[idx].videoName = uploaded.originalFilename;
+        } else {
+          updated[idx].pptUrl = uploaded.url;
+          updated[idx].pptName = uploaded.originalFilename;
+        }
+        setSec1Items(updated);
+      } else if (sectionNumber === 2) {
+        const updated = [...sec2Items];
+        if (type === 'video') {
+          updated[idx].videoUrl = uploaded.url;
+          updated[idx].videoName = uploaded.originalFilename;
+        } else {
+          updated[idx].pptUrl = uploaded.url;
+          updated[idx].pptName = uploaded.originalFilename;
+        }
+        setSec2Items(updated);
+      } else {
+        const updated = [...sec3Items];
+        if (type === 'video') {
+          updated[idx].videoUrl = uploaded.url;
+          updated[idx].videoName = uploaded.originalFilename;
+        } else {
+          updated[idx].pptUrl = uploaded.url;
+          updated[idx].pptName = uploaded.originalFilename;
+        }
+        setSec3Items(updated);
+      }
+    } catch (err: any) {
+      alert(err.message || `${type === 'video' ? 'Video' : 'PPT'} upload failed`);
+    } finally {
+      setUploadSec(null);
+      setUploadIdx(null);
+      setUploadType(null);
+    }
+  };
+
+  const numOrigFee = Number(originalPrice) || 0;
+  const numDiscountFee = Number(trainingPrice) || 0;
+  const scholarshipAmount = numOrigFee > numDiscountFee ? numOrigFee - numDiscountFee : 0;
+  const scholarshipPct = numOrigFee > 0 && scholarshipAmount > 0 ? Math.round((scholarshipAmount / numOrigFee) * 100) : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!title.trim()) {
+      alert('Please enter internship title');
+      return;
+    }
+    if (!description.trim()) {
+      alert('Please enter internship description');
+      return;
+    }
 
     const formattedSections = [
       {
         id: 'section-1-training',
         number: 1,
-        title: sec1Title,
-        tagline: sec1Tagline,
-        description: 'Comprehensive, mentor-led weekend live classes with hands-on code walkthroughs and assignments.',
-        modules: program?.sections?.[0]?.modules || [
-          { moduleNumber: '1.1', title: 'Semantic HTML5, Modern CSS3 & Responsive Architecture' },
-          { moduleNumber: '1.2', title: 'Modern JavaScript (ES6+) & Asynchronous Mastery' },
-          { moduleNumber: '1.3', title: 'TypeScript for Scalable Frontend Systems' },
-          { moduleNumber: '1.4', title: 'React 18+ Deep Dive & State Architecture' },
-          { moduleNumber: '1.5', title: 'Next.js 14 App Router & Full-Stack Capabilities' },
-          { moduleNumber: '1.6', title: 'Developer Tooling, Git & Deployment Pipelines' },
-        ],
+        title: 'Section 1: Intensive Technical Training',
+        tagline: 'Mentor-Led Live Weekend Training & Core Technical Foundations',
+        description: description.trim(),
+        items: sec1Items,
+        modules: sec1Items.map((it, idx) => ({
+          moduleNumber: `1.${idx + 1}`,
+          title: it.title,
+          videoUrl: it.videoUrl,
+          videoName: it.videoName,
+          pptUrl: it.pptUrl,
+          pptName: it.pptName,
+        })),
       },
       {
         id: 'section-2-minor-project',
         number: 2,
-        title: minorProjectTitle,
-        description: minorProjectDesc,
+        title: sec2Items[0]?.title || 'Section 2: Production Minor Project',
+        tagline: 'Hands-on Production Minor Capstone Project with Code Review',
+        description: 'Production-ready minor portfolio project with live mentor evaluation and code walkthrough.',
+        items: sec2Items,
+        projectTitle: sec2Items[0]?.title || 'Production Minor Project',
+        videoUrl: sec2Items[0]?.videoUrl || '',
+        videoName: sec2Items[0]?.videoName || '',
+        pptUrl: sec2Items[0]?.pptUrl || '',
+        pptName: sec2Items[0]?.pptName || '',
       },
       {
         id: 'section-3-major-project',
         number: 3,
-        title: majorProjectTitle,
-        description: majorProjectDesc,
+        title: sec3Items[0]?.title || 'Section 3: Enterprise Major Project',
+        tagline: 'Comprehensive Industrial Capstone Portfolio Project',
+        description: 'Full-fledged commercial enterprise capstone project architecture, development, and live deployment.',
+        items: sec3Items,
+        projectTitle: sec3Items[0]?.title || 'Enterprise Major Capstone Project',
+        videoUrl: sec3Items[0]?.videoUrl || '',
+        videoName: sec3Items[0]?.videoName || '',
+        pptUrl: sec3Items[0]?.pptUrl || '',
+        pptName: sec3Items[0]?.pptName || '',
       },
-    ];
-
-    const formattedCredentials = [
-      { id: 'cred-1', title: 'Letter of Recommendation (LOR)', issuedBy: 'Binary Vidya Technical Board' },
-      { id: 'cred-2', title: 'Internship Completion Certificate', issuedBy: 'Binary Vidya Technical Academy' },
-      { id: 'cred-3', title: 'Training Certificate', issuedBy: 'Binary Vidya Faculty' },
-      { id: 'cred-4', title: 'Outstanding & Excellence Certificate', issuedBy: 'Honors Committee' },
     ];
 
     onSave({
-      title,
-      subtitle,
+      title: title.trim(),
+      description: description.trim(),
+      subtitle: description.trim(),
       thumbnail,
-      track,
-      domain,
-      type,
-      duration,
-      mode,
-      stipendOrFee: stipendOrFee || `₹${trainingPrice} Tuition • Free Internship`,
-      trainingPrice: Number(trainingPrice),
-      originalPrice: Number(originalPrice),
-      internshipPrice: Number(internshipPrice),
-      schedule: {
-        badge: scheduleBadge,
-        days: scheduleDays,
-        timings: scheduleTimings,
-        flexibility: eligibility,
+      domain: program?.domain || title.trim(),
+      track: program?.track || title.trim(),
+      type: program?.type || 'internship',
+      duration: program?.duration || '2 Months Internship + Training',
+      mode: program?.mode || 'Live Online • Weekend Classes',
+      stipendOrFee: `₹${numDiscountFee} Tuition • Free 2-Month Internship`,
+      trainingPrice: numDiscountFee,
+      originalPrice: numOrigFee,
+      internshipPrice: 0,
+      schedule: program?.schedule || {
+        badge: 'Weekend Live Batches',
+        days: 'Every Saturday & Sunday',
+        timings: 'Live Interactive Sessions + 24/7 Session Recordings',
+        flexibility: 'Specially crafted for College Students & Working Professionals',
       },
-      durations: {
-        total: duration,
-        trainingWeeks,
-        internshipWeeks,
+      durations: program?.durations || {
+        total: '2 Months Internship + Training',
+        trainingWeeks: '4 Weeks Intensive Live Training',
+        internshipWeeks: '2 Months Hands-on Industrial Internship',
       },
       sections: formattedSections,
-      credentials: formattedCredentials,
-      eligibility,
-      deadline,
-      status,
-      perks: perks.split('\n').map((p) => p.trim()).filter(Boolean),
+      credentials: program?.credentials || [
+        { id: 'cred-1', title: 'Letter of Recommendation (LOR)', issuedBy: 'Binary Vidya Technical Board' },
+        { id: 'cred-2', title: 'Internship Completion Certificate', issuedBy: 'Binary Vidya Technical Academy' },
+        { id: 'cred-3', title: 'Training Certificate', issuedBy: 'Binary Vidya Faculty' },
+        { id: 'cred-4', title: 'Outstanding & Excellence Certificate', issuedBy: 'Honors Committee' },
+      ],
+      eligibility: program?.eligibility || 'College Students, Freshers & Working Professionals',
+      perks: program?.perks || [
+        'Official Internship Certificate with verification ID',
+        'Letter of Recommendation (LOR)',
+        '100% Free 2-Month Industrial Internship',
+        'Weekend Live Interactive Classes + Recordings',
+      ],
+      deadline: program?.deadline || 'Rolling Admissions',
+      status: program?.status || 'open',
     });
   };
 
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalCard} style={{ maxWidth: '840px', maxHeight: '92vh' }} onClick={(e) => e.stopPropagation()}>
-        {/* Modal Header */}
-        <div className={styles.modalHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '8px',
-                background: '#ecfdf5',
-                color: '#059669',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <GraduationCap size={20} />
-            </div>
-            <div>
-              <h3 className={styles.modalTitle} style={{ margin: 0 }}>
-                {program ? 'Edit Training & Internship Program' : 'Add New Training & Internship Program'}
-              </h3>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
-                Manage track, weekend schedules, curriculum sections, and completion credentials.
+  // Helper renderer for a Section's items
+  const renderSectionCrud = (
+    sectionNumber: 1 | 2 | 3,
+    titleText: string,
+    accentColor: string,
+    badgeBg: string,
+    badgeBorder: string,
+    items: VideoPptItem[]
+  ) => {
+    return (
+      <div
+        style={{
+          padding: '18px',
+          background: '#ffffff',
+          borderRadius: '14px',
+          border: `1.5px solid ${accentColor}33`,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: accentColor, background: badgeBg, border: `1px solid ${badgeBorder}`, padding: '2px 8px', borderRadius: '6px', textTransform: 'uppercase' }}>
+                Section {sectionNumber}
               </span>
+              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                {titleText}
+              </h4>
             </div>
+            <span style={{ fontSize: '12px', color: '#64748b', marginTop: '2px', display: 'block' }}>
+              Manage videos &amp; related presentation files with full CRUD operations.
+            </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {!program && (
-              <button
-                type="button"
-                onClick={handleLoadFrontendTemplate}
-                className={styles.templateLoadBtn}
-                title="Populate with Frontend Developer standard curriculum"
+          <button
+            type="button"
+            onClick={() => handleAddItem(sectionNumber)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 12px',
+              borderRadius: '8px',
+              background: badgeBg,
+              border: `1px solid ${badgeBorder}`,
+              color: accentColor,
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            <Plus size={14} /> Add Video &amp; PPT
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {items.map((it, idx) => {
+            const isUploadingThisVideo = uploadSec === sectionNumber && uploadIdx === idx && uploadType === 'video';
+            const isUploadingThisPpt = uploadSec === sectionNumber && uploadIdx === idx && uploadType === 'ppt';
+
+            return (
+              <div
+                key={it.id || idx}
+                style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px',
+                  background: '#f8fafc',
+                  padding: '14px',
+                }}
               >
-                <Zap size={14} color="#2563eb" /> Auto-Fill Frontend Template
-              </button>
-            )}
-            <button onClick={onClose} className={styles.closeModalBtn}>
-              <X size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Modal Subnavigation */}
-        <div className={styles.modalSubNav}>
-          <button
-            type="button"
-            onClick={() => setModalTab('basic')}
-            className={`${styles.modalSubNavBtn} ${modalTab === 'basic' ? styles.modalSubNavBtnActive : ''}`}
-          >
-            1. Track &amp; Overview
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalTab('pricing')}
-            className={`${styles.modalSubNavBtn} ${modalTab === 'pricing' ? styles.modalSubNavBtnActive : ''}`}
-          >
-            2. Tuition &amp; Schedule
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalTab('curriculum')}
-            className={`${styles.modalSubNavBtn} ${modalTab === 'curriculum' ? styles.modalSubNavBtnActive : ''}`}
-          >
-            3. 3 Curriculum Sections &amp; Projects
-          </button>
-          <button
-            type="button"
-            onClick={() => setModalTab('credentials')}
-            className={`${styles.modalSubNavBtn} ${modalTab === 'credentials' ? styles.modalSubNavBtnActive : ''}`}
-          >
-            4. Credentials &amp; Perks
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className={styles.modalBody} style={{ padding: '24px' }}>
-            {/* TAB 1: BASIC INFO & TRACK */}
-            {modalTab === 'basic' && (
-              <div className={styles.formGrid}>
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Program Title *</label>
-                  <input
-                    type="text"
-                    required
-                    className={styles.formInput}
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Frontend Developer Training & 2-Month Internship"
-                  />
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Subtitle / Program Overview</label>
-                  <textarea
-                    rows={2}
-                    className={styles.formTextarea}
-                    value={subtitle}
-                    onChange={(e) => setSubtitle(e.target.value)}
-                    placeholder="e.g. Master Modern Web Development, Build Production Projects, and Complete a 2-Month Industrial Internship..."
-                  />
-                </div>
-
-                {/* Program Thumbnail Section */}
-                <div
-                  className={`${styles.formGroup} ${styles.formFullWidth}`}
-                  style={{
-                    background: '#f8fafc',
-                    padding: '16px',
-                    borderRadius: '12px',
-                    border: '1px solid #e2e8f0',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    <div>
-                      <h4
-                        style={{
-                          margin: 0,
-                          fontSize: '13px',
-                          fontWeight: 800,
-                          color: '#1e293b',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                        }}
-                      >
-                        <ImageIcon size={16} color="#2563eb" /> Program Thumbnail / Cover Image
-                      </h4>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>
-                        Upload high-res image (auto-compressed to ~40KB WebP) or paste an external image URL.
-                      </span>
-                    </div>
-                    {thumbnail && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setThumbnail('');
-                          setThumbnailStats(null);
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: '#ef4444',
-                          fontSize: '12px',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Remove Thumbnail
-                      </button>
-                    )}
+                {/* Title & Delete */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: '#475569', background: '#ffffff', border: '1px solid #cbd5e1', padding: '3px 7px', borderRadius: '6px' }}>
+                      #{idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={it.title}
+                      onChange={(e) => handleItemChange(sectionNumber, idx, 'title', e.target.value)}
+                      placeholder="Title / Topic name..."
+                      className={styles.formInput}
+                      style={{ fontSize: '13px', fontWeight: 600, padding: '6px 10px', background: '#ffffff' }}
+                    />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    {thumbnail ? (
-                      <div
-                        style={{
-                          position: 'relative',
-                          width: '200px',
-                          height: '112px',
-                          borderRadius: '10px',
-                          overflow: 'hidden',
-                          border: '2px solid #2563eb',
-                          flexShrink: 0,
-                          background: '#0f172a',
-                        }}
-                      >
-                        <img
-                          src={thumbnail}
-                          alt="Program Preview"
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          width: '200px',
-                          height: '112px',
-                          borderRadius: '10px',
-                          border: '2px dashed #cbd5e1',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#94a3b8',
-                          gap: '6px',
-                          flexShrink: 0,
-                          background: '#ffffff',
-                        }}
-                      >
-                        <ImageIcon size={26} color="#cbd5e1" />
-                        <span style={{ fontSize: '11px', fontWeight: 600 }}>16:9 Thumbnail</span>
-                      </div>
-                    )}
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(sectionNumber, idx)}
+                      style={{
+                        background: '#fef2f2',
+                        border: '1px solid #fecaca',
+                        color: '#dc2626',
+                        padding: '5px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginLeft: '8px',
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                </div>
 
-                    <div style={{ flex: 1, minWidth: '240px' }}>
+                {/* Media Row: Video & PPT */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+                  {/* Video Box */}
+                  <div style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Video size={13} color="#2563eb" /> Video Lecture
+                      </span>
+                      {it.videoUrl && (
+                        <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <CheckCircle2 size={11} /> Attached
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
                       <label
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          padding: '9px 16px',
-                          borderRadius: '10px',
+                          gap: '5px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
                           background: '#2563eb',
                           color: '#ffffff',
-                          fontSize: '13px',
+                          fontSize: '11px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                          flexShrink: 0,
                         }}
                       >
-                        <Upload size={15} />
-                        {isCompressingThumb ? 'Compressing Image...' : 'Upload Image File'}
+                        {isUploadingThisVideo ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                        {isUploadingThisVideo ? 'Uploading...' : 'Upload Video'}
                         <input
                           type="file"
-                          accept="image/*"
-                          onChange={handleThumbnailFile}
+                          accept="video/*,.mp4,.mov,.webm,.mkv"
+                          onChange={(e) => handleUploadFileForSection(sectionNumber, idx, 'video', e)}
                           style={{ display: 'none' }}
-                          disabled={isCompressingThumb}
+                          disabled={isUploadingThisVideo}
                         />
                       </label>
 
-                      {thumbnailStats && (
-                        <div
-                          style={{
-                            marginTop: '10px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '5px 10px',
-                            borderRadius: '8px',
-                            background: '#ecfdf5',
-                            border: '1px solid #a7f3d0',
-                            color: '#065f46',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                          }}
-                        >
-                          <Zap size={13} color="#059669" />
-                          Auto-Optimized: {thumbnailStats.orig} &rarr; {thumbnailStats.comp} ({thumbnailStats.saved}% smaller)
-                        </div>
-                      )}
-
-                      <div style={{ marginTop: '10px' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            color: '#64748b',
-                            display: 'block',
-                            marginBottom: '4px',
-                          }}
-                        >
-                          Or paste direct image URL:
-                        </span>
-                        <input
-                          type="url"
-                          className={styles.formInput}
-                          placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
-                          value={thumbnail}
-                          onChange={(e) => {
-                            setThumbnail(e.target.value);
-                            setThumbnailStats(null);
-                          }}
-                        />
-                      </div>
+                      <input
+                        type="url"
+                        value={it.videoUrl}
+                        onChange={(e) => handleItemChange(sectionNumber, idx, 'videoUrl', e.target.value)}
+                        placeholder="Or paste video link"
+                        className={styles.formInput}
+                        style={{ fontSize: '11px', padding: '5px 8px', flex: 1 }}
+                      />
                     </div>
+                    {it.videoName && (
+                      <span style={{ fontSize: '10px', color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        📁 {it.videoName}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* PPT Box */}
+                  <div style={{ background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <FileText size={13} color="#059669" /> Related PPT / PDF
+                      </span>
+                      {it.pptUrl && (
+                        <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <CheckCircle2 size={11} /> Attached
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '4px' }}>
+                      <label
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          background: '#059669',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        {isUploadingThisPpt ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                        {isUploadingThisPpt ? 'Uploading...' : 'Upload PPT/PDF'}
+                        <input
+                          type="file"
+                          accept=".ppt,.pptx,.pdf,.doc,.docx"
+                          onChange={(e) => handleUploadFileForSection(sectionNumber, idx, 'ppt', e)}
+                          style={{ display: 'none' }}
+                          disabled={isUploadingThisPpt}
+                        />
+                      </label>
+
+                      <input
+                        type="url"
+                        value={it.pptUrl}
+                        onChange={(e) => handleItemChange(sectionNumber, idx, 'pptUrl', e.target.value)}
+                        placeholder="Or paste PPT link"
+                        className={styles.formInput}
+                        style={{ fontSize: '11px', padding: '5px 8px', flex: 1 }}
+                      />
+                    </div>
+                    {it.pptName && (
+                      <span style={{ fontSize: '10px', color: '#64748b', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        📊 {it.pptName}
+                      </span>
+                    )}
                   </div>
                 </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Role / Track *</label>
-                  <input
-                    type="text"
-                    required
-                    className={styles.formInput}
-                    value={track}
-                    onChange={(e) => setTrack(e.target.value)}
-                    placeholder="e.g. Frontend Developer"
-                  />
-                </div>
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '92vh' }}>
+        <div className={styles.modalHeader}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <GraduationCap size={22} />
+            </div>
+            <div>
+              <h3 className={styles.modalTitle}>
+                {program ? 'Edit Training & Internship Program' : 'Add Training & Internship Program'}
+              </h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                Set title, description, thumbnail, training fees, and manage videos &amp; PPTs for Sections 1, 2, and 3.
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className={styles.closeModalBtn}>
+            <X size={20} />
+          </button>
+        </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Domain / Core Technologies *</label>
-                  <input
-                    type="text"
-                    required
-                    className={styles.formInput}
-                    value={domain}
-                    onChange={(e) => setDomain(e.target.value)}
-                    placeholder="e.g. Frontend Web Engineering & Next.js 14"
-                  />
-                </div>
+        <form onSubmit={handleSubmit}>
+          <div className={styles.modalBody} style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
+            {/* 1. INTERNSHIP TITLE */}
+            <div>
+              <label className={styles.formLabel} style={{ fontWeight: 700, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                Internship Title *
+              </label>
+              <input
+                type="text"
+                required
+                className={styles.formInput}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Frontend Developer Training & 2-Month Industrial Internship"
+                style={{ fontSize: '14px', fontWeight: 600 }}
+              />
+            </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Program Type</label>
-                  <select
-                    className={styles.formSelect}
-                    value={type}
-                    onChange={(e) => setType(e.target.value as any)}
+            {/* 2. DESCRIPTION */}
+            <div>
+              <label className={styles.formLabel} style={{ fontWeight: 700, fontSize: '13px', display: 'block', marginBottom: '6px' }}>
+                Description *
+              </label>
+              <textarea
+                required
+                rows={3}
+                className={styles.formTextarea}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Comprehensive overview of training modules, technologies, minor/major capstones, and industrial internship details..."
+              />
+            </div>
+
+            {/* 3. THUMBNAIL */}
+            <div style={{ padding: '16px 18px', background: '#f8fafc', borderRadius: '14px', border: '1.5px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 800, fontSize: '13px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <ImageIcon size={16} color="#2563eb" /> Program Thumbnail
+                </span>
+                {thumbnail && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThumbnail('');
+                      setThumbnailStats(null);
+                    }}
+                    style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}
                   >
-                    <option value="internship">Internship + Training</option>
-                    <option value="training">Industrial Training Only</option>
-                    <option value="bootcamp">Bootcamp</option>
-                  </select>
-                </div>
+                    Remove Thumbnail
+                  </button>
+                )}
+              </div>
 
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Work &amp; Class Mode</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={mode}
-                    onChange={(e) => setMode(e.target.value)}
-                    placeholder="e.g. Live Online • Weekend Classes"
-                  />
-                </div>
+              <div style={{ display: 'flex', gap: '18px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {thumbnail ? (
+                  <div style={{ position: 'relative', width: '200px', height: '112px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #2563eb', flexShrink: 0, background: '#0f172a' }}>
+                    <img src={thumbnail} alt="Thumbnail Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  <div style={{ width: '200px', height: '112px', borderRadius: '10px', border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '6px', flexShrink: 0, background: '#ffffff' }}>
+                    <ImageIcon size={26} color="#cbd5e1" />
+                    <span style={{ fontSize: '11px', fontWeight: 600 }}>16:9 Thumbnail</span>
+                  </div>
+                )}
 
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Enrollment Status</label>
-                  <select
-                    className={styles.formSelect}
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as any)}
+                <div style={{ flex: 1, minWidth: '240px' }}>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 16px',
+                      borderRadius: '10px',
+                      background: '#2563eb',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+                    }}
                   >
-                    <option value="open">Open (Accepting Enrollments)</option>
-                    <option value="ongoing">Ongoing (In Progress)</option>
-                    <option value="closed">Closed</option>
-                  </select>
+                    <Upload size={15} />
+                    {isCompressingThumb ? 'Compressing...' : 'Upload Image File'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleThumbnailFile}
+                      style={{ display: 'none' }}
+                      disabled={isCompressingThumb}
+                    />
+                  </label>
+
+                  {thumbnailStats && (
+                    <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 8px', borderRadius: '6px', background: '#ecfdf5', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '11px', fontWeight: 700 }}>
+                      <Zap size={13} color="#059669" />
+                      Optimized: {thumbnailStats.orig} &rarr; {thumbnailStats.comp} ({thumbnailStats.saved}% saved)
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '10px' }}>
+                    <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                      Or paste direct image URL:
+                    </span>
+                    <input
+                      type="url"
+                      value={thumbnail}
+                      onChange={(e) => setThumbnail(e.target.value)}
+                      placeholder="https://images.unsplash.com/... or CDN link"
+                      className={styles.formInput}
+                      style={{ padding: '7px 10px', fontSize: '12px' }}
+                    />
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* TAB 2: PRICING & SCHEDULE */}
-            {modalTab === 'pricing' && (
+            {/* 4. TRAINING FEE'S (ORIGINAL, AFTER DISCOUNT) */}
+            <div style={{ padding: '16px 18px', background: '#ecfdf5', borderRadius: '14px', border: '1.5px solid #a7f3d0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 800, fontSize: '13px', color: '#065f46', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IndianRupee size={16} color="#059669" /> Training Fee&apos;s
+                </span>
+                <span style={{ fontSize: '11px', fontWeight: 800, background: '#ffffff', color: '#059669', padding: '3px 8px', borderRadius: '6px', border: '1px solid #a7f3d0' }}>
+                  2-Month Industrial Internship is 100% Free of Cost (₹0)
+                </span>
+              </div>
+
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Training Tuition Fee (INR) *</label>
+                  <label className={styles.formLabel} style={{ color: '#065f46' }}>Original Training Fee (₹)</label>
                   <input
                     type="number"
+                    min="0"
+                    className={styles.formInput}
+                    value={originalPrice}
+                    onChange={(e) => setOriginalPrice(e.target.value)}
+                    placeholder="e.g. 7999"
+                    style={{ background: '#ffffff' }}
+                  />
+                  <span style={{ fontSize: '11px', color: '#047857', marginTop: '4px', display: 'block' }}>
+                    Strikethrough base tuition fee
+                  </span>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} style={{ color: '#065f46' }}>Training Fee After Discount (₹) *</label>
+                  <input
+                    type="number"
+                    min="0"
                     required
                     className={styles.formInput}
                     value={trainingPrice}
-                    onChange={(e) => setTrainingPrice(Number(e.target.value))}
+                    onChange={(e) => setTrainingPrice(e.target.value)}
                     placeholder="e.g. 2400"
+                    style={{ fontWeight: 700, color: '#059669', background: '#ffffff' }}
                   />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Original Tuition Price (Strikethrough)</label>
-                  <input
-                    type="number"
-                    className={styles.formInput}
-                    value={originalPrice}
-                    onChange={(e) => setOriginalPrice(Number(e.target.value))}
-                    placeholder="e.g. 7999"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>2-Month Internship Fee (INR)</label>
-                  <input
-                    type="number"
-                    className={styles.formInput}
-                    value={internshipPrice}
-                    onChange={(e) => setInternshipPrice(Number(e.target.value))}
-                    placeholder="0 for 100% Free Bundled"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Stipend / Fee Label Display</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={stipendOrFee}
-                    onChange={(e) => setStipendOrFee(e.target.value)}
-                    placeholder="e.g. ₹2,400 Tuition • Free 2-Month Internship"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Schedule Badge</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={scheduleBadge}
-                    onChange={(e) => setScheduleBadge(e.target.value)}
-                    placeholder="e.g. Weekend Live Batches"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Class Days</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={scheduleDays}
-                    onChange={(e) => setScheduleDays(e.target.value)}
-                    placeholder="e.g. Every Saturday & Sunday"
-                  />
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Session Timings &amp; Recordings Info</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={scheduleTimings}
-                    onChange={(e) => setScheduleTimings(e.target.value)}
-                    placeholder="e.g. Live Interactive Sessions + 24/7 Session Recordings"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Total Duration</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    placeholder="e.g. 2 Months Internship + Training"
-                  />
-                </div>
-
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Application Deadline</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={deadline}
-                    onChange={(e) => setDeadline(e.target.value)}
-                    placeholder="e.g. Rolling Admissions"
-                  />
+                  <span style={{ fontSize: '11px', color: '#047857', marginTop: '4px', display: 'block' }}>
+                    {scholarshipPct > 0 ? `Learner pays ₹${numDiscountFee} (${scholarshipPct}% scholarship)` : 'Final tuition fee'}
+                  </span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* TAB 3: CURRICULUM SECTIONS & PROJECTS */}
-            {modalTab === 'curriculum' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Section 1 */}
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <BookOpen size={18} color="#2563eb" /> Section 1: Intensive Engineering Training
-                  </div>
-                  <div className={styles.formGrid}>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Section 1 Title</label>
-                      <input
-                        type="text"
-                        className={styles.formInput}
-                        value={sec1Title}
-                        onChange={(e) => setSec1Title(e.target.value)}
-                      />
-                    </div>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Section 1 Tagline</label>
-                      <input
-                        type="text"
-                        className={styles.formInput}
-                        value={sec1Tagline}
-                        onChange={(e) => setSec1Tagline(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+            {/* 5. 3 CURRICULUM SECTIONS CRUD */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* SECTION 1: Training Video & PPT */}
+              {renderSectionCrud(
+                1,
+                'Section 1: Training Videos & Related PPTs',
+                '#2563eb',
+                '#eff6ff',
+                '#bfdbfe',
+                sec1Items
+              )}
 
-                {/* Section 2: Minor Project */}
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Layers size={18} color="#059669" /> Section 2: Minor Project
-                  </div>
-                  <div className={styles.formGrid}>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Minor Project Title</label>
-                      <input
-                        type="text"
-                        className={styles.formInput}
-                        value={minorProjectTitle}
-                        onChange={(e) => setMinorProjectTitle(e.target.value)}
-                      />
-                    </div>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Minor Project Scope &amp; Architecture</label>
-                      <textarea
-                        rows={2}
-                        className={styles.formTextarea}
-                        value={minorProjectDesc}
-                        onChange={(e) => setMinorProjectDesc(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
+              {/* SECTION 2: Minor Project PPT & Related Video */}
+              {renderSectionCrud(
+                2,
+                'Section 2: Minor Project PPT & Related Videos',
+                '#059669',
+                '#ecfdf5',
+                '#a7f3d0',
+                sec2Items
+              )}
 
-                {/* Section 3: Major Project */}
-                <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Award size={18} color="#7c3aed" /> Section 3: Major Project
-                  </div>
-                  <div className={styles.formGrid}>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Major Project Title</label>
-                      <input
-                        type="text"
-                        className={styles.formInput}
-                        value={majorProjectTitle}
-                        onChange={(e) => setMajorProjectTitle(e.target.value)}
-                      />
-                    </div>
-                    <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                      <label className={styles.formLabel}>Major Project Scope &amp; Deliverables</label>
-                      <textarea
-                        rows={2}
-                        className={styles.formTextarea}
-                        value={majorProjectDesc}
-                        onChange={(e) => setMajorProjectDesc(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: CREDENTIALS & PERKS */}
-            {modalTab === 'credentials' && (
-              <div className={styles.formGrid}>
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Eligibility Criteria</label>
-                  <input
-                    type="text"
-                    className={styles.formInput}
-                    value={eligibility}
-                    onChange={(e) => setEligibility(e.target.value)}
-                    placeholder="e.g. College Students, Freshers & Working Professionals"
-                  />
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
-                    <div style={{ fontWeight: 800, fontSize: '13px', color: '#065f46', marginBottom: '4px' }}>
-                      4 Official Completion Credentials Automatically Bundled:
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#047857', lineHeight: 1.5 }}>
-                      1. Letter of Recommendation (LOR) • 2. Industrial Internship Certificate • 3. Framework Mastery Certificate • 4. Outstanding Honors Certificate
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                  <label className={styles.formLabel}>Program Highlights &amp; Perks (one per line)</label>
-                  <textarea
-                    rows={6}
-                    className={styles.formTextarea}
-                    value={perks}
-                    onChange={(e) => setPerks(e.target.value)}
-                    placeholder="Official Internship Certificate&#10;Letter of Recommendation&#10;PPO Opportunity"
-                  />
-                </div>
-              </div>
-            )}
+              {/* SECTION 3: Major Project & PPT Related to Video */}
+              {renderSectionCrud(
+                3,
+                'Section 3: Major Project Video & Related PPTs',
+                '#7c3aed',
+                '#f5f3ff',
+                '#ddd6fe',
+                sec3Items
+              )}
+            </div>
           </div>
 
-          {/* Modal Footer */}
           <div className={styles.modalFooter}>
             <button type="button" onClick={onClose} className={styles.cancelBtn}>
               Cancel
             </button>
             <button type="submit" className={styles.submitBtn} style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}>
-              <Check size={16} /> Save Program &amp; Publish
+              <Check size={16} /> Save Program &amp; Curriculum
             </button>
           </div>
         </form>
