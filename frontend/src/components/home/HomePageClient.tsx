@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../app/home.module.css';
-import { ALL_COMPANY_LOGOS } from '../common/CompanyLogos';
 import {
   Sparkles,
   ArrowRight,
@@ -620,23 +619,7 @@ export default function HomePageClient({
         </div>
       </section>
 
-      {/* =====================================================================
-          HIRING PARTNERS MARQUEE: VECTOR COMPANY LOGOS (NO TEXT NAMES)
-          ===================================================================== */}
-      <section className={styles.partnersSection}>
-        <div className={styles.partnersHeading}>
-          Our Learners &amp; Interns Are Hired By Top Global Tech Companies
-        </div>
-        <div className={styles.marqueeOuter}>
-          <div className={styles.marqueeTrack}>
-            {[...ALL_COMPANY_LOGOS, ...ALL_COMPANY_LOGOS, ...ALL_COMPANY_LOGOS].map((item, i) => (
-              <div key={i} className={styles.partnerBadge} title={item.name}>
-                <item.Component height={26} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* =====================================================================
           PROGRAMS CATALOG SHOWCASE (ALL PROGRAMS UPDATED BY SUPER ADMIN)
