@@ -88,12 +88,15 @@ export async function GET(req: Request) {
           formattedPrograms.find((p) => /frontend/i.test(p.slug) || /frontend/i.test(p.title)) ||
           formattedPrograms[0];
       }
+      if (!activeProgram) {
+        activeProgram = formatSingleProgram(FRONTEND_INTERNSHIP_PROGRAM, slug || FRONTEND_INTERNSHIP_PROGRAM.slug);
+      }
 
       return NextResponse.json({
         success: true,
-        programs: formattedPrograms,
+        programs: formattedPrograms.length > 0 ? formattedPrograms : [activeProgram],
         program: activeProgram,
-        total: formattedPrograms.length,
+        total: formattedPrograms.length > 0 ? formattedPrograms.length : 1,
       });
     } catch (dbErr) {
       console.warn('[Next.js Training Internship API] MongoDB query error:', dbErr);

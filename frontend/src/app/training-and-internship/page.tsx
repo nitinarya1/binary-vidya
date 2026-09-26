@@ -273,14 +273,8 @@ function TrainingAndInternshipContent() {
 
   const handleEnrollClick = (progToEnroll?: any) => {
     const target = progToEnroll || selectedProgram;
-    if (!target) return;
-
-    if (!user) {
-      setPendingProgramForEnroll(target);
-      setShowAuthModal(true);
-    } else {
-      triggerRazorpayPayment(user, target);
-    }
+    const targetSlug = target?.slug || target?.id || 'frontend-developer-training-internship';
+    router.push(`/training-and-internship/checkout?slug=${encodeURIComponent(targetSlug)}`);
   };
 
   const handleAuthSuccess = (authenticatedUser: any) => {
@@ -639,25 +633,16 @@ function TrainingAndInternshipContent() {
               <button
                 type="button"
                 onClick={() => handleEnrollClick(currentProg)}
-                disabled={paymentStep === 'initiating' || paymentStep === 'verifying'}
                 className={styles.enrollBtn}
               >
-                {paymentStep === 'initiating' ? (
-                  <span>Opening Razorpay Secure Gateway...</span>
-                ) : paymentStep === 'verifying' ? (
-                  <span>Verifying Payment...</span>
-                ) : (
-                  <>
-                    <Zap size={18} />
-                    <span>
-                      Enroll Now &bull; Pay ₹{(currentProg.pricing?.trainingPrice !== undefined ? currentProg.pricing.trainingPrice : 2400).toLocaleString('en-IN')} via Razorpay
-                    </span>
-                  </>
-                )}
+                <Zap size={18} />
+                <span>
+                  Enroll Now &bull; View Details &amp; Apply Coupon &rarr;
+                </span>
               </button>
 
               <Link
-                href={`/training-and-internship/checkout?program=${currentProg.slug || currentProg.id}`}
+                href={`/training-and-internship/checkout?slug=${encodeURIComponent(currentProg.slug || currentProg.id || 'frontend-developer-training-internship')}`}
                 className={styles.viewInvoiceLink}
               >
                 Or view detailed invoice &amp; payment options &rarr;
@@ -1143,16 +1128,15 @@ function TrainingAndInternshipContent() {
                 <button
                   type="button"
                   onClick={() => handleEnrollClick(currentProg)}
-                  disabled={paymentStep === 'initiating' || paymentStep === 'verifying'}
                   className={styles.enrollBtn}
                 >
                   <Zap size={18} />
                   <span>
-                    Pay ₹{(currentProg.pricing?.trainingPrice !== undefined ? currentProg.pricing.trainingPrice : 2400).toLocaleString('en-IN')} via Razorpay
+                    Enroll Now &bull; View Details &amp; Apply Coupon &rarr;
                   </span>
                 </button>
                 <Link
-                  href={`/training-and-internship/checkout?program=${currentProg.slug || currentProg.id}`}
+                  href={`/training-and-internship/checkout?slug=${encodeURIComponent(currentProg.slug || currentProg.id || 'frontend-developer-training-internship')}`}
                   className={styles.viewInvoiceLink}
                 >
                   View Checkout Invoice &rarr;
