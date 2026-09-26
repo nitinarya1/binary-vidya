@@ -1398,6 +1398,20 @@ export default function SuperAdminDashboard() {
               <span className={styles.tabCountPill}>{coupons.length}</span>
             </button>
           )}
+
+          <Link
+            href="/sales/domains"
+            target="_blank"
+            className={styles.tabBtn}
+            style={{ textDecoration: 'none' }}
+            title="Manage counselling form domains live"
+          >
+            <Sparkles size={16} />
+            <span>Counselling Domains</span>
+            <span className={styles.tabCountPill} style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
+              Form Live
+            </span>
+          </Link>
         </nav>
 
         {/* TAB 1: OVERVIEW & RECENT ACTIVITY */}

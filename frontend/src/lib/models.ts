@@ -490,3 +490,140 @@ const couponSchema = new Schema<ICoupon>(
 export const Coupon: Model<ICoupon> =
   mongoose.models.Coupon || mongoose.model<ICoupon>('Coupon', couponSchema);
 
+export interface ICounsellingDomain extends Document {
+  name: string;
+  slug: string;
+  description?: string;
+  order: number;
+  isActive: boolean;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const counsellingDomainSchema = new Schema<ICounsellingDomain>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Domain name is required'],
+      trim: true,
+      unique: true,
+    },
+    slug: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    description: {
+      type: String,
+      default: '',
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    createdBy: {
+      type: String,
+      default: 'system',
+    },
+  },
+  { timestamps: true }
+);
+
+export const CounsellingDomain: Model<ICounsellingDomain> =
+  mongoose.models.CounsellingDomain ||
+  mongoose.model<ICounsellingDomain>('CounsellingDomain', counsellingDomainSchema);
+
+export interface ICallNote {
+  agentId: string;
+  agentName: string;
+  note: string;
+  status: string;
+  followUpAt?: Date;
+  createdAt: Date;
+}
+
+export interface ILead extends Document {
+  name: string;
+  phone: string;
+  email?: string;
+  course?: string;
+  preferredDomain?: string;
+  education?: string;
+  collegeName?: string;
+  year?: string;
+  branch?: string;
+  source: string;
+  status: string;
+  statusUpdatedBy?: string;
+  statusUpdatedByName?: string;
+  statusUpdatedAt?: Date;
+  followUpAt?: Date;
+  temperature?: 'hot' | 'warm' | 'cold';
+  assignedTo?: string;
+  assignedAgentName?: string;
+  callNotes: ICallNote[];
+  lastContactedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const callNoteSchema = new Schema<ICallNote>(
+  {
+    agentId: { type: String, required: true },
+    agentName: { type: String, required: true },
+    note: { type: String, required: true },
+    status: { type: String, required: true },
+    followUpAt: { type: Date },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const leadSchema = new Schema<ILead>(
+  {
+    name: { type: String, required: true, trim: true },
+    phone: { type: String, required: true, trim: true, index: true },
+    email: { type: String, trim: true, lowercase: true },
+    course: { type: String, default: '' },
+    preferredDomain: { type: String, default: '' },
+    education: { type: String, default: '' },
+    collegeName: { type: String, default: '' },
+    year: { type: String, default: '' },
+    branch: { type: String, default: '' },
+    source: { type: String, default: 'public_form' },
+    status: {
+      type: String,
+      default: 'new',
+      index: true,
+    },
+    statusUpdatedBy: { type: String, default: '' },
+    statusUpdatedByName: { type: String, default: '' },
+    statusUpdatedAt: { type: Date },
+    followUpAt: { type: Date, index: true },
+    temperature: {
+      type: String,
+      enum: ['hot', 'warm', 'cold'],
+      default: 'hot',
+    },
+    assignedTo: { type: String, default: null, index: true },
+    assignedAgentName: { type: String, default: '' },
+    callNotes: { type: [callNoteSchema], default: [] },
+    lastContactedAt: { type: Date },
+  },
+  {
+    timestamps: true,
+    strict: false,
+  }
+);
+
+export const Lead: Model<ILead> =
+  mongoose.models.Lead || mongoose.model<ILead>('Lead', leadSchema);
+

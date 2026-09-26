@@ -17,6 +17,7 @@ import {
   Globe,
   ExternalLink,
   Trophy,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { href: '/sales/leads', label: 'Leads Calling', icon: Phone },
   { href: '/sales/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/sales/generate', label: 'Generate Lead', icon: UserPlus },
+  { href: '/sales/domains', label: 'Counselling Domains', icon: Sparkles },
   {
     href: '/get-counselling',
     label: 'Lead Generation (Public)',

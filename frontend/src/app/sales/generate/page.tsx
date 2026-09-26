@@ -7,25 +7,27 @@ import { useCrm } from '../../../context/CrmContext';
 import { CrmSidebar } from '../../../components/crm/CrmSidebar';
 import { UserPlus, CheckCircle, AlertCircle, ArrowRight, BookOpen, GraduationCap, Building2, User, Phone, Mail, Globe, ExternalLink } from 'lucide-react';
 
-const COURSES = [
-  { value: '', label: 'Select course / domain...' },
-  { value: 'Full Stack Web Development (MERN)', label: 'Full Stack Web Development (MERN)' },
-  { value: 'Frontend Mastery (React, Next.js, TS)', label: 'Frontend Mastery (React, Next.js, TS)' },
-  { value: 'Cloud Computing & DevOps', label: 'Cloud Computing & DevOps' },
-  { value: 'Generative AI, LLMs & Prompt Engineering', label: 'Generative AI, LLMs & Prompt Engineering' },
-  { value: 'Data Science & Analytics', label: 'Data Science & Analytics' },
-  { value: 'Backend Architecture & System Design', label: 'Backend Architecture & System Design' },
-  { value: 'DSA & Placement Preparation', label: 'DSA & Placement Preparation' },
+const DEFAULT_COURSES = [
+  'Full Stack Development',
+  'Data Science',
+  'Data Analytics',
+  'App Development',
+  'Cyber Security',
+  'Cloud / DevOps',
+  'AI / ML',
+  'Web Development',
+  'Generative AI & LLM',
+  'Prompt Engineering',
 ];
 
 const STUDY_YEARS = [
   '',
-  '1st Year (Freshman)',
-  '2nd Year (Sophomore)',
-  '3rd Year (Pre-final)',
-  '4th / Final Year',
-  'Recent Graduate (Looking for Jobs)',
-  'Working Professional / Career Switcher'
+  '1st Year',
+  '2nd Year',
+  '3rd Year',
+  'Final Year',
+  'Just Graduated',
+  'Working Professional',
 ];
 
 interface FormData {
@@ -41,6 +43,8 @@ interface FormData {
 export default function GenerateLeadPage() {
   const { crmUser, loading } = useCrm();
   const router = useRouter();
+
+  const [courseList, setCourseList] = useState<string[]>(DEFAULT_COURSES);
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -58,6 +62,19 @@ export default function GenerateLeadPage() {
   useEffect(() => {
     if (!loading && !crmUser) router.replace('/sales/login');
   }, [loading, crmUser, router]);
+
+  useEffect(() => {
+    async function loadDomains() {
+      try {
+        const res = await fetch('/api/counselling/domains');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.domains) && data.domains.length > 0) {
+          setCourseList(data.domains.map((d: any) => d.name));
+        }
+      } catch {}
+    }
+    loadDomains();
+  }, []);
 
   const handleChange = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -287,8 +304,9 @@ export default function GenerateLeadPage() {
                     className="lead-input"
                     style={{ ...fieldStyle, cursor: 'pointer' }}
                   >
-                    {COURSES.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
+                    <option value="">Select course / domain...</option>
+                    {courseList.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
