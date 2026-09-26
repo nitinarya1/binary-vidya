@@ -217,8 +217,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { title, department, employmentType, location, experience, salary, description, requirements, responsibilities, deadline, status } = body;
 
-    if (!title || !department || !description) {
-      return NextResponse.json({ success: false, message: 'Title, department, and description are required' }, { status: 400 });
+    if (!title || !description) {
+      return NextResponse.json({ success: false, message: 'Job title and description are required' }, { status: 400 });
     }
 
     const slug = (body.slug || title)
@@ -226,12 +226,14 @@ export async function POST(req: Request) {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '') + `-${Date.now().toString().slice(-4)}`;
 
+    const dept = (department && department.trim()) || 'Engineering & Operations';
+
     const newCareer = await Career.create({
       title: title.trim(),
       slug,
-      department: department.trim(),
-      employmentType: employmentType || 'full-time',
-      location: location || 'Remote (India)',
+      department: dept,
+      employmentType: (employmentType || 'full-time').toLowerCase(),
+      location: (location && location.trim()) || 'Remote',
       experience: experience || '1-3 Years',
       salary: salary || 'Competitive',
       description: description.trim(),

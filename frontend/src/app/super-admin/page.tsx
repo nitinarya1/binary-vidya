@@ -27,6 +27,7 @@ import {
   Clock,
   Award,
   MapPin,
+  Globe,
   Check,
   TrendingUp,
   Upload,
@@ -136,7 +137,7 @@ interface CareerItem {
   title: string;
   slug: string;
   department: string;
-  employmentType: 'full-time' | 'part-time' | 'contract' | 'remote';
+  employmentType: 'full-time' | 'internship' | 'part-time' | 'contract' | 'remote';
   location: string;
   experience: string;
   salary: string;
@@ -4241,42 +4242,84 @@ function CareerFormModal({
   onSave: (data: Partial<CareerItem>) => void;
 }) {
   const [title, setTitle] = useState(career?.title || '');
-  const [department, setDepartment] = useState(career?.department || 'Curriculum & Instruction');
-  const [employmentType, setEmploymentType] = useState<CareerItem['employmentType']>(
-    career?.employmentType || 'full-time'
+  const [employmentType, setEmploymentType] = useState<'full-time' | 'internship'>(
+    career?.employmentType === 'internship' ? 'internship' : 'full-time'
   );
-  const [location, setLocation] = useState(career?.location || 'Remote (India)');
-  const [experience, setExperience] = useState(career?.experience || '2-5 Years');
-  const [salary, setSalary] = useState(career?.salary || 'Competitive (Market Standard)');
+
+  // Location handling: Remote vs Write Location
+  const initialIsRemote = !career?.location || career.location.toLowerCase().includes('remote');
+  const [locationMode, setLocationMode] = useState<'remote' | 'custom'>(initialIsRemote ? 'remote' : 'custom');
+  const [location, setLocation] = useState(career?.location || 'Remote');
+
   const [description, setDescription] = useState(career?.description || '');
+
+  // Additional optional attributes (Department, Salary/Stipend, Status)
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [department, setDepartment] = useState(career?.department || 'Engineering & Tech');
+  const [salary, setSalary] = useState(career?.salary || '');
+  const [experience, setExperience] = useState(career?.experience || '');
   const [status, setStatus] = useState<CareerItem['status']>(career?.status || 'active');
-  const [requirements, setRequirements] = useState(
-    career?.requirements?.join('\n') ||
-      'Solid hands-on software development expertise\nStrong communication & mentoring skills'
-  );
+
+  const handleSelectRemote = () => {
+    setLocationMode('remote');
+    setLocation('Remote');
+  };
+
+  const handleSelectWriteLocation = () => {
+    setLocationMode('custom');
+    if (location.toLowerCase().includes('remote')) {
+      setLocation('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalLocation = location.trim() || (locationMode === 'remote' ? 'Remote' : 'Remote (Work From Home)');
+    const defaultSalary = salary.trim() || (employmentType === 'internship' ? 'Competitive Stipend' : 'Competitive CTC');
+    const defaultExp = experience.trim() || (employmentType === 'internship' ? 'Freshers / Students' : '1-3 Years');
+
     onSave({
-      title,
-      department,
+      title: title.trim(),
+      department: department.trim() || 'Engineering & Tech',
       employmentType,
-      location,
-      experience,
-      salary,
-      description,
+      location: finalLocation,
+      experience: defaultExp,
+      salary: defaultSalary,
+      description: description.trim(),
       status,
-      requirements: requirements.split('\n').map((r) => r.trim()).filter(Boolean),
+      requirements: [],
+      responsibilities: [],
     });
   };
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
         <div className={styles.modalHeader}>
-          <h3 className={styles.modalTitle}>
-            {career ? 'Edit Career Opening' : 'Post New Career Opportunity'}
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: '#eff6ff',
+                color: '#2563eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Briefcase size={20} />
+            </div>
+            <div>
+              <h3 className={styles.modalTitle} style={{ margin: 0, fontSize: '18px' }}>
+                {career ? 'Edit Career Opening' : 'Post New Career Opportunity'}
+              </h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                Create or update a position visible to aspiring candidates on Binary Vidya Careers.
+              </p>
+            </div>
+          </div>
           <button onClick={onClose} className={styles.closeModalBtn}>
             <X size={20} />
           </button>
@@ -4285,111 +4328,255 @@ function CareerFormModal({
         <form onSubmit={handleSubmit}>
           <div className={styles.modalBody}>
             <div className={styles.formGrid}>
+              {/* 1. JOB TITLE */}
               <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Job Title *</label>
+                <label className={styles.formLabel}>
+                  Job Title <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <input
                   type="text"
                   required
                   className={styles.formInput}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Lead Full Stack Instructor"
+                  placeholder="e.g. Senior Full Stack Developer or Web Development Intern"
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Department *</label>
-                <select
-                  className={styles.formSelect}
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                >
-                  <option value="Curriculum & Instruction">Curriculum & Instruction</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="Student Operations">Student Operations</option>
-                  <option value="Marketing & Growth">Marketing & Growth</option>
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Employment Type</label>
-                <select
-                  className={styles.formSelect}
-                  value={employmentType}
-                  onChange={(e) => setEmploymentType(e.target.value as any)}
-                >
-                  <option value="full-time">Full-Time</option>
-                  <option value="part-time">Part-Time</option>
-                  <option value="contract">Contract</option>
-                  <option value="remote">Remote</option>
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Location</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g. Remote (India) / Bangalore"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Experience Required</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={experience}
-                  onChange={(e) => setExperience(e.target.value)}
-                  placeholder="e.g. 2-4 Years"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Compensation / Salary</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
-                  placeholder="e.g. ₹12,00,000 - ₹18,00,000 PA"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Hiring Status</label>
-                <select
-                  className={styles.formSelect}
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value as any)}
-                >
-                  <option value="active">Active (Open)</option>
-                  <option value="closed">Closed</option>
-                </select>
-              </div>
-
+              {/* 2. EMPLOYMENT TYPE */}
               <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Job Summary & Description *</label>
+                <label className={styles.formLabel}>
+                  Employment Type <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEmploymentType('full-time')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      border: employmentType === 'full-time' ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                      background: employmentType === 'full-time' ? '#eff6ff' : '#ffffff',
+                      color: employmentType === 'full-time' ? '#1d4ed8' : '#475569',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Briefcase size={20} color={employmentType === 'full-time' ? '#2563eb' : '#64748b'} />
+                      <span>Full-Time</span>
+                    </div>
+                    {employmentType === 'full-time' && <Check size={18} color="#2563eb" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEmploymentType('internship')}
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      border: employmentType === 'internship' ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                      background: employmentType === 'internship' ? '#eff6ff' : '#ffffff',
+                      color: employmentType === 'internship' ? '#1d4ed8' : '#475569',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <GraduationCap size={20} color={employmentType === 'internship' ? '#2563eb' : '#64748b'} />
+                      <span>Internship</span>
+                    </div>
+                    {employmentType === 'internship' && <Check size={18} color="#2563eb" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. LOCATION */}
+              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label className={styles.formLabel} style={{ marginBottom: 0 }}>
+                    Location <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={handleSelectRemote}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        border: locationMode === 'remote' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                        background: locationMode === 'remote' ? '#eff6ff' : '#f8fafc',
+                        color: locationMode === 'remote' ? '#1d4ed8' : '#475569',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Globe size={15} /> Remote
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSelectWriteLocation}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        border: locationMode === 'custom' ? '2px solid #2563eb' : '1px solid #cbd5e1',
+                        background: locationMode === 'custom' ? '#eff6ff' : '#f8fafc',
+                        color: locationMode === 'custom' ? '#1d4ed8' : '#475569',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <MapPin size={15} /> Write Location
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    required
+                    className={styles.formInput}
+                    value={location}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLocation(val);
+                      if (val.trim().toLowerCase().includes('remote')) {
+                        setLocationMode('remote');
+                      } else {
+                        setLocationMode('custom');
+                      }
+                    }}
+                    placeholder={
+                      locationMode === 'remote'
+                        ? 'Remote (Work From Home / Anywhere)'
+                        : 'Write location (e.g. Noida, Sector 62 / Bengaluru / Hybrid)'
+                    }
+                    style={{ paddingLeft: '38px' }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      pointerEvents: 'none',
+                      color: '#94a3b8',
+                    }}
+                  >
+                    {locationMode === 'remote' ? <Globe size={18} /> : <MapPin size={18} />}
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                  {locationMode === 'remote'
+                    ? '💡 Selected: Remote / Work From Anywhere (You can also customize the text above).'
+                    : '✍️ Write any specific office, city, or hybrid location in the field above.'}
+                </div>
+              </div>
+
+              {/* 4. JOB SUMMARY & DESCRIPTION */}
+              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
+                <label className={styles.formLabel}>
+                  Job Summary &amp; Description <span style={{ color: '#ef4444' }}>*</span>
+                </label>
                 <textarea
                   required
+                  rows={8}
                   className={styles.formTextarea}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Overview of the role and key impact..."
+                  placeholder="Provide an overview of the role, key responsibilities, expectations, qualifications, and perks..."
+                  style={{ minHeight: '160px', lineHeight: '1.6', fontSize: '14px' }}
                 />
               </div>
 
-              <div className={`${styles.formGroup} ${styles.formFullWidth}`}>
-                <label className={styles.formLabel}>Key Requirements (one per line)</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                  placeholder="3+ years production Next.js experience&#10;Excellent communication skills"
-                />
+              {/* 5. OPTIONAL MORE DETAILS */}
+              <div className={`${styles.formGroup} ${styles.formFullWidth}`} style={{ marginTop: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563eb',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 0',
+                  }}
+                >
+                  <Settings2 size={15} />
+                  {showAdvanced ? 'Hide Additional Details' : 'Show Additional Details (Department, Salary/Stipend, Status)'}
+                </button>
               </div>
+
+              {showAdvanced && (
+                <>
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Department</label>
+                    <select
+                      className={styles.formSelect}
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
+                    >
+                      <option value="Engineering & Tech">Engineering &amp; Tech</option>
+                      <option value="Curriculum & Instruction">Curriculum &amp; Instruction</option>
+                      <option value="Student Operations">Student Operations</option>
+                      <option value="Marketing & Growth">Marketing &amp; Growth</option>
+                      <option value="General">General</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      {employmentType === 'internship' ? 'Stipend' : 'Compensation / Salary'}
+                    </label>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      value={salary}
+                      onChange={(e) => setSalary(e.target.value)}
+                      placeholder={
+                        employmentType === 'internship'
+                          ? 'e.g. ₹15,000 - ₹25,000 / month'
+                          : 'e.g. ₹8,00,000 - ₹14,00,000 PA'
+                      }
+                    />
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Hiring Status</label>
+                    <select
+                      className={styles.formSelect}
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as any)}
+                    >
+                      <option value="active">Active (Open)</option>
+                      <option value="closed">Closed</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -4398,7 +4585,7 @@ function CareerFormModal({
               Cancel
             </button>
             <button type="submit" className={styles.submitBtn}>
-              <Check size={16} /> Post Opening
+              <Check size={16} /> {career ? 'Update Career Opening' : 'Post Opening'}
             </button>
           </div>
         </form>

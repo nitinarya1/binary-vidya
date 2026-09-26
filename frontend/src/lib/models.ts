@@ -379,7 +379,7 @@ export interface ICareer extends Document {
   title: string;
   slug: string;
   department: string;
-  employmentType: 'full-time' | 'part-time' | 'contract' | 'remote';
+  employmentType: 'full-time' | 'internship' | 'part-time' | 'contract' | 'remote';
   location: string;
   experience: string;
   salary: string;
@@ -397,13 +397,13 @@ const careerSchema = new Schema<ICareer>(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, unique: true, lowercase: true, trim: true },
-    department: { type: String, required: true, trim: true },
+    department: { type: String, default: 'Engineering & Tech', trim: true },
     employmentType: {
       type: String,
-      enum: ['full-time', 'part-time', 'contract', 'remote'],
+      enum: ['full-time', 'internship', 'part-time', 'contract', 'remote'],
       default: 'full-time',
     },
-    location: { type: String, default: 'Remote (India)' },
+    location: { type: String, default: 'Remote' },
     experience: { type: String, default: '1-3 Years' },
     salary: { type: String, default: 'Competitive' },
     description: { type: String, required: true },
