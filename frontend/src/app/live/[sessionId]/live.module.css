@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LMS WEBRTC LIVE CLASSROOM & REAL-TIME CHAT STYLESHEET
+   LMS WEBRTC LIVE CLASSROOM & REAL-TIME CHAT — PREMIUM LIGHT MODE
    ========================================================================== */
 
 .classroomContainer {
@@ -7,8 +7,8 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: #090d16;
-  color: #f1f5f9;
+  background: #f8fafc;
+  color: #0f172a;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   overflow: hidden;
 }
@@ -16,14 +16,15 @@
 /* TOP NAVIGATION HEADER */
 .topNav {
   height: 60px;
-  background: #0f172a;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
   flex-shrink: 0;
   z-index: 20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .navLeft {
@@ -54,7 +55,7 @@
 .divider {
   width: 1px;
   height: 24px;
-  background: rgba(255, 255, 255, 0.15);
+  background: #e2e8f0;
 }
 
 .sessionMeta {
@@ -69,8 +70,8 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 9999px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   color: #ef4444;
   font-size: 11px;
   font-weight: 800;
@@ -95,7 +96,7 @@
 .sessionTitle {
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: #0f172a;
   max-width: 440px;
   white-space: nowrap;
   overflow: hidden;
@@ -114,11 +115,11 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   font-size: 12px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #475569;
 }
 
 .attendanceBadge {
@@ -127,11 +128,11 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: 8px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   font-size: 12px;
   font-weight: 700;
-  color: #34d399;
+  color: #059669;
 }
 
 .leaveBtn {
@@ -140,9 +141,9 @@
   gap: 6px;
   padding: 7px 14px;
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -162,6 +163,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  background: #f8fafc;
 }
 
 /* LEFT VIDEO STAGE (70%) */
@@ -169,7 +171,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #020617;
+  background: #f1f5f9;
   position: relative;
   overflow: hidden;
 }
@@ -181,7 +183,7 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: #000000;
+  background: #0f172a;
 }
 
 .liveVideoPlayer {
@@ -199,7 +201,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+  background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
   position: relative;
   padding: 30px;
   text-align: center;
@@ -209,10 +211,10 @@
   width: 88%;
   max-width: 900px;
   height: 60%;
-  background: #0b1120;
-  border: 1.5px solid rgba(59, 130, 246, 0.25);
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
   border-radius: 14px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -221,12 +223,12 @@
 
 .mockupHeader {
   height: 36px;
-  background: #1e293b;
+  background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .mockupDots {
@@ -241,7 +243,7 @@
 .mockupTitle {
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   letter-spacing: 0.5px;
 }
 
@@ -251,10 +253,10 @@
   text-align: left;
   font-family: 'Consolas', 'Courier New', monospace;
   font-size: 13px;
-  color: #38bdf8;
+  color: #2563eb;
   line-height: 1.6;
   overflow: hidden;
-  background: #070d19;
+  background: #fafafa;
 }
 
 .streamInfoPill {
@@ -263,24 +265,25 @@
   gap: 8px;
   padding: 8px 16px;
   border-radius: 20px;
-  background: rgba(37, 99, 235, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
+  background: #ffffff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
   font-size: 13px;
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 }
 
 /* INSTRUCTOR OVERLAY PIN */
 .instructorPiP {
   position: absolute;
-  bottom: 80px;
+  bottom: 85px;
   right: 20px;
   width: 180px;
   height: 110px;
   border-radius: 12px;
-  background: #1e293b;
-  border: 2px solid #3b82f6;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  background: #ffffff;
+  border: 2px solid #2563eb;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   z-index: 10;
 }
@@ -295,7 +298,7 @@
   position: absolute;
   bottom: 6px;
   left: 6px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 23, 42, 0.85);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 10px;
@@ -303,12 +306,12 @@
   color: #ffffff;
 }
 
-/* FLOATING CONTROLS BAR */
+/* FLOATING CONTROLS BAR (LIGHT MODE DOCK) */
 .controlsBar {
   height: 70px;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -316,15 +319,16 @@
   padding: 0 20px;
   flex-shrink: 0;
   z-index: 15;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.03);
 }
 
 .controlBtn {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,20 +337,26 @@
 }
 
 .controlBtn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: #e2e8f0;
+  color: #0f172a;
   transform: translateY(-2px);
 }
 
 .controlBtnActive {
   background: #2563eb;
-  border-color: #3b82f6;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.controlBtnActive:hover {
+  background: #1d4ed8;
   color: #ffffff;
 }
 
 .controlBtnDanger {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #f87171;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
 }
 
 .controlBtnDanger:hover {
@@ -362,18 +372,18 @@
   height: 44px;
   border-radius: 12px;
   background: #f59e0b;
-  color: #0f172a;
+  color: #ffffff;
   border: none;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.25);
 }
 
 .raiseHandBtn:hover {
   transform: translateY(-2px);
-  background: #fbbf24;
+  background: #d97706;
 }
 
 .raiseHandBtnRaised {
@@ -382,22 +392,23 @@
   animation: pulse 1.2s infinite;
 }
 
-/* RIGHT CHAT & COLLABORATION PANEL (30%) */
+/* RIGHT CHAT & COLLABORATION PANEL (30% LIGHT MODE) */
 .chatPanel {
   width: 380px;
-  background: #0f172a;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.02);
 }
 
 .chatTabsHeader {
   display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: #090d16;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .chatTabBtn {
@@ -406,7 +417,7 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -418,29 +429,31 @@
 }
 
 .chatTabBtn:hover {
-  color: #f1f5f9;
+  color: #0f172a;
+  background: #f1f5f9;
 }
 
 .chatTabBtnActive {
-  color: #38bdf8;
-  border-bottom-color: #38bdf8;
-  background: rgba(56, 189, 248, 0.05);
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: #ffffff;
+  font-weight: 700;
 }
 
 /* PINNED ANNOUNCEMENT STRIP */
 .pinnedStrip {
-  background: #172554;
-  border-bottom: 1px solid #1e40af;
+  background: #eff6ff;
+  border-bottom: 1px solid #dbeafe;
   padding: 10px 14px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: #bfdbfe;
+  color: #1e40af;
 }
 
 .pinnedIcon {
-  color: #60a5fa;
+  color: #2563eb;
   flex-shrink: 0;
 }
 
@@ -452,6 +465,7 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  background: #ffffff;
 }
 
 .messagesFeed::-webkit-scrollbar {
@@ -459,7 +473,7 @@
 }
 
 .messagesFeed::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: #cbd5e1;
   border-radius: 4px;
 }
 
@@ -473,8 +487,9 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: #2563eb;
-  color: #ffffff;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -484,14 +499,15 @@
 }
 
 .avatarInstructor {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
-  border: 1.5px solid #60a5fa;
+  background: linear-gradient(135deg, #2563eb, #4338ca);
+  color: #ffffff;
+  border: none;
 }
 
 .messageContent {
   flex: 1;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   padding: 8px 12px;
 }
@@ -506,7 +522,7 @@
 .senderName {
   font-size: 12px;
   font-weight: 700;
-  color: #ffffff;
+  color: #0f172a;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -531,18 +547,18 @@
 }
 
 .roleStudent {
-  background: rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: #e2e8f0;
+  color: #475569;
 }
 
 .messageTime {
   font-size: 10px;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .messageText {
   font-size: 13px;
-  color: #cbd5e1;
+  color: #334155;
   line-height: 1.45;
   word-break: break-word;
   white-space: pre-wrap;
@@ -550,7 +566,7 @@
 
 .codeBox {
   margin-top: 6px;
-  background: #020617;
+  background: #0f172a;
   border: 1px solid #1e293b;
   border-radius: 6px;
   padding: 8px 10px;
@@ -563,8 +579,8 @@
 /* CHAT INPUT AREA */
 .chatInputArea {
   padding: 12px 14px;
-  background: #090d16;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
 }
 
 .quickEmojiBar {
@@ -585,23 +601,24 @@
 
 .emojiQuickBtn:hover {
   transform: scale(1.3);
-  background: rgba(255, 255, 255, 0.1);
+  background: #f1f5f9;
 }
 
 .inputRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
   padding: 4px 6px 4px 12px;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .inputRow:focus-within {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  border-color: #2563eb;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .chatInput {
@@ -609,19 +626,19 @@
   background: none;
   border: none;
   outline: none;
-  color: #ffffff;
+  color: #0f172a;
   font-size: 13px;
   padding: 8px 0;
 }
 
 .chatInput::placeholder {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .codeSnippetToggleBtn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #64748b;
   cursor: pointer;
   padding: 6px;
   border-radius: 6px;
@@ -631,8 +648,8 @@
 }
 
 .codeSnippetToggleBtn:hover {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  color: #2563eb;
+  background: #eff6ff;
 }
 
 .sendBtn {
@@ -674,7 +691,7 @@
   }
 }
 
-/* WAITING ROOM & SCHEDULED STAGE */
+/* WAITING ROOM & SCHEDULED STAGE (LIGHT MODE) */
 .waitingRoomContainer {
   display: flex;
   flex-direction: column;
@@ -684,7 +701,7 @@
   text-align: center;
   height: 100%;
   width: 100%;
-  background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+  background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
   position: relative;
   overflow: hidden;
 }
@@ -692,12 +709,11 @@
 .waitingCard {
   max-width: 580px;
   width: 100%;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 20px;
   padding: 28px 32px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -712,8 +728,8 @@
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  background: #020617;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
 }
 
 .waitingThumbImg {
@@ -729,8 +745,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
-  color: #818cf8;
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  color: #2563eb;
   gap: 8px;
 }
 
@@ -744,21 +760,28 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: rgba(99, 102, 241, 0.15);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
 }
 
 .waitingStatusPillScheduled {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fbbf24;
-  border-color: rgba(245, 158, 11, 0.3);
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .waitingTitle {
   font-size: 20px;
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
   margin: 0;
   line-height: 1.35;
 }
@@ -766,8 +789,9 @@
 .waitingCourseTag {
   font-size: 12px;
   font-weight: 600;
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
   padding: 4px 10px;
   border-radius: 6px;
 }
@@ -777,16 +801,17 @@
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #cbd5e1;
+  color: #475569;
 }
 
 .waitingMessageNotice {
   font-size: 13px;
-  color: #94a3b8;
+  color: #475569;
   line-height: 1.5;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 10px 16px;
-  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 10px;
   width: 100%;
 }
 
@@ -803,42 +828,23 @@
   font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
   transition: all 0.2s ease;
   width: 100%;
 }
 
 .instructorStartBroadcastBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.6);
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
   background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-}
-
-.leaveBtn {
-  background: rgba(239, 68, 68, 0.18);
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  color: #f87171;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.leaveBtn:hover {
-  background: rgba(239, 68, 68, 0.3);
-  color: #ffffff;
 }
 
 .studentAttendeeNotice {
   font-size: 11.5px;
-  color: #94a3b8;
+  color: #475569;
   display: flex;
   align-items: center;
   gap: 6px;
 }
+
 

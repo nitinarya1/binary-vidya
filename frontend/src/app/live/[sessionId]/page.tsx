@@ -439,7 +439,7 @@ export default function LiveClassroomPage() {
 
         <div className={styles.navRight}>
           <div className={styles.attendeeCountBadge}>
-            <Users size={14} color="#38bdf8" />
+            <Users size={14} color="#2563eb" />
             <span>{Math.max(attendeeCount, attendees.length || 1)} Engineers Online</span>
           </div>
 
@@ -485,7 +485,7 @@ export default function LiveClassroomPage() {
                 </span>
 
                 <div className={styles.waitingTimeRow}>
-                  <Clock size={14} color="#38bdf8" />
+                  <Clock size={14} color="#2563eb" />
                   <span>
                     {sessionData.scheduledAt
                       ? new Date(sessionData.scheduledAt).toLocaleString('en-US', {
@@ -502,7 +502,7 @@ export default function LiveClassroomPage() {
 
                 {isInstructor ? (
                   <div style={{ width: '100%', marginTop: '8px' }}>
-                    <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '14px' }}>
+                    <p style={{ fontSize: '13px', color: '#475569', marginBottom: '14px' }}>
                       You are the host instructor for this class. Ready to begin? Click below to go live.
                     </p>
                     <button
@@ -563,27 +563,27 @@ export default function LiveClassroomPage() {
                     </div>
                     <div className={styles.mockupBody}>
                       <div style={{ color: '#64748b' }}>// Binary Vidya Weekend Live Cohort Stream</div>
-                      <div style={{ color: '#e2e8f0', marginTop: '6px' }}>
-                        <span style={{ color: '#f43f5e' }}>import</span> React, {'{'} useState, useEffect {'}'}{' '}
-                        <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'react'</span>;
+                      <div style={{ color: '#0f172a', marginTop: '6px' }}>
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>import</span> React, {'{'} useState, useEffect {'}'}{' '}
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>from</span> <span style={{ color: '#059669' }}>'react'</span>;
                       </div>
-                      <div style={{ color: '#e2e8f0' }}>
-                        <span style={{ color: '#f43f5e' }}>import</span> {'{'} io {'}'}{' '}
-                        <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'socket.io-client'</span>;
+                      <div style={{ color: '#0f172a' }}>
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>import</span> {'{'} io {'}'}{' '}
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>from</span> <span style={{ color: '#059669' }}>'socket.io-client'</span>;
                       </div>
                       <br />
-                      <div style={{ color: '#e2e8f0' }}>
-                        <span style={{ color: '#38bdf8' }}>export const</span>{' '}
-                        <span style={{ color: '#fbbf24' }}>RealtimeClassroom</span> = () =&gt; {'{'}
+                      <div style={{ color: '#0f172a' }}>
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>export const</span>{' '}
+                        <span style={{ color: '#7c3aed', fontWeight: 700 }}>RealtimeClassroom</span> = () =&gt; {'{'}
                       </div>
-                      <div style={{ paddingLeft: '20px', color: '#94a3b8' }}>
+                      <div style={{ paddingLeft: '20px', color: '#475569' }}>
                         const [webrtcFeed, setFeed] = useState(true);
                         <br />
-                        <span style={{ color: '#10b981' }}>// Live WebRTC Audio/Video &amp; Socket.io signaling active</span>
+                        <span style={{ color: '#059669', fontStyle: 'italic' }}>// Live WebRTC Audio/Video &amp; Socket.io signaling active</span>
                         <br />
-                        return &lt;<span style={{ color: '#38bdf8' }}>ProductionLMSStage</span> feed={'webrtcFeed'} /&gt;;
+                        return &lt;<span style={{ color: '#7c3aed', fontWeight: 700 }}>ProductionLMSStage</span> feed={'webrtcFeed'} /&gt;;
                       </div>
-                      <div style={{ color: '#e2e8f0' }}>{'}'};</div>
+                      <div style={{ color: '#0f172a' }}>{'}'};</div>
                     </div>
                   </div>
 
