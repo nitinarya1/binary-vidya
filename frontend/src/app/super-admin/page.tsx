@@ -53,6 +53,7 @@ import {
   Copy,
   FileText,
   Loader2,
+  Radio,
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
 import { CouponAdminModal, CouponItem } from '../../components/CouponAdminModal';
@@ -1061,6 +1062,24 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.navActions}>
+            {/* Live WebRTC Classroom Quick Launch */}
+            <Link
+              href="/live/frontend-developer-weekend-live"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.quickAddCourseBtn}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#ffffff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+              }}
+              title="Launch Live WebRTC Classroom & Studio"
+            >
+              <Radio size={14} />
+              <span>Live Studio</span>
+            </Link>
+
             {/* Quick Actions - Strictly guarded by module permissions (Desktop) */}
             {canManageCourses && (
               <button
@@ -1317,6 +1336,22 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.headerActions}>
+            {/* Launch Live Studio */}
+            <Link
+              href="/live/frontend-developer-weekend-live"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.primaryActionBtn}
+              style={{
+                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                border: 'none',
+                boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+              }}
+              title="Open Live WebRTC Classroom as Instructor"
+            >
+              <Radio size={16} /> Go Live (WebRTC Studio)
+            </Link>
+
             {canManageCourses && (
               <button
                 onClick={() => {

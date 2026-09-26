@@ -741,4 +741,114 @@ enrollmentSchema.index({ userEmail: 1, courseId: 1 }, { unique: true });
 export const Enrollment: Model<IEnrollment> =
   mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', enrollmentSchema);
 
+// ============================================================================
+// LIVE LMS WEBRTC SESSIONS & CHAT SCHEMAS
+// ============================================================================
+
+export interface ILiveSession {
+  _id?: string;
+  title: string;
+  courseTitle: string;
+  courseId: string;
+  instructorName: string;
+  instructorEmail: string;
+  meetingId: string;
+  description?: string;
+  scheduledAt: Date;
+  status: 'scheduled' | 'live' | 'ended';
+  startedAt?: Date;
+  endedAt?: Date;
+  attendeesCount: number;
+  attendees: Array<{
+    userEmail: string;
+    userName: string;
+    joinedAt: Date;
+    watchDurationMinutes?: number;
+  }>;
+  recordingUrl?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+const liveSessionSchema = new Schema<ILiveSession>(
+  {
+    title: { type: String, required: true },
+    courseTitle: { type: String, required: true },
+    courseId: { type: String, required: true },
+    instructorName: { type: String, default: 'Binary Vidya Lead Faculty' },
+    instructorEmail: { type: String, required: true },
+    meetingId: { type: String, required: true, unique: true, index: true },
+    description: { type: String },
+    scheduledAt: { type: Date, default: Date.now },
+    status: {
+      type: String,
+      enum: ['scheduled', 'live', 'ended'],
+      default: 'scheduled',
+      index: true,
+    },
+    startedAt: { type: Date },
+    endedAt: { type: Date },
+    attendeesCount: { type: Number, default: 0 },
+    attendees: [
+      {
+        userEmail: { type: String, required: true },
+        userName: { type: String, required: true },
+        joinedAt: { type: Date, default: Date.now },
+        watchDurationMinutes: { type: Number, default: 0 },
+      },
+    ],
+    recordingUrl: { type: String },
+  },
+  { timestamps: true }
+);
+
+export const LiveSession: Model<ILiveSession> =
+  mongoose.models.LiveSession || mongoose.model<ILiveSession>('LiveSession', liveSessionSchema);
+
+export interface ILiveChatMessage {
+  _id?: string;
+  sessionId: string;
+  senderEmail: string;
+  senderName: string;
+  senderAvatar?: string;
+  senderRole: 'instructor' | 'mentor' | 'student';
+  text: string;
+  codeSnippet?: {
+    code: string;
+    language: string;
+  };
+  type: 'chat' | 'question' | 'announcement';
+  isPinned: boolean;
+  createdAt?: Date;
+}
+
+const liveChatMessageSchema = new Schema<ILiveChatMessage>(
+  {
+    sessionId: { type: String, required: true, index: true },
+    senderEmail: { type: String, required: true },
+    senderName: { type: String, required: true },
+    senderAvatar: { type: String },
+    senderRole: {
+      type: String,
+      enum: ['instructor', 'mentor', 'student'],
+      default: 'student',
+    },
+    text: { type: String, required: true },
+    codeSnippet: {
+      code: { type: String },
+      language: { type: String, default: 'javascript' },
+    },
+    type: {
+      type: String,
+      enum: ['chat', 'question', 'announcement'],
+      default: 'chat',
+    },
+    isPinned: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
+export const LiveChatMessage: Model<ILiveChatMessage> =
+  mongoose.models.LiveChatMessage || mongoose.model<ILiveChatMessage>('LiveChatMessage', liveChatMessageSchema);
+
 

@@ -29,6 +29,7 @@ import {
   User as UserIcon,
   HelpCircle,
   Lock,
+  Radio,
 } from 'lucide-react';
 
 interface VideoLesson {
@@ -434,6 +435,46 @@ export default function MyLearningDashboardPage() {
 
           {/* Main Dashboard Body */}
           <main className={styles.mainLayout}>
+            {/* Live WebRTC Classroom Banner */}
+            <div className={styles.liveBanner}>
+              <div className={styles.liveBannerLeft}>
+                <div className={styles.livePulseIcon}>
+                  <Radio size={24} />
+                </div>
+                <div>
+                  <div className={styles.liveBadgeRow}>
+                    <span className={styles.livePill}>
+                      <span className={styles.liveBlinkDot} />
+                      Live Now
+                    </span>
+                    <span className={styles.liveCohortTag}>Weekend Live Batch • Frontend &amp; Full-Stack LMS</span>
+                  </div>
+                  <h3 className={styles.liveBannerTitle}>
+                    React 19, WebRTC &amp; Production Architecture Live Class
+                  </h3>
+                  <p className={styles.liveBannerDesc}>
+                    Interactive live stream with camera, mic, screen share, doubt clearing, and real-time chat. Attendance is tracked automatically towards your certification.
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.liveBannerRight}>
+                <Link
+                  href="/live/frontend-developer-weekend-live"
+                  className={styles.liveJoinBtn}
+                >
+                  <Video size={18} />
+                  Join Live Classroom
+                  <ArrowRight size={16} />
+                </Link>
+                <div className={styles.liveFeatureTags}>
+                  <span className={styles.liveTag}>Zero-Lag WebRTC</span>
+                  <span className={styles.liveTag}>Instant Doubts Chat</span>
+                  <span className={styles.liveTag}>Auto Attendance</span>
+                </div>
+              </div>
+            </div>
+
             {/* Filter Tabs Bar */}
             <div className={styles.controlsBar}>
               <div className={styles.tabButtonsRow}>

@@ -9,6 +9,7 @@ import certificateRoutes from './routes/certificate.routes';
 import uploadRoutes from './routes/upload.routes';
 import trainingRoutes from './routes/training.routes';
 import couponRoutes from './routes/coupon.routes';
+import liveRoutes from './routes/live.routes';
 import crmRoutes from './routes/crm.routes';
 import { capturePublicLead } from './controllers/crm.controller';
 
@@ -44,6 +45,7 @@ export const createApp = (): Application => {
   app.use('/api/upload', uploadRoutes);
   app.use('/api/training-internship', trainingRoutes);
   app.use('/api/coupons', couponRoutes);
+  app.use('/api/live', liveRoutes);
 
   // CRM (internal sales team)
   app.use('/api/crm', crmRoutes);
