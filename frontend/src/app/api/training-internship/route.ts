@@ -75,56 +75,35 @@ export async function GET(req: Request) {
         .sort({ createdAt: -1 })
         .lean();
 
-      if (dbPrograms && dbPrograms.length > 0) {
-        const formattedPrograms = dbPrograms.map((p) => formatSingleProgram(p));
+      const formattedPrograms = (dbPrograms || []).map((p) => formatSingleProgram(p));
 
-        // Find specific requested program or default to first / matching slug
-        let activeProgram = null;
-        if (slug) {
-          activeProgram = formattedPrograms.find(
-            (p) => p.slug === slug || p.id === slug
-          );
-        }
-        if (!activeProgram) {
-          // If no slug or not found, try finding frontend or first
-          activeProgram =
-            formattedPrograms.find((p) => /frontend/i.test(p.slug) || /frontend/i.test(p.title)) ||
-            formattedPrograms[0];
-        }
-
-        return NextResponse.json({
-          success: true,
-          programs: formattedPrograms,
-          program: activeProgram,
-          total: formattedPrograms.length,
-        });
+      let activeProgram = null;
+      if (slug && formattedPrograms.length > 0) {
+        activeProgram = formattedPrograms.find(
+          (p) => p.slug === slug || p.id === slug
+        );
       }
-    } catch (dbErr) {
-      console.warn('[Next.js Training Internship API] MongoDB query error, falling back:', dbErr);
-    }
+      if (!activeProgram && formattedPrograms.length > 0) {
+        activeProgram =
+          formattedPrograms.find((p) => /frontend/i.test(p.slug) || /frontend/i.test(p.title)) ||
+          formattedPrograms[0];
+      }
 
-    // Fallback to Express backend if running
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-    try {
-      const res = await fetch(`${backendUrl}/api/training-internship`, {
-        cache: 'no-store',
+      return NextResponse.json({
+        success: true,
+        programs: formattedPrograms,
+        program: activeProgram,
+        total: formattedPrograms.length,
       });
-      if (res.ok) {
-        const data = await res.json();
-        return NextResponse.json(data);
-      }
-    } catch (backendErr) {
-      // ignore
+    } catch (dbErr) {
+      console.warn('[Next.js Training Internship API] MongoDB query error:', dbErr);
+      return NextResponse.json({
+        success: true,
+        programs: [],
+        program: null,
+        total: 0,
+      });
     }
-
-    // Default static fallback with single standard program wrapped in programs array
-    const defaultProgram = formatSingleProgram(FRONTEND_INTERNSHIP_PROGRAM);
-    return NextResponse.json({
-      success: true,
-      programs: [defaultProgram],
-      program: defaultProgram,
-      total: 1,
-    });
   } catch (error: any) {
     console.error('[Next.js Training Internship GET Error]:', error);
     return NextResponse.json(

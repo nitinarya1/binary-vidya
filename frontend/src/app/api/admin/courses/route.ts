@@ -132,12 +132,6 @@ export async function GET(req: Request) {
 
     await connectDB();
 
-    // Auto-seed if 0 courses exist
-    const count = await Course.countDocuments();
-    if (count === 0) {
-      await Course.insertMany(INITIAL_COURSES);
-    }
-
     const { searchParams } = new URL(req.url);
     const category = searchParams.get('category');
     const status = searchParams.get('status');

@@ -14,6 +14,9 @@ import {
   HelpCircle,
   RefreshCw,
   Gift,
+  ArrowRight,
+  ShieldCheck,
+  Wand2,
 } from 'lucide-react';
 
 export interface CouponItem {
@@ -104,6 +107,13 @@ export function CouponAdminModal({
   }
   const simulatedFinal = Math.max(0, sampleAmount - simulatedSavings);
 
+  const handleGenerateCode = () => {
+    const prefixes = ['BV', 'LEARN', 'FESTIVE', 'SUPER', 'SUMMER', 'SKILL'];
+    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const val = typeof discountValue === 'number' && discountValue > 0 ? discountValue : '25';
+    setCode(`${p}${val}`);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -153,12 +163,13 @@ export function CouponAdminModal({
         position: 'fixed',
         inset: 0,
         zIndex: 99999,
-        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
         backdropFilter: 'blur(6px)',
+        WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '16px',
+        padding: '20px',
         overflowY: 'auto',
       }}
       onClick={(e) => {
@@ -168,52 +179,53 @@ export function CouponAdminModal({
       <div
         style={{
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: '700px',
           maxHeight: '92vh',
-          backgroundColor: '#0f172a',
-          border: '1px solid rgba(56, 189, 248, 0.25)',
-          borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(56, 189, 248, 0.15)',
+          backgroundColor: '#ffffff',
+          border: '1.5px solid #e2e8f0',
+          borderRadius: '20px',
+          boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 1px 1px rgba(15, 23, 42, 0.05)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          color: '#f8fafc',
+          color: '#0f172a',
           fontFamily: 'inherit',
         }}
       >
-        {/* Header */}
+        {/* Solid Light Mode Header */}
         <div
           style={{
-            padding: '20px 24px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '22px 28px',
+            borderBottom: '1.5px solid #f1f5f9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'linear-gradient(to right, #1e293b, #0f172a)',
+            backgroundColor: '#ffffff',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div
               style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                width: '44px',
+                height: '44px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                border: '1px solid #bfdbfe',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#ffffff',
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)',
+                color: '#2563eb',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.12)',
               }}
             >
-              <Tag size={20} />
+              <Tag size={22} />
             </div>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, margin: 0, color: '#ffffff' }}>
+              <h2 style={{ fontSize: '19px', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.01em' }}>
                 {isEditing ? `Edit Coupon: ${couponToEdit?.code}` : 'Create New Discount Coupon'}
               </h2>
-              <p style={{ fontSize: '12px', color: '#94a3b8', margin: '2px 0 0 0' }}>
-                Configure promo codes, percentage or money off, conditions, and program scope
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '3px 0 0 0' }}>
+                Configure promo codes, percentage or cash discount, scope, and validity limits
               </p>
             </div>
           </div>
@@ -221,49 +233,81 @@ export function CouponAdminModal({
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '10px',
               padding: '8px',
-              color: '#94a3b8',
+              color: '#64748b',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              transition: 'all 0.15s ease',
             }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f1f5f9';
+              e.currentTarget.style.color = '#0f172a';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              e.currentTarget.style.color = '#64748b';
+            }}
+            title="Close dialog"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
-        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: '24px' }}>
+        {/* Scrollable Form Body - Pure Solid White */}
+        <form onSubmit={handleSubmit} style={{ overflowY: 'auto', padding: '24px 28px', backgroundColor: '#ffffff' }}>
           {errorMsg && (
             <div
               style={{
                 marginBottom: '20px',
                 padding: '12px 16px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                border: '1px solid #ef4444',
-                color: '#fca5a5',
+                borderRadius: '12px',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
                 fontSize: '13px',
+                fontWeight: 600,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
               }}
             >
-              <AlertCircle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+              <AlertCircle size={18} color="#dc2626" style={{ flexShrink: 0 }} />
               <span>{errorMsg}</span>
             </div>
           )}
 
-          {/* Section 1: Code & Status */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          {/* Section 1: Promo Code & Status Toggle */}
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '16px', marginBottom: '22px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                Coupon Promo Code <span style={{ color: '#ef4444' }}>*</span>
-              </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 700, color: '#334155' }}>
+                  Coupon Promo Code <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGenerateCode}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563eb',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '0 4px',
+                  }}
+                >
+                  <Wand2 size={12} /> Auto-Generate
+                </button>
+              </div>
+
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
@@ -274,26 +318,30 @@ export function CouponAdminModal({
                   style={{
                     width: '100%',
                     padding: '11px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(56, 189, 248, 0.3)',
-                    backgroundColor: '#1e293b',
-                    color: '#38bdf8',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
                     fontFamily: 'monospace',
                     fontSize: '15px',
                     fontWeight: 800,
                     letterSpacing: '1px',
                     boxSizing: 'border-box',
+                    outline: 'none',
+                    transition: 'border-color 0.15s ease',
                   }}
+                  onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                  onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
                 />
               </div>
-              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                Alphanumeric characters only. Auto-uppercased.
+              <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                Uppercase alphanumeric characters only (auto-converted).
               </span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                Status
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                Coupon Status
               </label>
               <button
                 type="button"
@@ -301,10 +349,10 @@ export function CouponAdminModal({
                 style={{
                   width: '100%',
                   padding: '11px 14px',
-                  borderRadius: '8px',
-                  border: isActive ? '1px solid #10b981' : '1px solid #64748b',
-                  backgroundColor: isActive ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.15)',
-                  color: isActive ? '#34d399' : '#94a3b8',
+                  borderRadius: '10px',
+                  border: isActive ? '1.5px solid #a7f3d0' : '1.5px solid #cbd5e1',
+                  backgroundColor: isActive ? '#ecfdf5' : '#f8fafc',
+                  color: isActive ? '#047857' : '#64748b',
                   fontSize: '13px',
                   fontWeight: 800,
                   cursor: 'pointer',
@@ -313,129 +361,147 @@ export function CouponAdminModal({
                   justifyContent: 'center',
                   gap: '8px',
                   boxSizing: 'border-box',
+                  transition: 'all 0.15s ease',
                 }}
               >
                 <div
                   style={{
-                    width: '10px',
-                    height: '10px',
+                    width: '9px',
+                    height: '9px',
                     borderRadius: '50%',
-                    backgroundColor: isActive ? '#10b981' : '#64748b',
+                    backgroundColor: isActive ? '#10b981' : '#94a3b8',
                   }}
                 />
-                <span>{isActive ? 'Active (Live)' : 'Inactive (Disabled)'}</span>
+                <span>{isActive ? 'Active (Live)' : 'Inactive (Draft)'}</span>
               </button>
+              <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block', textAlign: 'center' }}>
+                Click button to toggle live status
+              </span>
             </div>
           </div>
 
-          {/* Section 2: Discount Type Selector (Percent vs Money Off) */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '8px' }}>
+          {/* Section 2: Discount Type Selector (Percentage vs Fixed Money Off) */}
+          <div style={{ marginBottom: '22px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '8px' }}>
               Select Discount Type <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div
               style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
-                gap: '12px',
+                gap: '14px',
               }}
             >
               {/* Percentage Toggle Card */}
               <div
                 onClick={() => setDiscountType('percentage')}
                 style={{
-                  padding: '14px',
-                  borderRadius: '10px',
+                  padding: '16px',
+                  borderRadius: '14px',
                   border:
                     discountType === 'percentage'
-                      ? '2px solid #38bdf8'
-                      : '1px solid rgba(255, 255, 255, 0.1)',
+                      ? '2px solid #2563eb'
+                      : '1.5px solid #e2e8f0',
                   backgroundColor:
                     discountType === 'percentage'
-                      ? 'rgba(56, 189, 248, 0.12)'
-                      : 'rgba(30, 41, 59, 0.5)',
+                      ? '#eff6ff'
+                      : '#ffffff',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '14px',
                   transition: 'all 0.15s ease',
+                  boxShadow: discountType === 'percentage' ? '0 4px 14px rgba(37, 99, 235, 0.1)' : 'none',
                 }}
               >
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '8px',
-                    backgroundColor: discountType === 'percentage' ? '#0284c7' : '#334155',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: discountType === 'percentage' ? '#2563eb' : '#f1f5f9',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#ffffff',
+                    color: discountType === 'percentage' ? '#ffffff' : '#64748b',
+                    flexShrink: 0,
                   }}
                 >
-                  <Percent size={18} />
+                  <Percent size={20} />
                 </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: discountType === 'percentage' ? '#38bdf8' : '#e2e8f0' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: discountType === 'percentage' ? '#1d4ed8' : '#0f172a' }}>
                     Percentage Off (%)
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-                    e.g., 10%, 20%, 30% discount off total
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                    e.g., 10%, 20%, 30% discount off tuition
                   </div>
                 </div>
+                {discountType === 'percentage' && (
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={12} strokeWidth={3} />
+                  </div>
+                )}
               </div>
 
               {/* Fixed Money Off Toggle Card */}
               <div
                 onClick={() => setDiscountType('fixed')}
                 style={{
-                  padding: '14px',
-                  borderRadius: '10px',
+                  padding: '16px',
+                  borderRadius: '14px',
                   border:
                     discountType === 'fixed'
-                      ? '2px solid #10b981'
-                      : '1px solid rgba(255, 255, 255, 0.1)',
+                      ? '2px solid #059669'
+                      : '1.5px solid #e2e8f0',
                   backgroundColor:
                     discountType === 'fixed'
-                      ? 'rgba(16, 185, 129, 0.12)'
-                      : 'rgba(30, 41, 59, 0.5)',
+                      ? '#ecfdf5'
+                      : '#ffffff',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
+                  gap: '14px',
                   transition: 'all 0.15s ease',
+                  boxShadow: discountType === 'fixed' ? '0 4px 14px rgba(5, 150, 105, 0.1)' : 'none',
                 }}
               >
                 <div
                   style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '8px',
-                    backgroundColor: discountType === 'fixed' ? '#059669' : '#334155',
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '10px',
+                    backgroundColor: discountType === 'fixed' ? '#059669' : '#f1f5f9',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#ffffff',
+                    color: discountType === 'fixed' ? '#ffffff' : '#64748b',
+                    flexShrink: 0,
                   }}
                 >
-                  <IndianRupee size={18} />
+                  <IndianRupee size={20} />
                 </div>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: discountType === 'fixed' ? '#34d399' : '#e2e8f0' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: discountType === 'fixed' ? '#047857' : '#0f172a' }}>
                     Fixed Money Off (₹)
                   </div>
-                  <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
                     e.g., Flat ₹500, ₹1,000, ₹2,000 off total
                   </div>
                 </div>
+                {discountType === 'fixed' && (
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#059669', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={12} strokeWidth={3} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Section 3: Value and Applicability */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '22px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 {discountType === 'percentage' ? 'Percentage Off (%)' : 'Discount Amount (₹)'}{' '}
                 <span style={{ color: '#ef4444' }}>*</span>
               </label>
@@ -451,37 +517,40 @@ export function CouponAdminModal({
                   onChange={(e) => setDiscountValue(e.target.value === '' ? '' : Number(e.target.value))}
                   style={{
                     width: '100%',
-                    padding: '11px 36px 11px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    backgroundColor: '#1e293b',
-                    color: '#f8fafc',
+                    padding: '11px 40px 11px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
                     fontSize: '15px',
                     fontWeight: 700,
                     boxSizing: 'border-box',
+                    outline: 'none',
                   }}
+                  onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                  onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
                 />
                 <span
                   style={{
                     position: 'absolute',
-                    right: '12px',
+                    right: '14px',
                     top: '50%',
                     transform: 'translateY(-50%)',
                     fontWeight: 800,
-                    color: discountType === 'percentage' ? '#38bdf8' : '#34d399',
-                    fontSize: '14px',
+                    color: discountType === 'percentage' ? '#2563eb' : '#059669',
+                    fontSize: '15px',
                   }}
                 >
                   {discountType === 'percentage' ? '%' : '₹'}
                 </span>
               </div>
-              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                {discountType === 'percentage' ? 'Must be between 1% and 100%' : 'Exact cash amount deducted from checkout'}
+              <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                {discountType === 'percentage' ? 'Value between 1% and 100%' : 'Exact cash deduction amount'}
               </span>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
                 Applicable Program Scope
               </label>
               <select
@@ -490,62 +559,82 @@ export function CouponAdminModal({
                 style={{
                   width: '100%',
                   padding: '11px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  backgroundColor: '#1e293b',
-                  color: '#f8fafc',
-                  fontSize: '13px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
+                  fontSize: '13.5px',
                   fontWeight: 600,
                   boxSizing: 'border-box',
                   cursor: 'pointer',
+                  outline: 'none',
                 }}
+                onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
               >
                 <option value="all">All Programs (Courses &amp; Training)</option>
                 <option value="courses">Courses Only (/courses/...)</option>
                 <option value="training">Training &amp; Internship Only</option>
               </select>
-              <span style={{ fontSize: '11px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                Limits coupon usage to specific categories
+              <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                Limits coupon usage to specific platform modules
               </span>
             </div>
           </div>
 
-          {/* Section 4: Live Simulation Preview Banner */}
+          {/* Section 4: Live Checkout Calculation Preview (Solid Light Mode) */}
           <div
             style={{
-              padding: '14px 18px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(15, 23, 42, 0.85)',
-              border: '1px dashed rgba(56, 189, 248, 0.4)',
-              marginBottom: '20px',
+              padding: '16px 20px',
+              borderRadius: '14px',
+              backgroundColor: '#f8fafc',
+              border: '1.5px solid #e2e8f0',
+              marginBottom: '22px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '12px',
+              gap: '14px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Sparkles size={20} color="#38bdf8" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563eb',
+                  flexShrink: 0,
+                }}
+              >
+                <Sparkles size={18} />
+              </div>
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#38bdf8' }}>
+                <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e293b' }}>
                   Live Checkout Calculation Preview
                 </div>
-                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-                  On a sample ₹{sampleAmount.toLocaleString('en-IN')} tuition, student saves{' '}
-                  <strong style={{ color: '#34d399' }}>₹{simulatedSavings.toLocaleString('en-IN')}</strong> and pays{' '}
-                  <strong style={{ color: '#ffffff' }}>₹{simulatedFinal.toLocaleString('en-IN')}</strong>
+                <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px' }}>
+                  On a sample ₹{sampleAmount.toLocaleString('en-IN')} tuition: student saves{' '}
+                  <strong style={{ color: '#047857' }}>₹{simulatedSavings.toLocaleString('en-IN')}</strong> and pays{' '}
+                  <strong style={{ color: '#0f172a' }}>₹{simulatedFinal.toLocaleString('en-IN')}</strong>
                 </div>
               </div>
             </div>
             <span
               style={{
-                backgroundColor: discountType === 'percentage' ? '#0284c7' : '#059669',
-                color: '#ffffff',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
+                backgroundColor: discountType === 'percentage' ? '#eff6ff' : '#ecfdf5',
+                color: discountType === 'percentage' ? '#1d4ed8' : '#047857',
+                border: `1px solid ${discountType === 'percentage' ? '#bfdbfe' : '#a7f3d0'}`,
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontSize: '12.5px',
                 fontWeight: 800,
-                letterSpacing: '0.5px',
+                letterSpacing: '0.3px',
+                whiteSpace: 'nowrap',
               }}
             >
               {discountType === 'percentage' ? `${discountValue || 0}% OFF` : `FLAT ₹${discountValue || 0} OFF`}
@@ -553,9 +642,9 @@ export function CouponAdminModal({
           </div>
 
           {/* Section 5: Conditions (Min Order, Max Cap, Expiry) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', marginBottom: '22px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
                 Min Order Amount (₹)
               </label>
               <input
@@ -566,19 +655,22 @@ export function CouponAdminModal({
                 onChange={(e) => setMinOrderAmount(e.target.value === '' ? '' : Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: '#1e293b',
-                  color: '#f8fafc',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
                   fontSize: '13px',
                   boxSizing: 'border-box',
+                  outline: 'none',
                 }}
+                onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
                 Max Discount Cap (₹)
               </label>
               <input
@@ -590,19 +682,22 @@ export function CouponAdminModal({
                 onChange={(e) => setMaxDiscountAmount(e.target.value === '' ? '' : Number(e.target.value))}
                 style={{
                   width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: discountType === 'fixed' ? '#0f172a' : '#1e293b',
-                  color: discountType === 'fixed' ? '#475569' : '#f8fafc',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: discountType === 'fixed' ? '#f1f5f9' : '#ffffff',
+                  color: discountType === 'fixed' ? '#94a3b8' : '#0f172a',
                   fontSize: '13px',
                   boxSizing: 'border-box',
+                  outline: 'none',
                 }}
+                onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
                 Expiry Date (Optional)
               </label>
               <input
@@ -611,21 +706,24 @@ export function CouponAdminModal({
                 onChange={(e) => setValidUntil(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  backgroundColor: '#1e293b',
-                  color: '#f8fafc',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#0f172a',
                   fontSize: '13px',
                   boxSizing: 'border-box',
+                  outline: 'none',
                 }}
+                onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+                onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
               />
             </div>
           </div>
 
           {/* Section 6: Description */}
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
               Offer Description / Promotional Tagline
             </label>
             <textarea
@@ -635,27 +733,31 @@ export function CouponAdminModal({
               onChange={(e) => setDescription(e.target.value)}
               style={{
                 width: '100%',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                backgroundColor: '#1e293b',
-                color: '#f8fafc',
-                fontSize: '13px',
+                padding: '11px 14px',
+                borderRadius: '10px',
+                border: '1.5px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                fontSize: '13.5px',
                 boxSizing: 'border-box',
                 resize: 'none',
+                outline: 'none',
               }}
+              onFocus={(e) => (e.target.style.borderColor = '#2563eb')}
+              onBlur={(e) => (e.target.style.borderColor = '#cbd5e1')}
             />
           </div>
 
-          {/* Modal Footer Actions */}
+          {/* Modal Footer Actions - Solid Light Mode */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
               gap: '12px',
-              paddingTop: '16px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              paddingTop: '18px',
+              borderTop: '1.5px solid #f1f5f9',
+              backgroundColor: '#ffffff',
             }}
           >
             <button
@@ -663,14 +765,23 @@ export function CouponAdminModal({
               onClick={onClose}
               disabled={submitting}
               style={{
-                padding: '10px 18px',
-                borderRadius: '8px',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                backgroundColor: 'transparent',
-                color: '#94a3b8',
-                fontSize: '13px',
-                fontWeight: 600,
+                padding: '11px 20px',
+                borderRadius: '10px',
+                border: '1.5px solid #e2e8f0',
+                backgroundColor: '#ffffff',
+                color: '#475569',
+                fontSize: '13.5px',
+                fontWeight: 700,
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f8fafc';
+                e.currentTarget.style.borderColor = '#cbd5e1';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ffffff';
+                e.currentTarget.style.borderColor = '#e2e8f0';
               }}
             >
               Cancel
@@ -679,23 +790,24 @@ export function CouponAdminModal({
               type="submit"
               disabled={submitting}
               style={{
-                padding: '10px 22px',
-                borderRadius: '8px',
+                padding: '11px 24px',
+                borderRadius: '10px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)',
+                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                 color: '#ffffff',
-                fontSize: '13px',
+                fontSize: '13.5px',
                 fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
+                transition: 'all 0.15s ease',
               }}
             >
               {submitting ? (
                 <>
-                  <RefreshCw size={15} className="animate-spin" /> Saving...
+                  <RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Saving...
                 </>
               ) : (
                 <>

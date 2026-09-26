@@ -173,23 +173,12 @@ const INITIAL_COURSES = [
   },
 ];
 
-// Helper: Seed courses if collection is completely empty
-async function autoSeedIfEmpty() {
-  const count = await Course.countDocuments();
-  if (count === 0) {
-    await Course.insertMany(INITIAL_COURSES);
-    console.log('[Course Controller] Auto-seeded starter courses into MongoDB');
-  }
-}
-
 /**
  * GET /api/courses
  * Public endpoint to list all available active courses
  */
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
-    await autoSeedIfEmpty();
-
     const { category, level, search, limit, status } = req.query;
 
     const query: any = {};

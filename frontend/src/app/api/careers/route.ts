@@ -81,34 +81,31 @@ export async function GET(req: Request) {
     try {
       await connectDB();
       const dbCareers = await Career.find({ status: 'active' }).sort({ createdAt: -1 }).lean();
-      if (dbCareers && dbCareers.length > 0) {
-        return NextResponse.json({
-          success: true,
-          careers: dbCareers.map((c: any) => ({
-            id: c._id?.toString() || c.slug,
-            title: c.title,
-            slug: c.slug,
-            department: c.department || 'Engineering',
-            employmentType: c.employmentType || 'Full-Time',
-            location: c.location || 'Remote (India)',
-            experience: c.experience || '1-3 Years',
-            salary: c.salary || 'Competitive Industry Standard',
-            description: c.description || '',
-            requirements: c.requirements || [],
-            responsibilities: c.responsibilities || [],
-            deadline: c.deadline || 'Rolling Admissions',
-            status: c.status || 'active',
-          })),
-        });
-      }
+      return NextResponse.json({
+        success: true,
+        careers: (dbCareers || []).map((c: any) => ({
+          id: c._id?.toString() || c.slug,
+          title: c.title,
+          slug: c.slug,
+          department: c.department || 'Engineering',
+          employmentType: c.employmentType || 'Full-Time',
+          location: c.location || 'Remote (India)',
+          experience: c.experience || '1-3 Years',
+          salary: c.salary || 'Competitive Industry Standard',
+          description: c.description || '',
+          requirements: c.requirements || [],
+          responsibilities: c.responsibilities || [],
+          deadline: c.deadline || 'Rolling Admissions',
+          status: c.status || 'active',
+        })),
+      });
     } catch (dbErr) {
-      console.warn('[Public Careers API] Database fetch error, falling back to curated:', dbErr);
+      console.warn('[Public Careers API] Database fetch error:', dbErr);
+      return NextResponse.json({
+        success: true,
+        careers: [],
+      });
     }
-
-    return NextResponse.json({
-      success: true,
-      careers: CURATED_CAREERS,
-    });
   } catch (error: any) {
     console.error('[Public Careers API Error]:', error);
     return NextResponse.json(

@@ -145,11 +145,6 @@ export async function GET(req: Request) {
 
     await connectDB();
 
-    const count = await Career.countDocuments();
-    if (count === 0) {
-      await Career.insertMany(INITIAL_CAREERS);
-    }
-
     const { searchParams } = new URL(req.url);
     const department = searchParams.get('department');
     const status = searchParams.get('status');

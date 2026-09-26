@@ -49,12 +49,6 @@ export async function GET(req: Request) {
 
     await connectDB();
 
-    // Auto-seed default coupons if collection is empty
-    const count = await Coupon.countDocuments();
-    if (count === 0) {
-      await Coupon.insertMany(DEFAULT_COUPONS);
-    }
-
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
     const discountType = searchParams.get('discountType');

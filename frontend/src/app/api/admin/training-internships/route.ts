@@ -125,17 +125,6 @@ export async function GET(req: Request) {
 
     await connectDB();
 
-    const count = await TrainingInternship.countDocuments();
-    if (count === 0) {
-      await TrainingInternship.insertMany(INITIAL_PROGRAMS);
-    } else {
-      // Ensure frontend developer program exists in DB
-      const feProg = await TrainingInternship.findOne({ slug: FRONTEND_INTERNSHIP_PROGRAM.slug });
-      if (!feProg) {
-        await TrainingInternship.create(INITIAL_PROGRAMS[0] as any);
-      }
-    }
-
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type');
     const status = searchParams.get('status');
