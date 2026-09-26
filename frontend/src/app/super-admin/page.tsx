@@ -1404,10 +1404,10 @@ export default function SuperAdminDashboard() {
             target="_blank"
             className={styles.tabBtn}
             style={{ textDecoration: 'none' }}
-            title="Manage counselling form domains live"
+            title="Manage internship form domains live"
           >
             <Sparkles size={16} />
-            <span>Counselling Domains</span>
+            <span>Internship Domains</span>
             <span className={styles.tabCountPill} style={{ backgroundColor: '#eff6ff', color: '#2563eb' }}>
               Form Live
             </span>

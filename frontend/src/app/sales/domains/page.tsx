@@ -240,12 +240,12 @@ export default function CounsellingDomainsManagementPage() {
               </span>
             </div>
             <h1 style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              Counselling Domains Management
+              Internship Domains Management
             </h1>
             <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px', maxWidth: '640px' }}>
-              Create, edit, or delete domains. Every update here automatically reflects on the public{' '}
+              Create, edit, or delete verified internship domains. Every update here automatically reflects on the public{' '}
               <Link href="/get-counselling" target="_blank" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}>
-                /get-counselling form
+                Apply for Internship form (/get-counselling)
               </Link>{' '}
               and across the CRM system in real time.
             </p>

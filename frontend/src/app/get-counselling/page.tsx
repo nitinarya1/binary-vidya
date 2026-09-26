@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   Clock,
   HelpCircle,
+  Award,
+  CheckCircle,
 } from 'lucide-react';
 
 interface DomainOption {
@@ -146,7 +148,7 @@ export default function GetCounsellingPage() {
     }
 
     if (!formData.preferredDomain) {
-      setError('Please select your preferred domain.');
+      setError('Please select your preferred internship domain.');
       return;
     }
 
@@ -167,7 +169,7 @@ export default function GetCounsellingPage() {
           year: formData.year,
           preferredDomain: formData.preferredDomain,
           course: formData.preferredDomain,
-          source: 'counselling_page',
+          source: 'verified_internship_application',
         }),
       });
 
@@ -243,21 +245,23 @@ export default function GetCounsellingPage() {
             />
           </Link>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* AICTE / MSME / ISO Verified Badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              backgroundColor: '#ecfdf5',
-              color: '#047857',
-              border: '1px solid #a7f3d0',
-              padding: '5px 12px',
+              backgroundColor: '#eff6ff',
+              color: '#1d4ed8',
+              border: '1px solid #bfdbfe',
+              padding: '6px 14px',
               borderRadius: '9999px',
               fontSize: '12px',
-              fontWeight: 700,
+              fontWeight: 800,
+              boxShadow: '0 1px 4px rgba(37, 99, 235, 0.08)',
             }}>
-              <ShieldCheck size={14} color="#059669" />
-              100% Free Session
+              <ShieldCheck size={15} color="#2563eb" />
+              AICTE • MSME • ISO 9001:2015 Verified
             </span>
           </div>
         </div>
@@ -275,7 +279,7 @@ export default function GetCounsellingPage() {
       }}>
         <div style={{
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: '700px',
           margin: '0 auto',
           boxSizing: 'border-box',
         }}>
@@ -307,22 +311,22 @@ export default function GetCounsellingPage() {
 
               <h2 style={{
                 fontSize: '26px',
-                fontWeight: 800,
+                fontWeight: 900,
                 color: '#0f172a',
                 marginBottom: '10px',
                 letterSpacing: '-0.02em',
               }}>
-                Counselling Session Booked!
+                Internship Application Submitted!
               </h2>
 
               <p style={{
                 fontSize: '15px',
                 color: '#475569',
                 lineHeight: 1.6,
-                maxWidth: '480px',
+                maxWidth: '520px',
                 margin: '0 auto 24px',
               }}>
-                Hi <strong>{formData.name}</strong>, our senior tech counsellor has received your details for <strong>{formData.preferredDomain}</strong> and will call/WhatsApp you within <strong>24 hours</strong>.
+                Hi <strong>{formData.name}</strong>, your application for the <strong>{formData.preferredDomain}</strong> AICTE, MSME &amp; ISO 9001:2015 verified internship has been registered. Our admissions coordinator will review your profile and connect via Call/WhatsApp within <strong>24 hours</strong>.
               </p>
 
               <div style={{
@@ -330,7 +334,7 @@ export default function GetCounsellingPage() {
                 borderRadius: '16px',
                 padding: '16px 20px',
                 border: '1px solid #e2e8f0',
-                maxWidth: '440px',
+                maxWidth: '460px',
                 margin: '0 auto 28px',
                 textAlign: 'left',
                 fontSize: '13px',
@@ -340,14 +344,15 @@ export default function GetCounsellingPage() {
                 gap: '8px',
               }}>
                 <div><strong>📱 Contact:</strong> +91 {formData.phone}</div>
-                <div><strong>🎓 Education:</strong> {formData.education} ({formData.branch})</div>
+                <div><strong>🎓 Qualification:</strong> {formData.education} ({formData.branch})</div>
                 <div><strong>🏛️ College:</strong> {formData.collegeName}</div>
-                <div><strong>🎯 Preferred Domain:</strong> {formData.preferredDomain}</div>
+                <div><strong>🎯 Internship Domain:</strong> {formData.preferredDomain}</div>
+                <div><strong>📜 Certifications:</strong> AICTE Compliant • MSME Registered • ISO 9001:2015</div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Link
-                  href="/"
+                  href="/training-and-internship"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -362,7 +367,7 @@ export default function GetCounsellingPage() {
                     boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
                   }}
                 >
-                  Explore Home Page
+                  Explore All Programs
                   <ArrowRight size={16} />
                 </Link>
 
@@ -391,7 +396,7 @@ export default function GetCounsellingPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  Book Another Session
+                  Submit Another Application
                 </button>
               </div>
             </div>
@@ -406,7 +411,7 @@ export default function GetCounsellingPage() {
               width: '100%',
             }}>
               {/* Header inside Card */}
-              <div style={{ textAlign: 'center', marginBottom: '26px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '24px' }}>
                 <div style={{
                   display: 'inline-flex',
                   alignItems: 'center',
@@ -417,11 +422,11 @@ export default function GetCounsellingPage() {
                   padding: '5px 14px',
                   borderRadius: '9999px',
                   fontSize: '12px',
-                  fontWeight: 700,
+                  fontWeight: 800,
                   marginBottom: '12px',
                 }}>
                   <Sparkles size={13} color="#2563eb" />
-                  Free 1-on-1 Career Counselling
+                  AICTE • MSME • ISO 9001:2015 Verified Internship
                 </div>
 
                 <h1 style={{
@@ -433,18 +438,84 @@ export default function GetCounsellingPage() {
                   marginBottom: '8px',
                   wordBreak: 'break-word',
                 }}>
-                  Book Your Career Guidance Session
+                  Apply for Verified Internship Program
                 </h1>
 
                 <p style={{
                   fontSize: '14px',
                   color: '#64748b',
                   lineHeight: 1.5,
-                  maxWidth: '520px',
-                  margin: '0 auto',
+                  maxWidth: '540px',
+                  margin: '0 auto 16px',
                 }}>
-                  Confused about career options, internships, or switching tech domains? Get personalised advice from senior engineers.
+                  Work on real-world industrial capstone projects, gain live mentor guidance, and earn globally verifiable AICTE-compliant &amp; ISO 9001:2015 certified credentials.
                 </p>
+
+                {/* Trust Badges Strip */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    color: '#334155',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                  }}>
+                    <Award size={13} color="#2563eb" /> AICTE Compliant
+                  </span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    color: '#334155',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                  }}>
+                    <CheckCircle size={13} color="#059669" /> MSME Registered
+                  </span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    color: '#334155',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                  }}>
+                    <ShieldCheck size={13} color="#0284c7" /> ISO 9001:2015
+                  </span>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    color: '#334155',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                  }}>
+                    <Sparkles size={13} color="#7c3aed" /> Capstone Project
+                  </span>
+                </div>
               </div>
 
               {/* Error Alert */}
@@ -640,7 +711,7 @@ export default function GetCounsellingPage() {
                   {/* Education */}
                   <div>
                     <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                      Education <span style={{ color: '#ef4444' }}>*</span>
+                      Education Qualification <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <div style={{ position: 'relative' }}>
                       <GraduationCap size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
@@ -705,7 +776,7 @@ export default function GetCounsellingPage() {
                   </div>
                 </div>
 
-                {/* 4. Current Year & Preferred Domain */}
+                {/* 4. Current Year & Preferred Internship Domain */}
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -747,10 +818,10 @@ export default function GetCounsellingPage() {
                     </div>
                   </div>
 
-                  {/* Preferred Domain (Dynamically loaded & Managed) */}
+                  {/* Preferred Internship Domain (Dynamically loaded & Managed) */}
                   <div>
                     <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                      Preferred Domain <span style={{ color: '#ef4444' }}>*</span>
+                      Preferred Internship Domain <span style={{ color: '#ef4444' }}>*</span>
                     </label>
                     <div style={{ position: 'relative' }}>
                       <Sparkles size={16} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
@@ -776,7 +847,7 @@ export default function GetCounsellingPage() {
                         onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.backgroundColor = '#f8fafc'; }}
                       >
                         <option value="">
-                          {domainsLoading ? 'Loading available domains...' : 'Select Preferred Domain...'}
+                          {domainsLoading ? 'Loading verified domains...' : 'Select Internship Domain...'}
                         </option>
                         {domains.map((dom) => (
                           <option key={dom.id || dom.name} value={dom.name} style={{ color: '#0f172a' }}>
@@ -800,7 +871,7 @@ export default function GetCounsellingPage() {
                     backgroundColor: '#2563eb',
                     backgroundImage: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
                     color: '#ffffff',
-                    fontSize: '15px',
+                    fontSize: '15.5px',
                     fontWeight: 800,
                     border: 'none',
                     cursor: loading ? 'not-allowed' : 'pointer',
@@ -823,11 +894,11 @@ export default function GetCounsellingPage() {
                         borderRadius: '50%',
                         animation: 'spin 0.8s linear infinite',
                       }} />
-                      Booking Your Free Session...
+                      Submitting Your Application...
                     </>
                   ) : (
                     <>
-                      Book Free Career Counselling Session
+                      Apply for Verified Internship Now
                       <ArrowRight size={18} />
                     </>
                   )}
@@ -839,16 +910,16 @@ export default function GetCounsellingPage() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '16px',
-                  marginTop: '6px',
+                  marginTop: '8px',
                   fontSize: '12px',
                   color: '#64748b',
                   flexWrap: 'wrap',
                 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <ShieldCheck size={14} color="#059669" /> 100% Free & No Hidden Cost
+                    <ShieldCheck size={14} color="#059669" /> AICTE Compliant &amp; MSME Registered
                   </span>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <Clock size={14} color="#2563eb" /> Response within 24 Hours
+                    <Clock size={14} color="#2563eb" /> Application Review within 24 Hours
                   </span>
                 </div>
               </form>
