@@ -30,6 +30,7 @@ import {
   HelpCircle,
   Lock,
   Radio,
+  Calendar,
 } from 'lucide-react';
 
 interface VideoLesson {
@@ -78,6 +79,7 @@ export default function MyLearningDashboardPage() {
   const { user, token, logout, isLoading: authLoading } = useAuth();
 
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
+  const [liveSessions, setLiveSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'course' | 'internship'>('all');
   const [activeLectureCourse, setActiveLectureCourse] = useState<EnrolledCourse | null>(null);
@@ -300,6 +302,25 @@ export default function MyLearningDashboardPage() {
     }
   }, [user, token, authLoading]);
 
+  // Fetch Live and Scheduled LMS Sessions
+  useEffect(() => {
+    async function fetchLiveSessions() {
+      try {
+        const res = await fetch('/api/live/sessions');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.sessions)) {
+          setLiveSessions(data.sessions);
+        }
+      } catch (err) {
+        console.error('Failed to fetch live sessions:', err);
+      }
+    }
+    fetchLiveSessions();
+  }, []);
+
+  const activeLiveSession = liveSessions.find((s) => s.status === 'live');
+  const upcomingScheduledSessions = liveSessions.filter((s) => s.status === 'scheduled');
+
   // Filtered courses based on active tab
   const filteredCourses = courses.filter((c) => {
     if (filterType === 'all') return true;
@@ -435,7 +456,7 @@ export default function MyLearningDashboardPage() {
 
           {/* Main Dashboard Body */}
           <main className={styles.mainLayout}>
-            {/* Live WebRTC Classroom Banner */}
+            {/* Live WebRTC Classroom Banner (Shows active live session or default weekend cohort) */}
             <div className={styles.liveBanner}>
               <div className={styles.liveBannerLeft}>
                 <div className={styles.livePulseIcon}>
@@ -445,22 +466,25 @@ export default function MyLearningDashboardPage() {
                   <div className={styles.liveBadgeRow}>
                     <span className={styles.livePill}>
                       <span className={styles.liveBlinkDot} />
-                      Live Now
+                      {activeLiveSession ? 'Live Now' : 'Weekend Live LMS'}
                     </span>
-                    <span className={styles.liveCohortTag}>Weekend Live Batch • Frontend &amp; Full-Stack LMS</span>
+                    <span className={styles.liveCohortTag}>
+                      {activeLiveSession?.courseTitle || 'Frontend Developer Training & Internship'}
+                    </span>
                   </div>
                   <h3 className={styles.liveBannerTitle}>
-                    React 19, WebRTC &amp; Production Architecture Live Class
+                    {activeLiveSession?.title || 'React 19, WebRTC & Industrial Project Architecture Live Class'}
                   </h3>
                   <p className={styles.liveBannerDesc}>
-                    Interactive live stream with camera, mic, screen share, doubt clearing, and real-time chat. Attendance is tracked automatically towards your certification.
+                    {activeLiveSession?.description ||
+                      'Interactive weekend livestream with live coding, Q&A doubts, and verified attendance for certification.'}
                   </p>
                 </div>
               </div>
 
               <div className={styles.liveBannerRight}>
                 <Link
-                  href="/live/frontend-developer-weekend-live"
+                  href={`/live/${activeLiveSession?.meetingId || 'frontend-developer-weekend-live'}`}
                   className={styles.liveJoinBtn}
                 >
                   <Video size={18} />
@@ -474,6 +498,93 @@ export default function MyLearningDashboardPage() {
                 </div>
               </div>
             </div>
+
+            {/* Upcoming Scheduled Live Classes Section */}
+            {upcomingScheduledSessions.length > 0 && (
+              <section className={styles.scheduledSection}>
+                <div className={styles.scheduledHeader}>
+                  <h3 className={styles.scheduledSectionTitle}>
+                    <Calendar size={18} color="#2563eb" />
+                    Upcoming Scheduled Live Masterclasses ({upcomingScheduledSessions.length})
+                  </h3>
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>
+                    Scheduled by your instructors • Access opens at class time
+                  </span>
+                </div>
+
+                <div className={styles.scheduledGrid}>
+                  {upcomingScheduledSessions.map((session) => (
+                    <div key={session._id || session.meetingId} className={styles.scheduledCard}>
+                      <div className={styles.scheduledThumbArea}>
+                        {session.thumbnail ? (
+                          <img
+                            src={session.thumbnail}
+                            alt={session.title}
+                            className={styles.scheduledThumbImg}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
+                              color: '#818cf8',
+                            }}
+                          >
+                            <Radio size={36} />
+                          </div>
+                        )}
+                        <div className={styles.scheduledBadgePill}>
+                          <Clock size={11} color="#fbbf24" />
+                          <span>Scheduled</span>
+                        </div>
+                        <div className={styles.scheduledProgramBadge}>
+                          {session.targetType === 'internship' ? 'Training & Internship' : 'Technical Course'}
+                        </div>
+                      </div>
+
+                      <div className={styles.scheduledCardBody}>
+                        <div className={styles.scheduledDateTime}>
+                          <Calendar size={13} />
+                          <span>
+                            {session.scheduledAt
+                              ? new Date(session.scheduledAt).toLocaleString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : 'Upcoming Cohort'}
+                          </span>
+                        </div>
+
+                        <h4 className={styles.scheduledCardTitle}>{session.title}</h4>
+                        <p className={styles.scheduledCardDesc}>
+                          {session.description || 'Interactive live masterclass with live code demonstration and doubt clearing.'}
+                        </p>
+
+                        <div className={styles.scheduledCardFooter}>
+                          <span className={styles.scheduledFacultyName}>
+                            Faculty: {session.instructorName || 'Lead Faculty'}
+                          </span>
+                          <Link
+                            href={`/live/${session.meetingId}`}
+                            className={styles.scheduledJoinBtn}
+                          >
+                            <span>Open Classroom</span>
+                            <ArrowRight size={13} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Filter Tabs Bar */}
             <div className={styles.controlsBar}>

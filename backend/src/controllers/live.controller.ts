@@ -25,7 +25,18 @@ export const getLiveSessions = async (req: Request, res: Response): Promise<void
 // 2. Create Live Session (Admin / Instructor)
 export const createLiveSession = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { title, courseTitle, courseId, instructorName, instructorEmail, scheduledAt, description } = req.body;
+    const {
+      title,
+      courseTitle,
+      courseId,
+      targetType = 'course',
+      thumbnail = '',
+      instructorName,
+      instructorEmail,
+      scheduledAt,
+      description,
+      status = 'scheduled',
+    } = req.body;
 
     if (!title || !courseTitle || !courseId || !instructorEmail) {
       res.status(400).json({ success: false, message: 'Please provide all required session details.' });
@@ -38,23 +49,45 @@ export const createLiveSession = async (req: Request, res: Response): Promise<vo
       title,
       courseTitle,
       courseId,
+      targetType,
+      thumbnail,
       instructorName: instructorName || 'Binary Vidya Lead Faculty',
       instructorEmail,
       meetingId,
       description: description || 'Weekend live batch session with production code walkthrough and Q&A.',
       scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-      status: 'live',
-      startedAt: new Date(),
+      status: status === 'live' ? 'live' : 'scheduled',
+      startedAt: status === 'live' ? new Date() : undefined,
     });
 
     res.status(201).json({
       success: true,
-      message: 'Live session initialized successfully.',
+      message: status === 'live' ? 'Live broadcast initialized!' : 'Live session scheduled successfully.',
       session: newSession,
     });
   } catch (err: any) {
     console.error('[Create Live Session Error]:', err);
     res.status(500).json({ success: false, message: 'Failed to create live session.' });
+  }
+};
+
+// 2b. Delete Live Session
+export const deleteLiveSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const deleted = await LiveSession.findOneAndDelete({
+      $or: [{ meetingId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }],
+    });
+
+    if (!deleted) {
+      res.status(404).json({ success: false, message: 'Session not found' });
+      return;
+    }
+
+    res.json({ success: true, message: 'Session deleted successfully' });
+  } catch (err: any) {
+    console.error('[Delete Live Session Error]:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete live session.' });
   }
 };
 

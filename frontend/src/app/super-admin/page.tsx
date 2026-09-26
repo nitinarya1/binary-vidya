@@ -57,6 +57,7 @@ import {
 } from 'lucide-react';
 import { compressThumbnail, formatBytes } from '../../lib/imageCompressor';
 import { CouponAdminModal, CouponItem } from '../../components/CouponAdminModal';
+import { ScheduleLiveModal } from '../../components/ScheduleLiveModal';
 
 // Data Interfaces
 export interface VideoLessonItem {
@@ -281,6 +282,9 @@ export default function SuperAdminDashboard() {
 
   const [couponModalOpen, setCouponModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponItem | null>(null);
+
+  // Schedule Live / Go Live Modal State
+  const [scheduleLiveModalOpen, setScheduleLiveModalOpen] = useState(false);
 
   // Responsive Mobile Navigation & Quick Refresh
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -1062,23 +1066,22 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.navActions}>
-            {/* Live WebRTC Classroom Quick Launch */}
-            <Link
-              href="/live/frontend-developer-weekend-live"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Live WebRTC Classroom Quick Launch & Schedule */}
+            <button
+              onClick={() => setScheduleLiveModalOpen(true)}
               className={styles.quickAddCourseBtn}
               style={{
                 background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                 color: '#ffffff',
                 border: 'none',
                 boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+                cursor: 'pointer',
               }}
-              title="Launch Live WebRTC Classroom & Studio"
+              title="Schedule Live Session or Go Live"
             >
               <Radio size={14} />
-              <span>Live Studio</span>
-            </Link>
+              <span>Schedule / Go Live</span>
+            </button>
 
             {/* Quick Actions - Strictly guarded by module permissions (Desktop) */}
             {canManageCourses && (
@@ -1336,21 +1339,20 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.headerActions}>
-            {/* Launch Live Studio */}
-            <Link
-              href="/live/frontend-developer-weekend-live"
-              target="_blank"
-              rel="noopener noreferrer"
+            {/* Launch Live Studio & Schedule */}
+            <button
+              onClick={() => setScheduleLiveModalOpen(true)}
               className={styles.primaryActionBtn}
               style={{
                 background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
                 border: 'none',
                 boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)',
+                cursor: 'pointer',
               }}
-              title="Open Live WebRTC Classroom as Instructor"
+              title="Schedule Live Masterclass or Go Live"
             >
-              <Radio size={16} /> Go Live (WebRTC Studio)
-            </Link>
+              <Radio size={16} /> Schedule / Go Live Studio
+            </button>
 
             {canManageCourses && (
               <button
@@ -2965,6 +2967,22 @@ export default function SuperAdminDashboard() {
           onSave={handleSaveCoupon}
         />
       )}
+
+      {/* SCHEDULE LIVE / GO LIVE MODAL */}
+      <ScheduleLiveModal
+        isOpen={scheduleLiveModalOpen}
+        onClose={() => setScheduleLiveModalOpen(false)}
+        courses={courses}
+        trainingPrograms={trainingPrograms}
+        instructorName={user?.name || 'Binary Vidya Lead Faculty'}
+        instructorEmail={user?.email || 'faculty@binaryvidya.com'}
+        onSaved={(session) => {
+          setNotice({
+            type: 'success',
+            text: `Live session "${session.title}" ${session.status === 'live' ? 'started' : 'scheduled'} successfully!`,
+          });
+        }}
+      />
 
       {/* Toast Notice */}
       {notice && (

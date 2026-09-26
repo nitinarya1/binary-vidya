@@ -57,7 +57,18 @@ export async function POST(req: Request) {
   try {
     await connectDB();
     const body = await req.json();
-    const { title, courseTitle, courseId, instructorName, instructorEmail, description, scheduledAt } = body;
+    const {
+      title,
+      courseTitle,
+      courseId,
+      targetType = 'course',
+      thumbnail = '',
+      instructorName,
+      instructorEmail,
+      description,
+      scheduledAt,
+      status = 'scheduled',
+    } = body;
 
     if (!title || !courseTitle || !courseId || !instructorEmail) {
       return NextResponse.json({ success: false, message: 'Missing required session parameters' }, { status: 400 });
@@ -69,22 +80,53 @@ export async function POST(req: Request) {
       title,
       courseTitle,
       courseId,
-      instructorName: instructorName || 'Binary Vidya Faculty',
+      targetType,
+      thumbnail,
+      instructorName: instructorName || 'Binary Vidya Lead Faculty',
       instructorEmail,
       meetingId,
-      description: description || 'Weekend live batch masterclass with Q&A.',
+      description: description || 'Weekend live batch interactive masterclass with live code and Q&A.',
       scheduledAt: scheduledAt ? new Date(scheduledAt) : new Date(),
-      status: 'live',
-      startedAt: new Date(),
+      status: status === 'live' ? 'live' : 'scheduled',
+      startedAt: status === 'live' ? new Date() : undefined,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Live session created successfully',
+      message: status === 'live' ? 'Live session started!' : 'Live session scheduled successfully!',
       session: newSession,
     });
   } catch (err: any) {
     console.error('[POST /api/live/sessions Error]:', err);
     return NextResponse.json({ success: false, message: 'Failed to create session' }, { status: 500 });
+  }
+}
+
+// DELETE /api/live/sessions
+export async function DELETE(req: Request) {
+  try {
+    await connectDB();
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'Missing session ID' }, { status: 400 });
+    }
+
+    const deleted = await LiveSession.findOneAndDelete({
+      $or: [{ meetingId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }],
+    });
+
+    if (!deleted) {
+      return NextResponse.json({ success: false, message: 'Session not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Live session removed successfully',
+    });
+  } catch (err: any) {
+    console.error('[DELETE /api/live/sessions Error]:', err);
+    return NextResponse.json({ success: false, message: 'Failed to delete session' }, { status: 500 });
   }
 }

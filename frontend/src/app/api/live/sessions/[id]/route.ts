@@ -60,6 +60,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     const body = await req.json();
     const { action, messageData, attendanceData } = body;
 
+    // Start session action (Instructor starts broadcasting)
+    if (action === 'start_session') {
+      const updated = await LiveSession.findOneAndUpdate(
+        { $or: [{ meetingId: id }, { _id: id.match(/^[0-9a-fA-F]{24}$/) ? id : null }] },
+        { $set: { status: 'live', startedAt: new Date() } },
+        { new: true }
+      );
+      return NextResponse.json({ success: true, session: updated });
+    }
+
     // End session action
     if (action === 'end_session') {
       const updated = await LiveSession.findOneAndUpdate(

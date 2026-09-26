@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../../../context/AuthContext';
+import { isSuperAdminEmail } from '../../../lib/auth-helpers';
 import styles from './live.module.css';
 import {
   Mic,
@@ -93,9 +94,19 @@ export default function LiveClassroomPage() {
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const currentUserRole = isAdmin ? 'instructor' : 'student';
-  const currentUserName = user?.name || (isAdmin ? 'Faculty Member' : 'Student Learner');
-  const currentUserEmail = user?.email || 'student@binaryvidya.com';
+  // User Role Detection (Only instructor/admin can broadcast live)
+  const isInstructor = Boolean(
+    user && (
+      isSuperAdminEmail(user.email) ||
+      user.role === 'admin' ||
+      user.isTeamMember ||
+      (sessionData?.instructorEmail && user.email?.toLowerCase() === sessionData.instructorEmail?.toLowerCase())
+    )
+  );
+
+  const currentUserRole: 'instructor' | 'mentor' | 'student' = isInstructor ? 'instructor' : 'student';
+  const currentUserName = user?.name || (isInstructor ? 'Lead Faculty' : 'Student Learner');
+  const currentUserEmail = user?.email || (isInstructor ? 'faculty@binaryvidya.com' : 'student@binaryvidya.com');
 
   // 1. Fetch Session Metadata & Initial Chat History via Next.js API
   useEffect(() => {
@@ -167,6 +178,10 @@ export default function LiveClassroomPage() {
         setMessages((prev) => [...prev, msg]);
       });
 
+      socket.on('session_status_changed', (payload: { sessionId: string; status: 'scheduled' | 'live' | 'ended' }) => {
+        setSessionData((prev: any) => (prev ? { ...prev, status: payload.status } : prev));
+      });
+
       socket.on('student_raised_hand', (payload: { userName: string }) => {
         // Show in chat as system notification
         setMessages((prev) => [
@@ -222,8 +237,54 @@ export default function LiveClassroomPage() {
     return () => clearInterval(timer);
   }, [sessionId, currentUserEmail, currentUserName]);
 
-  // 5. Camera & Microphone Toggle Handlers (WebRTC Media)
+  // 5. Broadcast Control Actions (Instructor Only)
+  const handleStartBroadcast = async () => {
+    if (!isInstructor) return;
+    try {
+      const res = await fetch(`/api/live/sessions/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'start_session' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSessionData((prev: any) => ({ ...prev, status: 'live' }));
+        socketRef.current?.emit('session_started', { sessionId });
+        await toggleCamera();
+      }
+    } catch (err) {
+      console.error('Failed to start broadcast:', err);
+    }
+  };
+
+  const handleEndBroadcast = async () => {
+    if (!isInstructor || !confirm('Are you sure you want to end this live broadcast for all attendees?')) return;
+    try {
+      await fetch(`/api/live/sessions/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'end_session' }),
+      });
+      setSessionData((prev: any) => ({ ...prev, status: 'ended' }));
+      socketRef.current?.emit('session_ended', { sessionId });
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      setIsBroadcasting(false);
+      setIsCameraOn(false);
+      setIsScreenSharing(false);
+    } catch (err) {
+      console.error('Failed to end broadcast:', err);
+    }
+  };
+
+  // 6. Camera & Microphone Toggle Handlers (Instructor broadcasts, Student listens)
   const toggleCamera = async () => {
+    if (!isInstructor) {
+      alert('Only the designated instructor can broadcast video.');
+      return;
+    }
+
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
@@ -261,6 +322,11 @@ export default function LiveClassroomPage() {
   };
 
   const toggleScreenShare = async () => {
+    if (!isInstructor) {
+      alert('Only the designated instructor can share screen.');
+      return;
+    }
+
     if (isScreenSharing) {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((t) => t.stop());
@@ -392,123 +458,257 @@ export default function LiveClassroomPage() {
       <div className={styles.classroomWorkspace}>
         {/* LEFT VIDEO STAGE (70%) */}
         <section className={styles.videoStage}>
-          <div className={styles.videoContainer}>
-            {isBroadcasting ? (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className={styles.liveVideoPlayer}
-              />
-            ) : (
-              /* Simulated Stage / Interactive WebRTC Ready Canvas */
-              <div className={styles.simulationCanvas}>
-                <div className={styles.screenMockup}>
-                  <div className={styles.mockupHeader}>
-                    <div className={styles.mockupDots}>
-                      <span className={styles.dotRed} />
-                      <span className={styles.dotYellow} />
-                      <span className={styles.dotGreen} />
+          {sessionData?.status === 'scheduled' ? (
+            /* SCHEDULED STATE: WAITING ROOM FOR STUDENTS / START CONTROLS FOR INSTRUCTOR */
+            <div className={styles.waitingRoomContainer}>
+              <div className={styles.waitingCard}>
+                <div className={styles.waitingThumbnailBox}>
+                  {sessionData.thumbnail ? (
+                    <img src={sessionData.thumbnail} alt={sessionData.title} className={styles.waitingThumbImg} />
+                  ) : (
+                    <div className={styles.waitingThumbPlaceholder}>
+                      <Radio size={40} />
+                      <span style={{ fontSize: '13px', fontWeight: 600 }}>Binary Vidya Live LMS</span>
                     </div>
-                    <span className={styles.mockupTitle}>
-                      VS CODE &bull; live-cohort-demo.tsx &bull; Binary Vidya Studio
-                    </span>
-                    <Radio size={14} color="#10b981" />
-                  </div>
-                  <div className={styles.mockupBody}>
-                    <div style={{ color: '#64748b' }}>// Binary Vidya Weekend Live Cohort Stream</div>
-                    <div style={{ color: '#e2e8f0', marginTop: '6px' }}>
-                      <span style={{ color: '#f43f5e' }}>import</span> React, {'{'} useState, useEffect {'}'}{' '}
-                      <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'react'</span>;
-                    </div>
-                    <div style={{ color: '#e2e8f0' }}>
-                      <span style={{ color: '#f43f5e' }}>import</span> {'{'} io {'}'}{' '}
-                      <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'socket.io-client'</span>;
-                    </div>
-                    <br />
-                    <div style={{ color: '#e2e8f0' }}>
-                      <span style={{ color: '#38bdf8' }}>export const</span>{' '}
-                      <span style={{ color: '#fbbf24' }}>RealtimeClassroom</span> = () =&gt; {'{'}
-                    </div>
-                    <div style={{ paddingLeft: '20px', color: '#94a3b8' }}>
-                      const [webrtcFeed, setFeed] = useState(true);
-                      <br />
-                      <span style={{ color: '#10b981' }}>// Live WebRTC Audio/Video &amp; Socket.io signaling active</span>
-                      <br />
-                      return &lt;<span style={{ color: '#38bdf8' }}>ProductionLMSStage</span> feed={'webrtcFeed'} /&gt;;
-                    </div>
-                    <div style={{ color: '#e2e8f0' }}>{'}'};</div>
-                  </div>
+                  )}
                 </div>
 
-                <div className={styles.streamInfoPill}>
-                  <Sparkles size={16} color="#60a5fa" />
+                <div className={styles.waitingStatusPillScheduled}>
+                  <Clock size={12} />
+                  <span>Scheduled Live Cohort</span>
+                </div>
+
+                <h2 className={styles.waitingTitle}>{sessionData.title}</h2>
+
+                <span className={styles.waitingCourseTag}>
+                  {sessionData.courseTitle || 'Frontend Developer Training & Internship'}
+                </span>
+
+                <div className={styles.waitingTimeRow}>
+                  <Clock size={14} color="#38bdf8" />
                   <span>
-                    Faculty: <strong>{sessionData?.instructorName || 'Nitin Arya (Technical Lead)'}</strong> &bull; Weekend Batch Live
+                    {sessionData.scheduledAt
+                      ? new Date(sessionData.scheduledAt).toLocaleString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })
+                      : 'Scheduled Weekend Class'}
                   </span>
+                  <span>&bull; Faculty: {sessionData.instructorName}</span>
                 </div>
-              </div>
-            )}
 
-            {/* Instructor Picture-in-Picture Webcam */}
-            {isBroadcasting && (
-              <div className={styles.instructorPiP}>
-                <video ref={localVideoRef} autoPlay playsInline muted className={styles.pipVideo} />
-                <span className={styles.pipLabel}>Faculty Camera</span>
+                {isInstructor ? (
+                  <div style={{ width: '100%', marginTop: '8px' }}>
+                    <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '14px' }}>
+                      You are the host instructor for this class. Ready to begin? Click below to go live.
+                    </p>
+                    <button
+                      onClick={handleStartBroadcast}
+                      className={styles.instructorStartBroadcastBtn}
+                      type="button"
+                    >
+                      <Radio size={18} />
+                      <span>Start Live Broadcast Now</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className={styles.waitingMessageNotice}>
+                    Waiting for the faculty instructor to start streaming. The live video stage will open automatically here as soon as the broadcast begins! Feel free to ask doubts in the live chat on the right.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          ) : sessionData?.status === 'ended' ? (
+            /* CONCLUDED SESSION STATE */
+            <div className={styles.waitingRoomContainer}>
+              <div className={styles.waitingCard}>
+                <CheckCircle2 size={44} color="#10b981" />
+                <h2 className={styles.waitingTitle}>Live Session Concluded</h2>
+                <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.5 }}>
+                  This interactive cohort has ended. Your total watch duration of <strong>{watchedMinutes} minutes</strong> has been recorded towards your completion certification.
+                </p>
+                <Link href="/my-learning" className={styles.leaveBtn} style={{ color: '#ffffff', background: '#2563eb', borderColor: '#3b82f6', marginTop: '10px' }}>
+                  Return to My Learning
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* ACTIVE LIVE STREAMING STAGE */
+            <div className={styles.videoContainer}>
+              {isBroadcasting ? (
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className={styles.liveVideoPlayer}
+                />
+              ) : (
+                /* Simulated Stage / Interactive WebRTC Ready Canvas */
+                <div className={styles.simulationCanvas}>
+                  <div className={styles.screenMockup}>
+                    <div className={styles.mockupHeader}>
+                      <div className={styles.mockupDots}>
+                        <span className={styles.dotRed} />
+                        <span className={styles.dotYellow} />
+                        <span className={styles.dotGreen} />
+                      </div>
+                      <span className={styles.mockupTitle}>
+                        VS CODE &bull; live-cohort-demo.tsx &bull; Binary Vidya Studio
+                      </span>
+                      <Radio size={14} color="#10b981" />
+                    </div>
+                    <div className={styles.mockupBody}>
+                      <div style={{ color: '#64748b' }}>// Binary Vidya Weekend Live Cohort Stream</div>
+                      <div style={{ color: '#e2e8f0', marginTop: '6px' }}>
+                        <span style={{ color: '#f43f5e' }}>import</span> React, {'{'} useState, useEffect {'}'}{' '}
+                        <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'react'</span>;
+                      </div>
+                      <div style={{ color: '#e2e8f0' }}>
+                        <span style={{ color: '#f43f5e' }}>import</span> {'{'} io {'}'}{' '}
+                        <span style={{ color: '#f43f5e' }}>from</span> <span style={{ color: '#38bdf8' }}>'socket.io-client'</span>;
+                      </div>
+                      <br />
+                      <div style={{ color: '#e2e8f0' }}>
+                        <span style={{ color: '#38bdf8' }}>export const</span>{' '}
+                        <span style={{ color: '#fbbf24' }}>RealtimeClassroom</span> = () =&gt; {'{'}
+                      </div>
+                      <div style={{ paddingLeft: '20px', color: '#94a3b8' }}>
+                        const [webrtcFeed, setFeed] = useState(true);
+                        <br />
+                        <span style={{ color: '#10b981' }}>// Live WebRTC Audio/Video &amp; Socket.io signaling active</span>
+                        <br />
+                        return &lt;<span style={{ color: '#38bdf8' }}>ProductionLMSStage</span> feed={'webrtcFeed'} /&gt;;
+                      </div>
+                      <div style={{ color: '#e2e8f0' }}>{'}'};</div>
+                    </div>
+                  </div>
+
+                  <div className={styles.streamInfoPill}>
+                    <Sparkles size={16} color="#60a5fa" />
+                    <span>
+                      Faculty: <strong>{sessionData?.instructorName || 'Nitin Arya (Technical Lead)'}</strong> &bull; Weekend Batch Live
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Instructor Picture-in-Picture Webcam */}
+              {isBroadcasting && (
+                <div className={styles.instructorPiP}>
+                  <video ref={localVideoRef} autoPlay playsInline muted className={styles.pipVideo} />
+                  <span className={styles.pipLabel}>Faculty Camera</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* FLOATING CLASSROOM CONTROLS */}
           <footer className={styles.controlsBar}>
-            <button
-              onClick={toggleMic}
-              className={`${styles.controlBtn} ${!isMicOn ? styles.controlBtnDanger : ''}`}
-              title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
-              type="button"
-            >
-              {isMicOn ? <Mic size={18} /> : <MicOff size={18} />}
-            </button>
+            {isInstructor ? (
+              /* INSTRUCTOR BROADCASTER CONTROLS */
+              <>
+                <button
+                  onClick={toggleMic}
+                  className={`${styles.controlBtn} ${!isMicOn ? styles.controlBtnDanger : ''}`}
+                  title={isMicOn ? 'Mute Microphone' : 'Unmute Microphone'}
+                  type="button"
+                >
+                  {isMicOn ? <Mic size={18} /> : <MicOff size={18} />}
+                </button>
 
-            <button
-              onClick={toggleCamera}
-              className={`${styles.controlBtn} ${!isCameraOn ? styles.controlBtnDanger : ''}`}
-              title={isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
-              type="button"
-            >
-              {isCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
-            </button>
+                <button
+                  onClick={toggleCamera}
+                  className={`${styles.controlBtn} ${!isCameraOn ? styles.controlBtnDanger : ''}`}
+                  title={isCameraOn ? 'Turn Camera Off' : 'Turn Camera On'}
+                  type="button"
+                >
+                  {isCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
+                </button>
 
-            <button
-              onClick={toggleScreenShare}
-              className={`${styles.controlBtn} ${isScreenSharing ? styles.controlBtnActive : ''}`}
-              title="Share Screen (VS Code / Slides)"
-              type="button"
-            >
-              <ScreenShare size={18} />
-            </button>
+                <button
+                  onClick={toggleScreenShare}
+                  className={`${styles.controlBtn} ${isScreenSharing ? styles.controlBtnActive : ''}`}
+                  title="Share Screen (VS Code / Slides)"
+                  type="button"
+                >
+                  <ScreenShare size={18} />
+                </button>
 
-            <button
-              onClick={toggleRaiseHand}
-              className={`${styles.raiseHandBtn} ${isHandRaised ? styles.raiseHandBtnRaised : ''}`}
-              type="button"
-            >
-              <Hand size={18} />
-              <span>{isHandRaised ? 'Hand Raised' : 'Raise Hand'}</span>
-            </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                    alert('Classroom meeting link copied to clipboard!');
+                  }}
+                  className={styles.controlBtn}
+                  title="Copy Class Invite Link"
+                  type="button"
+                >
+                  <Share2 size={18} />
+                </button>
 
-            <button
-              onClick={() => {
-                navigator.clipboard?.writeText(window.location.href);
-                alert('Classroom meeting link copied to clipboard!');
-              }}
-              className={styles.controlBtn}
-              title="Copy Class Invite Link"
-              type="button"
-            >
-              <Share2 size={18} />
-            </button>
+                <button
+                  onClick={handleEndBroadcast}
+                  className={styles.leaveBtn}
+                  title="End live broadcast for all attendees"
+                  type="button"
+                >
+                  <LogOut size={16} />
+                  <span>End Live</span>
+                </button>
+              </>
+            ) : (
+              /* STUDENT ATTENDEE CONTROLS (Only Instructor Can Stream) */
+              <>
+                <button
+                  onClick={toggleMic}
+                  className={`${styles.controlBtn} ${!isMicOn ? styles.controlBtnDanger : ''}`}
+                  title={isMicOn ? 'Mute Classroom Audio' : 'Unmute Classroom Audio'}
+                  type="button"
+                >
+                  {isMicOn ? <Volume2 size={18} /> : <MicOff size={18} />}
+                </button>
+
+                <button
+                  onClick={toggleRaiseHand}
+                  className={`${styles.raiseHandBtn} ${isHandRaised ? styles.raiseHandBtnRaised : ''}`}
+                  type="button"
+                >
+                  <Hand size={18} />
+                  <span>{isHandRaised ? 'Hand Raised' : 'Raise Hand'}</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigator.clipboard?.writeText(window.location.href);
+                    alert('Classroom meeting link copied to clipboard!');
+                  }}
+                  className={styles.controlBtn}
+                  title="Copy Class Link"
+                  type="button"
+                >
+                  <Share2 size={18} />
+                </button>
+
+                <button
+                  onClick={() => router.push('/my-learning')}
+                  className={styles.leaveBtn}
+                  title="Leave live class"
+                  type="button"
+                >
+                  <LogOut size={16} />
+                  <span>Leave Class</span>
+                </button>
+
+                <div className={styles.studentAttendeeNotice}>
+                  <CheckCircle2 size={13} color="#10b981" />
+                  <span>Verified Attendance: {watchedMinutes}m</span>
+                </div>
+              </>
+            )}
           </footer>
         </section>
 

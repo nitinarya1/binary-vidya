@@ -4,6 +4,8 @@ export interface ILiveSession extends Document {
   title: string;
   courseTitle: string;
   courseId: string;
+  targetType?: 'course' | 'internship' | 'all';
+  thumbnail?: string;
   instructorName: string;
   instructorEmail: string;
   meetingId: string;
@@ -29,6 +31,12 @@ const LiveSessionSchema = new Schema<ILiveSession>(
     title: { type: String, required: true },
     courseTitle: { type: String, required: true },
     courseId: { type: String, required: true },
+    targetType: {
+      type: String,
+      enum: ['course', 'internship', 'all'],
+      default: 'course',
+    },
+    thumbnail: { type: String, default: '' },
     instructorName: { type: String, default: 'Binary Vidya Lead Faculty' },
     instructorEmail: { type: String, required: true },
     meetingId: { type: String, required: true, unique: true, index: true },

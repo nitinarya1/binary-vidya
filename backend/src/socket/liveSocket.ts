@@ -184,6 +184,15 @@ export const initLiveSocket = (httpServer: HttpServer) => {
       socket.to(payload.sessionId).emit('broadcast_state_change', payload);
     });
 
+    // 6b. Instructor Starts / Ends Live Session
+    socket.on('session_started', (payload: { sessionId: string }) => {
+      io.to(payload.sessionId).emit('session_status_changed', { sessionId: payload.sessionId, status: 'live' });
+    });
+
+    socket.on('session_ended', (payload: { sessionId: string }) => {
+      io.to(payload.sessionId).emit('session_status_changed', { sessionId: payload.sessionId, status: 'ended' });
+    });
+
     // 7. Disconnection
     socket.on('disconnect', () => {
       if (currentSessionId && roomUsers.has(currentSessionId)) {
