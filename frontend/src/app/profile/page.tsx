@@ -289,8 +289,8 @@ export default function UserProfilePage() {
             <Link href="/training-and-internship" className={styles.navBtn}>
               Training &amp; Internships
             </Link>
-            <Link href="/my-learning" className={styles.navBtn}>
-              My Learning
+            <Link href="/lms" className={styles.navBtn}>
+              LMS
             </Link>
             {user ? (
               <Link

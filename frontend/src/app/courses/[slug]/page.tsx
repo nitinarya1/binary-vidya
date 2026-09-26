@@ -304,7 +304,7 @@ export default function CourseDetailPage() {
           </div>
           <h2 className={styles.sectionTitle}>Track Modules &amp; Engineering Path</h2>
           <p className={styles.sectionSubtitle}>
-            Engineered learning path designed for production mastery. Complete interactive video lectures, exercises, and guided codebases are unlocked upon enrollment inside your My Learning student portal.
+            Engineered learning path designed for production mastery. Complete interactive video lectures, exercises, and guided codebases are unlocked upon enrollment inside your LMS student portal.
           </p>
         </div>
 
@@ -342,7 +342,7 @@ export default function CourseDetailPage() {
                     Interactive Video Lectures &amp; Code Player
                   </div>
                   <div style={{ fontSize: '13px', color: '#64748b' }}>
-                    Full chapter video lectures, exercises, progress tracking, and downloadable repositories are reserved for enrolled students in My Learning.
+                    Full chapter video lectures, exercises, progress tracking, and downloadable repositories are reserved for enrolled students in LMS.
                   </div>
                 </div>
               </div>

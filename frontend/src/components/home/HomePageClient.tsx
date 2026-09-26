@@ -250,8 +250,8 @@ export default function HomePageClient({
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Link href="/my-learning" className={`${styles.navBtn} ${styles.desktopOnly}`}>
-                  My Learning
+                <Link href="/lms" className={`${styles.navBtn} ${styles.desktopOnly}`}>
+                  LMS
                 </Link>
 
                 {isAdmin && (
@@ -369,12 +369,12 @@ export default function HomePageClient({
               {user && (
                 <>
                   <Link
-                    href="/my-learning"
+                    href="/lms"
                     className={styles.navBtn}
                     style={{ width: '100%', justifyContent: 'flex-start' }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    My Learning
+                    LMS
                   </Link>
                   <Link
                     href="/profile"
@@ -1451,7 +1451,7 @@ export default function HomePageClient({
                   <Link href="/login">Student Sign In</Link>
                 </li>
                 <li>
-                  <Link href="/my-learning">My Learning Dashboard</Link>
+                  <Link href="/lms">LMS Dashboard</Link>
                 </li>
                 <li>
                   <Link href="/profile">Profile &amp; Account Settings</Link>

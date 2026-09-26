@@ -166,7 +166,7 @@ export default function Footer() {
                 <Link href="/login">Student Sign In</Link>
               </li>
               <li>
-                <Link href="/my-learning">My Learning Dashboard</Link>
+                <Link href="/lms">LMS Dashboard</Link>
               </li>
               <li>
                 <Link href="/profile">Profile &amp; Account Settings</Link>

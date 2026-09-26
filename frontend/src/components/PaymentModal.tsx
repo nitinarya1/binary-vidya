@@ -321,7 +321,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <button
                 onClick={() => {
                   onClose();
-                  router.push('/my-learning');
+                  router.push('/lms');
                 }}
                 style={{
                   width: '100%',
@@ -335,7 +335,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   cursor: 'pointer',
                 }}
               >
-                Go to My Learning &amp; Start Watching
+                Go to LMS &amp; Start Watching
               </button>
             </div>
           ) : (

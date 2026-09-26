@@ -508,10 +508,10 @@ function TrainingCheckoutContent({ initialSlug }: { initialSlug?: string }) {
             <div className={styles.receiptActions}>
               <button
                 type="button"
-                onClick={() => router.push('/my-learning')}
+                onClick={() => router.push('/lms')}
                 className={styles.startCourseBtn}
               >
-                Go to My Learning Dashboard &rarr;
+                Go to LMS Dashboard &rarr;
               </button>
 
               <button

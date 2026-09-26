@@ -419,7 +419,7 @@ export default function LiveClassroomPage() {
       {/* TOP BAR NAVIGATION */}
       <header className={styles.topNav}>
         <div className={styles.navLeft}>
-          <Link href="/my-learning" className={styles.brandLink} title="Return to My Learning">
+          <Link href="/lms" className={styles.brandLink} title="Return to LMS">
             <img src="/images/binary-vidya-icon.png" alt="Binary Vidya" className={styles.brandIcon} />
             <img src="/images/binary-vidya-wordmark.png" alt="Binary Vidya" className={styles.brandWordmark} />
           </Link>
@@ -530,8 +530,8 @@ export default function LiveClassroomPage() {
                 <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: 1.5 }}>
                   This interactive cohort has ended. Your total watch duration of <strong>{watchedMinutes} minutes</strong> has been recorded towards your completion certification.
                 </p>
-                <Link href="/my-learning" className={styles.leaveBtn} style={{ color: '#ffffff', background: '#2563eb', borderColor: '#3b82f6', marginTop: '10px' }}>
-                  Return to My Learning
+                <Link href="/lms" className={styles.leaveBtn} style={{ color: '#ffffff', background: '#2563eb', borderColor: '#3b82f6', marginTop: '10px' }}>
+                  Return to LMS
                 </Link>
               </div>
             </div>

@@ -140,8 +140,8 @@ export default function CoursesCatalogPage() {
               <div style={{ fontSize: '13px', color: '#94a3b8' }}>Loading...</div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Link href="/my-learning" className={styles.signInBtn}>
-                  <BookOpen size={14} /> My Learning
+                <Link href="/lms" className={styles.signInBtn}>
+                  <BookOpen size={14} /> LMS
                 </Link>
                 {isAdmin && (
                   <Link href="/admin/dashboard" className={styles.signInBtn}>

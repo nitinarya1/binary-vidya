@@ -129,7 +129,7 @@ export const FRONTEND_INTERNSHIP_PROGRAM = {
           'Video lecture player with dynamic timestamp seeking, playlist sidebar, and auto-progress tracking',
           'Razorpay payment gateway checkout integration with instant UPI QR & card processing',
           'Digital certificate issuance engine with verifiable unique credential IDs and print-ready receipts',
-          'Student personalized "My Learning" dashboard with live progress percentage calculators',
+          'Student personalized "LMS" dashboard with live progress percentage calculators',
         ],
         mentorship: '1-on-1 architecture review, PR evaluation, and portfolio presentation guidance.',
       },

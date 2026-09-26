@@ -125,8 +125,8 @@ export default function CertificateDetailPage() {
           <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: 1.6, margin: '0 0 24px' }}>
             {errorMsg || 'The requested certificate could not be located in our verifiable credential registry.'}
           </p>
-          <Link href="/my-learning" className={styles.printBtn}>
-            <ArrowLeft size={16} /> Return to My Learning
+          <Link href="/lms" className={styles.printBtn}>
+            <ArrowLeft size={16} /> Return to LMS
           </Link>
         </div>
       </div>
@@ -137,8 +137,8 @@ export default function CertificateDetailPage() {
     <div className={styles.pageContainer}>
       {/* Top Action Controls Bar */}
       <div className={styles.topActionsBar}>
-        <Link href="/my-learning" className={styles.backLink}>
-          <ArrowLeft size={15} /> Back to My Learning
+        <Link href="/lms" className={styles.backLink}>
+          <ArrowLeft size={15} /> Back to LMS
         </Link>
 
         <div className={styles.actionsGroup}>

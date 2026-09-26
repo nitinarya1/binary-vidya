@@ -318,8 +318,60 @@ export default function MyLearningDashboardPage() {
     fetchLiveSessions();
   }, []);
 
-  const activeLiveSession = liveSessions.find((s) => s.status === 'live');
-  const upcomingScheduledSessions = liveSessions.filter((s) => s.status === 'scheduled');
+  // Helper to check if a live session is for a specific enrolled course
+  const isSessionForSpecificCourse = (session: any, course: EnrolledCourse) => {
+    if (!session || !course) return false;
+    const sCourseId = (session.courseId || '').toString().toLowerCase().trim();
+    const sCourseTitle = (session.courseTitle || '').toString().toLowerCase().trim();
+    const sTargetType = (session.targetType || '').toLowerCase();
+
+    const cId = (course.id || '').toString().toLowerCase().trim();
+    const cSlug = (course.slug || '').toString().toLowerCase().trim();
+    const cTitle = (course.title || '').toString().toLowerCase().trim();
+    const cType = (course.type || '').toLowerCase();
+
+    // 1. Direct ID or Slug match
+    if (sCourseId && (sCourseId === cId || sCourseId === cSlug)) return true;
+
+    // 2. Direct Title exact or substring match
+    if (
+      sCourseTitle &&
+      cTitle &&
+      (sCourseTitle === cTitle || sCourseTitle.includes(cTitle) || cTitle.includes(sCourseTitle))
+    ) {
+      return true;
+    }
+
+    // 3. Internship matching
+    if (
+      (cType === 'internship' || cTitle.includes('internship') || cSlug.includes('internship')) &&
+      (sTargetType === 'internship' || sCourseTitle.includes('internship') || sCourseId.includes('internship'))
+    ) {
+      if (
+        (cSlug.includes('frontend') || cTitle.includes('frontend')) &&
+        (sCourseTitle.includes('frontend') || sCourseId.includes('frontend'))
+      ) {
+        return true;
+      }
+    }
+
+    // 4. Fuzzy title match
+    const cleanCTitle = cTitle.replace(/[^a-z0-9]/g, ' ').trim();
+    const cleanSTitle = sCourseTitle.replace(/[^a-z0-9]/g, ' ').trim();
+    if (cleanCTitle.length > 5 && cleanSTitle.includes(cleanCTitle)) return true;
+
+    return false;
+  };
+
+  // Helper to check if a live session is for ANY of the student's purchased/enrolled courses
+  const isSessionForPurchasedCourse = (session: any) => {
+    return courses.some((c) => isSessionForSpecificCourse(session, c));
+  };
+
+  // Filter live sessions strictly to those scheduled or active for courses/internships the student has purchased
+  const purchasedLiveSessions = liveSessions.filter(isSessionForPurchasedCourse);
+  const activeLiveSession = purchasedLiveSessions.find((s) => s.status === 'live');
+  const upcomingScheduledSessions = purchasedLiveSessions.filter((s) => s.status === 'scheduled');
 
   // Filtered courses based on active tab
   const filteredCourses = courses.filter((c) => {
@@ -356,8 +408,8 @@ export default function MyLearningDashboardPage() {
             <Link href="/training-and-internship" className={styles.navBtn}>
               Training &amp; Internships
             </Link>
-            <Link href="/my-learning" className={styles.navBtn}>
-              My Learning
+            <Link href="/lms" className={styles.navBtn}>
+              LMS
             </Link>
             {user && (
               <Link
@@ -398,9 +450,9 @@ export default function MyLearningDashboardPage() {
               style={{ height: '60px', width: 'auto', objectFit: 'contain' }}
             />
           </div>
-          <h2 className={styles.emptyTitle}>Sign In to View Your Enrolled Courses</h2>
+          <h2 className={styles.emptyTitle}>Sign In to Access Your LMS Dashboard</h2>
           <p className={styles.emptySubtitle}>
-            Access your personalized learning portal, ongoing batches, hands-on code projects, and certificates.
+            Access your personalized LMS portal, ongoing batches, hands-on code projects, and certificates.
           </p>
           <Link href="/login" className={styles.exploreBtn}>
             Sign In to Account <ArrowRight size={16} />
@@ -412,7 +464,7 @@ export default function MyLearningDashboardPage() {
           <header className={styles.heroHeader}>
             <div className={styles.heroContent}>
               <div className={styles.welcomeBadge}>
-                <Sparkles size={14} /> Student Learning Workspace
+                <Sparkles size={14} /> Student LMS Workspace
               </div>
               <h1 className={styles.heroTitle}>Welcome back, {user.name || 'Engineer'}!</h1>
               <p className={styles.heroSubtitle}>
@@ -456,48 +508,50 @@ export default function MyLearningDashboardPage() {
 
           {/* Main Dashboard Body */}
           <main className={styles.mainLayout}>
-            {/* Live WebRTC Classroom Banner (Shows active live session or default weekend cohort) */}
-            <div className={styles.liveBanner}>
-              <div className={styles.liveBannerLeft}>
-                <div className={styles.livePulseIcon}>
-                  <Radio size={24} />
-                </div>
-                <div>
-                  <div className={styles.liveBadgeRow}>
-                    <span className={styles.livePill}>
-                      <span className={styles.liveBlinkDot} />
-                      {activeLiveSession ? 'Live Now' : 'Weekend Live LMS'}
-                    </span>
-                    <span className={styles.liveCohortTag}>
-                      {activeLiveSession?.courseTitle || 'Frontend Developer Training & Internship'}
-                    </span>
+            {/* Live WebRTC Classroom Banner - Shown IF AND ONLY IF a live class is currently active for student's purchased course */}
+            {activeLiveSession && (
+              <div className={styles.liveBanner}>
+                <div className={styles.liveBannerLeft}>
+                  <div className={styles.livePulseIcon}>
+                    <Radio size={24} />
                   </div>
-                  <h3 className={styles.liveBannerTitle}>
-                    {activeLiveSession?.title || 'React 19, WebRTC & Industrial Project Architecture Live Class'}
-                  </h3>
-                  <p className={styles.liveBannerDesc}>
-                    {activeLiveSession?.description ||
-                      'Interactive weekend livestream with live coding, Q&A doubts, and verified attendance for certification.'}
-                  </p>
+                  <div>
+                    <div className={styles.liveBadgeRow}>
+                      <span className={styles.livePill}>
+                        <span className={styles.liveBlinkDot} />
+                        Live Now
+                      </span>
+                      <span className={styles.liveCohortTag}>
+                        {activeLiveSession.courseTitle}
+                      </span>
+                    </div>
+                    <h3 className={styles.liveBannerTitle}>
+                      {activeLiveSession.title}
+                    </h3>
+                    <p className={styles.liveBannerDesc}>
+                      {activeLiveSession.description ||
+                        'Interactive live classroom with live coding, Q&A doubts, and verified attendance for certification.'}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              <div className={styles.liveBannerRight}>
-                <Link
-                  href={`/live/${activeLiveSession?.meetingId || 'frontend-developer-weekend-live'}`}
-                  className={styles.liveJoinBtn}
-                >
-                  <Video size={18} />
-                  Join Live Classroom
-                  <ArrowRight size={16} />
-                </Link>
-                <div className={styles.liveFeatureTags}>
-                  <span className={styles.liveTag}>Zero-Lag WebRTC</span>
-                  <span className={styles.liveTag}>Instant Doubts Chat</span>
-                  <span className={styles.liveTag}>Auto Attendance</span>
+                <div className={styles.liveBannerRight}>
+                  <Link
+                    href={`/live/${activeLiveSession.meetingId}`}
+                    className={styles.liveJoinBtn}
+                  >
+                    <Video size={18} />
+                    Join Live Classroom
+                    <ArrowRight size={16} />
+                  </Link>
+                  <div className={styles.liveFeatureTags}>
+                    <span className={styles.liveTag}>Zero-Lag WebRTC</span>
+                    <span className={styles.liveTag}>Instant Doubts Chat</span>
+                    <span className={styles.liveTag}>Auto Attendance</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Upcoming Scheduled Live Classes Section */}
             {upcomingScheduledSessions.length > 0 && (
@@ -701,7 +755,65 @@ export default function MyLearningDashboardPage() {
                       </div>
 
                       {/* Actions */}
-                      <div className={styles.cardFooter} style={{ display: 'flex', gap: '10px' }}>
+                      <div className={styles.cardFooter} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        {(() => {
+                          const cardActiveLive = liveSessions.find(
+                            (s) => s.status === 'live' && isSessionForSpecificCourse(s, enrolled)
+                          );
+                          const cardScheduledLive = liveSessions.find(
+                            (s) => s.status === 'scheduled' && isSessionForSpecificCourse(s, enrolled)
+                          );
+
+                          if (cardActiveLive) {
+                            return (
+                              <Link
+                                href={`/live/${cardActiveLive.meetingId}`}
+                                style={{
+                                  padding: '12px 18px',
+                                  borderRadius: '10px',
+                                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                                  color: '#ffffff',
+                                  fontSize: '13px',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '7px',
+                                  textDecoration: 'none',
+                                  boxShadow: '0 3px 12px rgba(239, 68, 68, 0.4)',
+                                }}
+                              >
+                                <Radio size={16} /> Join Live Class
+                              </Link>
+                            );
+                          }
+
+                          if (cardScheduledLive) {
+                            return (
+                              <Link
+                                href={`/live/${cardScheduledLive.meetingId}`}
+                                style={{
+                                  padding: '12px 16px',
+                                  borderRadius: '10px',
+                                  background: '#eff6ff',
+                                  border: '1.5px solid #bfdbfe',
+                                  color: '#1d4ed8',
+                                  fontSize: '13px',
+                                  fontWeight: 800,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  textDecoration: 'none',
+                                }}
+                                title={`Live Class Scheduled for ${new Date(cardScheduledLive.scheduledAt).toLocaleDateString()}`}
+                              >
+                                <Calendar size={15} color="#2563eb" /> Live Class Scheduled
+                              </Link>
+                            );
+                          }
+
+                          return null;
+                        })()}
+
                         <button
                           type="button"
                           onClick={() => handleStartLearning(enrolled)}

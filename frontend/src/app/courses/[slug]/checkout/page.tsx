@@ -706,8 +706,8 @@ function CourseCheckoutContent() {
                 </div>
 
                 <div className={styles.receiptActions}>
-                  <Link href="/my-learning" className={styles.startCourseBtn}>
-                    Go to My Learning &amp; Start Watching <ArrowRight size={18} />
+                  <Link href="/lms" className={styles.startCourseBtn}>
+                    Go to LMS &amp; Start Watching <ArrowRight size={18} />
                   </Link>
 
                   <button

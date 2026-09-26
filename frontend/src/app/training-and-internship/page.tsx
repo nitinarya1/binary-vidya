@@ -942,7 +942,7 @@ function TrainingAndInternshipContent() {
                     <li>Custom responsive video player with chapter navigation and progress synchronization</li>
                     <li>Official Razorpay payment gateway integration supporting UPI QR, Cards &amp; NetBanking</li>
                     <li>Digital certificate issuance engine generating verifiable credential IDs &amp; printable receipts</li>
-                    <li>Personalized "My Learning" dashboard showing progress percentages and course playback</li>
+                    <li>Personalized "LMS" dashboard showing progress percentages and course playback</li>
                   </ul>
                 </div>
               </div>
@@ -1238,11 +1238,11 @@ function TrainingAndInternshipContent() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
                 type="button"
-                onClick={() => router.push('/my-learning')}
+                onClick={() => router.push('/lms')}
                 className={styles.enrollBtn}
                 style={{ width: '100%', justifyContent: 'center' }}
               >
-                Go to My Learning Dashboard &rarr;
+                Go to LMS Dashboard &rarr;
               </button>
 
               <button
