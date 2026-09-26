@@ -24,6 +24,8 @@ import {
   ExternalLink,
   Sparkles,
   X,
+  Menu,
+  ChevronRight,
   Clock,
   Award,
   MapPin,
@@ -279,6 +281,10 @@ export default function SuperAdminDashboard() {
   const [couponModalOpen, setCouponModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponItem | null>(null);
 
+  // Responsive Mobile Navigation & Quick Refresh
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Forced First Login Password Change State
   const [firstPassValue, setFirstPassValue] = useState('');
   const [firstPassConfirm, setFirstPassConfirm] = useState('');
@@ -388,6 +394,18 @@ export default function SuperAdminDashboard() {
       setNotice({ type: 'error', text: err.message || 'Failed to fetch dashboard data' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await fetchData();
+      setNotice({ type: 'success', text: 'Dashboard data refreshed successfully!' });
+    } catch {
+      setNotice({ type: 'error', text: 'Failed to refresh data' });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -1014,6 +1032,15 @@ export default function SuperAdminDashboard() {
     );
   }
 
+  const visibleTabs = [
+    ...(canViewAnalytics ? [{ id: 'overview', label: 'Overview & Activity', icon: TrendingUp }] : []),
+    ...(canManageCourses ? [{ id: 'courses', label: 'Courses', icon: BookOpen, count: courses.length }] : []),
+    ...(canManageTraining ? [{ id: 'training', label: 'Training & Internship', icon: GraduationCap, count: trainingPrograms.length }] : []),
+    ...(canManageCareers ? [{ id: 'careers', label: 'Careers', icon: Briefcase, count: careers.length }] : []),
+    ...(canManageTeam ? [{ id: 'team', label: 'Team & Access', icon: Users, count: teamMembers.length }] : []),
+    ...(canManageCoupons ? [{ id: 'coupons', label: 'Coupons & Promos', icon: Tag, count: coupons.length }] : []),
+  ];
+
   return (
     <div className={styles.superAdminContainer}>
       {/* Top Navigation Bar */}
@@ -1034,7 +1061,7 @@ export default function SuperAdminDashboard() {
           </div>
 
           <div className={styles.navActions}>
-            {/* Quick Actions - Strictly guarded by module permissions */}
+            {/* Quick Actions - Strictly guarded by module permissions (Desktop) */}
             {canManageCourses && (
               <button
                 onClick={() => {
@@ -1110,12 +1137,30 @@ export default function SuperAdminDashboard() {
               </button>
             )}
 
+            {/* Quick Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              className={`${styles.iconActionBtn} ${isRefreshing ? styles.spinning : ''}`}
+              title="Refresh Dashboard Data"
+              disabled={isRefreshing}
+            >
+              <RefreshCw size={15} />
+            </button>
+
+            {/* Public Live Site */}
             <Link href="/" className={styles.liveSiteBtn} target="_blank" title="View Public Portal">
               <ExternalLink size={14} />
               <span>Live Site</span>
             </Link>
 
-            <div className={styles.userProfilePill}>
+            {/* CRM Portal shortcut for authorized staff */}
+            <Link href="/sales/dashboard" className={styles.crmLinkBtn} target="_blank" title="Open CRM Portal">
+              <Sparkles size={13} />
+              <span>CRM</span>
+            </Link>
+
+            {/* User Profile Pill (Desktop) */}
+            <div className={`${styles.userProfilePill} ${styles.desktopOnly}`}>
               <div className={styles.userAvatar}>
                 {user?.name ? user.name[0].toUpperCase() : 'A'}
               </div>
@@ -1125,12 +1170,135 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            <button onClick={logout} className={styles.logoutBtn} title="Sign Out">
+            {/* Sign Out Button (Desktop) */}
+            <button onClick={logout} className={`${styles.logoutBtn} ${styles.desktopOnly}`} title="Sign Out">
               <LogOut size={16} />
+            </button>
+
+            {/* Mobile Navigation Toggle Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className={styles.mobileNavToggle}
+              title={mobileMenuOpen ? 'Close Menu' : 'Open Navigation Menu'}
+              aria-label="Toggle navigation menu"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
       </header>
+
+      {/* Responsive Mobile Drawer Navigation Menu */}
+      {mobileMenuOpen && (
+        <div className={styles.mobileDrawerOverlay} onClick={() => setMobileMenuOpen(false)}>
+          <aside className={styles.mobileDrawer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.mobileDrawerHeader}>
+              <div className={styles.mobileDrawerUser}>
+                <div className={styles.userAvatar}>
+                  {user?.name ? user.name[0].toUpperCase() : 'A'}
+                </div>
+                <div>
+                  <h4 className={styles.mobileDrawerName}>{user?.name || 'Administrator'}</h4>
+                  <span className={styles.mobileDrawerRole}>{isSuper ? 'Super Admin' : user?.department || 'Staff Member'}</span>
+                </div>
+              </div>
+              <button
+                className={styles.mobileDrawerCloseBtn}
+                onClick={() => setMobileMenuOpen(false)}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className={styles.mobileDrawerActions}>
+              {canManageCourses && (
+                <button
+                  className={styles.mobileActionBtn}
+                  onClick={() => {
+                    setEditingCourse(null);
+                    setCourseModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Plus size={15} /> Add Course
+                </button>
+              )}
+              {canManageTraining && (
+                <button
+                  className={styles.mobileActionBtn}
+                  onClick={() => {
+                    setActiveTab('training');
+                    setEditingTraining(null);
+                    setTrainingModalOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <Plus size={15} /> Add Internship
+                </button>
+              )}
+            </div>
+
+            <nav className={styles.mobileDrawerNav}>
+              {visibleTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id as any);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`${styles.mobileDrawerNavItem} ${isActive ? styles.mobileDrawerNavItemActive : ''}`}
+                  >
+                    <div className={styles.mobileDrawerNavLeft}>
+                      <Icon size={18} />
+                      <span>{tab.label}</span>
+                    </div>
+                    <div className={styles.mobileDrawerNavRight}>
+                      {tab.count !== undefined && (
+                        <span className={styles.mobileDrawerBadge}>{tab.count}</span>
+                      )}
+                      <ChevronRight size={14} />
+                    </div>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className={styles.mobileDrawerFooter}>
+              <div className={styles.mobileDrawerLinks}>
+                <Link
+                  href="/"
+                  target="_blank"
+                  className={styles.mobileFooterLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <ExternalLink size={14} /> Live Website
+                </Link>
+                <Link
+                  href="/sales/dashboard"
+                  target="_blank"
+                  className={styles.mobileFooterLink}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Sparkles size={14} /> CRM Portal
+                </Link>
+              </div>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  logout();
+                }}
+                className={styles.mobileDrawerLogout}
+              >
+                <LogOut size={16} /> Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* Main Container */}
       <main className={styles.pageBody}>
@@ -1425,7 +1593,7 @@ export default function SuperAdminDashboard() {
         {/* TAB 1: OVERVIEW & RECENT ACTIVITY */}
         {activeTab === 'overview' && canViewAnalytics && (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+            <div className={styles.overviewGrid}>
               {/* Courses Snapshot */}
               {canManageCourses && (
                 <div className={styles.tableContainer} style={{ padding: '24px' }}>
